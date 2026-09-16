@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>나만의 네컷 Studio Pro 9.5</title>
+  <title>나만의 네컷 Studio Pro 10.0</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -35,10 +35,10 @@
         <div class="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center shadow-md shadow-rose-600/20">
           <i data-lucide="camera" class="w-4 h-4 text-white"></i>
         </div>
-        <span class="text-xl font-black tracking-tight text-slate-900">나만의 네컷 <span class="text-xs bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold ml-1">v9.5</span></span>
+        <span class="text-xl font-black tracking-tight text-slate-900">나만의 네컷 <span class="text-xs bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold ml-1">v10.0</span></span>
       </div>
       <span class="text-xs text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
-        아이패드 & 아이폰 전용
+        프로 스튜디오
       </span>
     </header>
 
@@ -50,7 +50,7 @@
           </div>
           <div>
             <h4 class="font-black text-base text-white">촬영 시작하기</h4>
-            <p class="text-xs text-rose-100 mt-0.5">아이패드 가로 대형 뷰파인더 + 3:2 영역 일치</p>
+            <p class="text-xs text-rose-100 mt-0.5">화각 줌 조절 + 컷별 동영상 동시 녹화</p>
           </div>
         </div>
         <i data-lucide="chevron-right" class="w-5 h-5 text-white/80"></i>
@@ -68,6 +68,18 @@
         </div>
         <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
       </button>
+
+      <button onclick="showScreen('screenBoard')" class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-4 rounded-2xl shadow-sm flex items-center justify-between active:scale-[0.98] transition group">
+        <div class="flex items-center space-x-3 text-left">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:scale-110 transition">
+            <i data-lucide="message-square" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-sm text-slate-900">공지사항 & 고객 소리함</h4>
+            <p class="text-[11px] text-slate-500">업데이트 소식 확인 및 건의사항 보내기</p>
+          </div>
+        </div>
+      </button>
     </section>
 
     <div class="mt-4 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
@@ -83,56 +95,102 @@
     </div>
 
     <footer class="mt-6 text-center text-[11px] text-slate-400">
-      아이패드 가로모드 거치대 촬영 완벽 대응
+      아이폰 · 아이패드 · 맥북 완벽 구동
     </footer>
   </main>
 
-  <section id="screenLiveShoot" class="hidden fixed inset-0 bg-black flex flex-col items-center justify-between p-2 sm:p-4 z-40">
+  <section id="screenBoard" class="hidden w-full max-w-md flex flex-col min-h-screen bg-white">
+    <header class="flex items-center px-4 py-4 border-b border-slate-200 bg-white sticky top-0 z-10">
+      <button onclick="showScreen('screenHome')" class="mr-3 text-slate-600 hover:text-slate-900">
+        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+      </button>
+      <h2 class="text-lg font-black text-slate-900">공지사항 & 고객 소리함</h2>
+    </header>
+
+    <div class="p-4 space-y-6 overflow-y-auto">
+      <div>
+        <h3 class="text-sm font-black text-rose-600 mb-3 flex items-center"><i data-lucide="bell" class="w-4 h-4 mr-1"></i> 업데이트 공지</h3>
+        <div class="space-y-3">
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400">2026.09.16</span>
+            <h4 class="text-sm font-bold text-slate-800 mt-1">[v10.0] 데이터 유실 방지 및 자동저장 안내</h4>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              이제 사진이 기기에 안전하게 자동 다운로드 되도록 기능이 개선되었습니다. 실수로 뒤로가기를 눌러도 경고창이 뜹니다.
+            </p>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400">2026.09.14</span>
+            <h4 class="text-sm font-bold text-slate-800 mt-1">[v9.0] 아이패드 분할 화면 및 줌 기능 업데이트</h4>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              아이패드에서 편집기 화면이 5:5로 쾌적하게 보입니다. 또한 카메라 줌 아웃 기능이 추가되었습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200">
+        <h3 class="text-sm font-black text-indigo-600 mb-3 flex items-center"><i data-lucide="mail" class="w-4 h-4 mr-1"></i> 고객 소리함 (개발자에게 의견 보내기)</h3>
+        <p class="text-xs text-slate-500 mb-3">개선할 점, 후기, 추가되었으면 하는 기능을 편하게 남겨주세요!</p>
+        
+        <textarea id="feedbackText" rows="4" placeholder="여기에 의견을 자유롭게 적어주세요..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm text-slate-800 outline-none focus:border-indigo-500 resize-none mb-3"></textarea>
+        
+        <button onclick="sendFeedbackEmail()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center space-x-2 shadow-md transition">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>개발자에게 의견 보내기</span>
+        </button>
+        <p class="text-[10px] text-slate-400 text-center mt-2">직접 이메일 문의: knsupolo@gmail.net</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="screenLiveShoot" class="hidden fixed inset-0 bg-black flex flex-col items-center justify-between p-3 sm:p-4 z-40">
     <div id="flashOverlay" class="hidden absolute inset-0 bg-white z-50 pointer-events-none"></div>
 
-    <div class="w-full max-w-5xl flex items-center justify-between px-2 pt-1 z-20">
-      <span id="liveProgressBadge" class="bg-rose-600 text-white font-black text-xs sm:text-sm px-4 py-1.5 rounded-full shadow-lg">
+    <div class="w-full max-w-xl flex items-center justify-between pt-1 px-1 z-10">
+      <span id="liveProgressBadge" class="bg-rose-600 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg">
         1 / 6 번째 컷 촬영 중
       </span>
 
       <div class="flex items-center space-x-2">
-        <button onclick="flipCameraFacing()" class="bg-slate-900/90 border border-slate-700 text-slate-200 hover:text-white px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1.5 active:scale-95 transition">
+        <button onclick="flipCameraFacing()" class="bg-slate-900/90 border border-slate-700 text-slate-200 hover:text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1 active:scale-95 transition">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           <span>카메라 돌리기</span>
         </button>
-        <button onclick="cancelSession()" class="text-slate-400 hover:text-white p-2 bg-slate-900/80 rounded-full">
+        <button onclick="cancelSession()" class="text-slate-400 hover:text-white p-1.5 bg-slate-900/80 rounded-full">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
     </div>
 
-    <div id="cameraContainer" class="relative w-full max-w-5xl flex-1 max-h-[75vh] sm:max-h-[78vh] overflow-hidden bg-black flex items-center justify-center rounded-2xl border-2 border-slate-800 shadow-2xl my-auto">
-      <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror origin-center"></video>
+    <div id="cameraContainer" class="relative w-full max-w-md aspect-[3/4] overflow-hidden border-2 border-slate-800 shadow-2xl bg-black flex flex-col items-center justify-between p-3">
+      <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror transition-transform duration-100 origin-center"></video>
       
-      <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-        <div id="viewfinder32Box" class="relative w-full max-w-4xl aspect-[3/2] max-h-full border-2 border-rose-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] flex items-center justify-center">
-          <span class="absolute top-2 left-2 text-[10px] sm:text-xs font-extrabold bg-rose-600 text-white px-2.5 py-1 rounded shadow">
-            📷 실제 사진 촬영 영역 (화면에 보이는 대로 찍힙니다)
+      <div class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+        <div class="w-full flex-1 bg-black/45"></div>
+        <div class="w-full aspect-[3/2] border-2 border-rose-500/80 relative shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] flex items-center justify-center">
+          <span class="absolute top-2 left-2 text-[10px] font-extrabold bg-rose-600/90 text-white px-2 py-0.5 rounded shadow">
+            📷 실제 사진 촬영 영역 (3:2)
           </span>
-          <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white"></div>
-          <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white"></div>
-          <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white"></div>
-          <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white"></div>
+          <div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white"></div>
+          <div class="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-white"></div>
+          <div class="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-white"></div>
+          <div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white"></div>
         </div>
+        <div class="w-full flex-1 bg-black/45"></div>
       </div>
 
-      <div class="absolute top-3 z-20 bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full border border-rose-500/30 flex items-center space-x-1.5">
+      <div class="z-20 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-rose-500/30 flex items-center space-x-1.5">
         <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
         <span class="text-[11px] font-bold text-rose-300">실시간 영상 녹화 중</span>
       </div>
 
       <div class="z-20 my-auto flex flex-col items-center pointer-events-none">
-        <span id="liveCountdownText" class="text-8xl sm:text-9xl font-black text-white drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)] scale-100 transition-all">
+        <span id="liveCountdownText" class="text-8xl sm:text-9xl font-black text-white drop-shadow-[0_4px_25px_rgba(0,0,0,0.9)] scale-100 transition-all">
           6
         </span>
       </div>
 
-      <div class="absolute bottom-3 z-20 w-11/12 max-w-md bg-black/35 backdrop-blur-sm border border-white/20 rounded-xl p-2.5 text-center shadow-lg">
+      <div class="z-20 w-full bg-black/35 backdrop-blur-sm border border-white/20 rounded-xl p-2.5 text-center shadow-lg">
         <p class="text-[10px] text-rose-300 font-bold">추천 포즈 미션</p>
         <p id="poseGuideText" class="text-sm sm:text-base font-black text-white tracking-tight drop-shadow">
           어깨동무하고 찰칵! 🫂
@@ -140,19 +198,35 @@
       </div>
     </div>
 
-    <div class="w-full max-w-xl flex flex-col items-center space-y-2 pb-1 z-20">
-      <button onclick="triggerInstantOneSec()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-center space-x-1.5 shadow-xl active:scale-95 transition">
+    <div class="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-xl p-2 px-3 flex items-center justify-between text-xs z-10">
+      <span class="text-slate-300 font-bold flex items-center space-x-1">
+        <i data-lucide="zoom-in" class="w-3.5 h-3.5 text-rose-400"></i>
+        <span>화각 줌:</span>
+        <b id="valZoomLevel" class="text-rose-400 font-mono">1.0x</b>
+      </span>
+      <div class="flex items-center space-x-2">
+        <input type="range" id="zoomSlider" min="0.7" max="2.0" step="0.05" value="1.0" oninput="onZoomChange(this.value)" class="w-28 accent-rose-500 h-1 bg-slate-700 rounded">
+        <div class="flex space-x-1">
+          <button onclick="setZoomQuick(0.7)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold rounded text-rose-300">0.7x 광각</button>
+          <button onclick="setZoomQuick(1.0)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold rounded">1.0x</button>
+          <button onclick="setZoomQuick(1.5)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold rounded">1.5x</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-full max-w-md flex flex-col items-center space-y-2 pb-1 z-10">
+      <button onclick="triggerInstantOneSec()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-xl active:scale-95 transition">
         <i data-lucide="zap" class="w-4 h-4 fill-slate-950"></i>
         <span>포즈 준비 완료! 바로 1초 뒤 촬영</span>
       </button>
 
-      <div class="w-full flex items-center justify-center space-x-2">
-        <div id="liveThumb0" class="w-12 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">1</div>
-        <div id="liveThumb1" class="w-12 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">2</div>
-        <div id="liveThumb2" class="w-12 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">3</div>
-        <div id="liveThumb3" class="w-12 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">4</div>
-        <div id="liveThumb4" class="w-12 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">5</div>
-        <div id="liveThumb5" class="w-12 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">6</div>
+      <div class="w-full flex items-center justify-center space-x-1.5">
+        <div id="liveThumb0" class="w-11 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">1</div>
+        <div id="liveThumb1" class="w-11 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">2</div>
+        <div id="liveThumb2" class="w-11 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">3</div>
+        <div id="liveThumb3" class="w-11 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">4</div>
+        <div id="liveThumb4" class="w-11 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">5</div>
+        <div id="liveThumb5" class="w-11 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold">6</div>
       </div>
     </div>
   </section>
@@ -179,7 +253,7 @@
 
     <div class="w-full lg:w-1/2 flex flex-col justify-between h-full space-y-3">
       <div>
-        <h3 class="font-black text-base text-slate-900">촬영된 사진 목록</h3>
+        <h3 class="font-black text-base text-slate-900">촬영된 사진 목록 (터치하여 슬롯에 넣기)</h3>
         <p class="text-xs text-slate-500">현재 <b id="currentActiveSlotLabel" class="text-rose-600 font-bold">1번 슬롯</b>에 들어갈 사진을 선택 중입니다</p>
       </div>
 
@@ -199,7 +273,7 @@
 
   <section id="screenEdit" class="hidden w-full h-screen max-h-screen flex flex-col lg:flex-row items-center justify-between gap-2 lg:gap-6 p-2 sm:p-4 lg:p-6 overflow-hidden bg-white text-slate-900">
     
-    <div class="w-full h-[58vh] lg:h-full lg:w-1/2 flex flex-col items-center justify-center overflow-hidden shrink-0 select-none bg-[#F6F3EC] border border-[#EBE6DC] shadow-inner p-2">
+    <div class="w-full h-[58vh] lg:h-full lg:w-1/2 flex flex-col items-center justify-center overflow-hidden shrink-0 select-none bg-[#F6F3EC] border border-[#EBE6DC] shadow-inner p-2 rounded-2xl">
       <div class="relative w-full h-full flex items-center justify-center">
         <canvas id="photoCanvas" class="max-h-full max-w-full object-contain shadow-2xl cursor-pointer"></canvas>
       </div>
@@ -211,7 +285,7 @@
 
     <div class="w-full h-[40vh] lg:h-full lg:w-1/2 bg-white border border-slate-200 rounded-2xl lg:rounded-3xl p-4 sm:p-5 flex flex-col justify-between shadow-xl overflow-y-auto touch-scroll no-scrollbar shrink-0">
       
-      <div class="space-y-4 pb-8 lg:pb-2">
+      <div class="space-y-4 pb-10 lg:pb-2">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100">
           <div class="flex items-center space-x-2">
             <h2 class="text-sm sm:text-base font-black text-slate-900 flex items-center space-x-1.5">
@@ -227,7 +301,6 @@
             </button>
             <button onclick="redo()" id="btnRedo" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] rounded-lg flex items-center space-x-1 active:scale-95 transition" title="다시 실행">
               <i data-lucide="redo" class="w-3 h-3"></i>
-              <span>다시실행</span>
             </button>
             <button onclick="cancelSession()" class="text-xs text-slate-400 hover:text-slate-600 font-bold ml-1">홈으로</button>
           </div>
@@ -262,7 +335,18 @@
           <div class="grid grid-cols-3 gap-1.5 text-[11px]">
             <button onclick="setFrameStyle('simple', this)" class="style-btn bg-rose-600 text-white font-black py-2 rounded-xl border border-rose-500 shadow-sm">심플 (상단문구)</button>
             <button onclick="setFrameStyle('bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">하단문구 (넓은여백)</button>
-            <button onclick="setFrameStyle('original', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">포토이즘 균일</button>
+            <button onclick="setFrameStyle('glow', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">네온 글로우</button>
+          </div>
+
+          <div id="glowColorPanel" class="hidden mt-2 p-2 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+            <span class="text-[10px] text-slate-600 font-bold">네온 글로우 색상:</span>
+            <div class="flex items-center space-x-1.5">
+              <button onclick="setGlowColor('#F43F5E')" class="w-5 h-5 rounded-full bg-rose-500 shadow-sm"></button>
+              <button onclick="setGlowColor('#10B981')" class="w-5 h-5 rounded-full bg-emerald-500 shadow-sm"></button>
+              <button onclick="setGlowColor('#06B6D4')" class="w-5 h-5 rounded-full bg-cyan-500 shadow-sm"></button>
+              <button onclick="setGlowColor('#8B5CF6')" class="w-5 h-5 rounded-full bg-purple-500 shadow-sm"></button>
+              <input type="color" onchange="setGlowColor(this.value)" class="w-5 h-5 rounded bg-transparent cursor-pointer">
+            </div>
           </div>
         </div>
 
@@ -303,7 +387,7 @@
             <span>프레임 두께</span>
             <span id="valThickness" class="text-rose-600 font-black">보통</span>
           </div>
-          <input type="range" id="sliderThickness" min="10" max="90" value="40" oninput="onThicknessChange(this.value)" class="w-full accent-rose-500 h-1 bg-slate-200 rounded">
+          <input type="range" id="sliderThickness" min="15" max="70" value="40" oninput="onThicknessChange(this.value)" class="w-full accent-rose-500 h-1 bg-slate-200 rounded">
         </div>
 
         <div>
@@ -359,7 +443,7 @@
 
         <div>
           <div class="flex justify-between items-center mb-1.5">
-            <label class="text-[11px] font-bold text-slate-600">감성 글자 & 이모티콘</label>
+            <label class="text-[11px] font-bold text-slate-600">감성 글자 & 이모티콘 (48종+)</label>
             <button onclick="clearAllStickers()" class="text-[10px] text-rose-600 font-bold hover:underline">전체 비우기</button>
           </div>
           
@@ -412,25 +496,25 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
-        <button onclick="generateRealFourCutVideo()" id="btnRealVideo" class="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black py-2.5 px-2 rounded-xl text-xs flex items-center justify-center space-x-1 shadow active:scale-95 transition">
-          <i data-lucide="video" class="w-3.5 h-3.5 shrink-0"></i>
-          <span>실시간 영상 저장</span>
+      <div class="space-y-2 pt-2 border-t border-slate-100">
+        <button onclick="generateRealFourCutVideo()" id="btnRealVideo" class="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+          <i data-lucide="video" class="w-4 h-4"></i>
+          <span>🎬 4컷 동시 재생 비디오 저장</span>
         </button>
 
-        <button onclick="downloadLocalImage()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-2 rounded-xl text-xs flex items-center justify-center space-x-1 shadow active:scale-95 transition">
-          <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
-          <span>네컷 사진 저장</span>
+        <button onclick="downloadLocalImage()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+          <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
+          <span>💾 네컷 사진 저장 (고화질)</span>
         </button>
 
-        <button onclick="exportCenteredPDF()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2.5 px-2 rounded-xl text-xs flex items-center justify-center space-x-1 shadow active:scale-95 transition">
-          <i data-lucide="printer" class="w-3.5 h-3.5 shrink-0"></i>
-          <span>PDF 인쇄 저장</span>
+        <button onclick="exportCenteredPDF()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>🖨️ 실물 포토 인쇄 (규격 PDF)</span>
         </button>
 
-        <button onclick="saveAndGenerateQR()" id="btnSaveQR" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-2.5 px-2 rounded-xl text-xs flex items-center justify-center space-x-1 shadow-lg active:scale-95 transition">
-          <i data-lucide="qr-code" class="w-3.5 h-3.5 shrink-0"></i>
-          <span>QR코드 생성</span>
+        <button onclick="saveAndGenerateQR()" id="btnSaveQR" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-2xl text-xs flex items-center justify-center space-x-1.5 shadow-lg active:scale-95 transition">
+          <i data-lucide="qr-code" class="w-4 h-4"></i>
+          <span>📱 QR코드 생성 (친구 전송용)</span>
         </button>
       </div>
     </div>
@@ -441,10 +525,10 @@
       <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
         <i data-lucide="check" class="w-6 h-6"></i>
       </div>
-      <h2 class="text-xl font-black text-slate-900">사진 다운로드 QR코드</h2>
-      <p class="text-xs text-rose-600 font-bold mt-1 mb-3">스마트폰 기본 카메라로 비추면 완성된 사진이 바로 열립니다!</p>
+      <h2 class="text-xl font-black text-slate-900">QR코드 생성 완료!</h2>
+      <p class="text-xs text-rose-600 font-bold mt-1 mb-3">다른 스마트폰으로 비추면 완성된 사진이 바로 열립니다!</p>
 
-      <div id="qrcodeBoxWrap" class="p-3.5 bg-white border border-slate-200 rounded-2xl mb-4 shadow-sm flex items-center justify-center min-h-[190px]">
+      <div class="p-3.5 bg-white border border-slate-200 rounded-2xl mb-4 shadow-sm">
         <div id="qrcodeArea"></div>
       </div>
 
@@ -452,11 +536,6 @@
         <button onclick="returnToEditor()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
           <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
           <span>✏️ 다시 편집 화면으로 돌아가기</span>
-        </button>
-
-        <button onclick="downloadLocalImage()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition">
-          <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
-          <span>내 기기에 직접 사진 저장</span>
         </button>
       </div>
 
@@ -489,21 +568,13 @@
   <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
 
   <script>
+    // ⚠️ 1단계에서 배포한 구글 웹 앱 URL을 복사해서 붙여넣으세요.
     const GAS_API_URL = "여기에_복사한_웹앱URL_붙여넣기";
 
     const POSE_SUGGESTIONS = [
-      "어깨동무하고 찰칵! 🫂",
-      "다같이 브이~ ✌️",
-      "손잡고 빙그르르 💫",
-      "개구쟁이 메롱 😜",
-      "서로 얼굴 맞대고 🥰",
-      "볼 옆에 브이 ✌️",
-      "새침한 시크 표정 😎",
-      "하트 뿅뿅 날리기 🫶",
-      "자유로운 힙합 포즈 🤙",
-      "꽃받침하고 방긋 🌸",
-      "눈 꼭 감고 윙크 😉",
-      "볼 빵빵 귀요미 🐹"
+      "어깨동무하고 찰칵! 🫂", "다같이 브이~ ✌️", "손잡고 빙그르르 💫", "개구쟁이 메롱 😜",
+      "서로 얼굴 맞대고 🥰", "볼 옆에 브이 ✌️", "새침한 시크 표정 😎", "하트 뿅뿅 날리기 🫶",
+      "자유로운 힙합 포즈 🤙", "꽃받침하고 방긋 🌸", "눈 꼭 감고 윙크 😉", "볼 빵빵 귀요미 🐹"
     ];
 
     const FILTER_PRESETS = {
@@ -523,6 +594,7 @@
       timerSec: 6,
       currentCount: 6,
       countdownTimer: null,
+      zoomLevel: 1.0,
       shotImages: [],
       selectedImages: [],
       selectedIndices: [0, 1, 2, 3],
@@ -532,7 +604,8 @@
       dragTarget: null,
       dragStartPos: { x:0, y:0 },
       layout: 'strip',
-      frameStyle: 'simple',     // 'simple' (상단문구) | 'bottom' (하단문구 넓은여백) | 'original' (포토이즘 균일)
+      frameStyle: 'simple',
+      glowColor: '#F43F5E',
       frameThickness: 40,
       frameColor: '#000000',
       customOverlayImage: null,
@@ -552,6 +625,14 @@
       resetInterval: null
     };
 
+    // 🌟 뒤로가기(새로고침) 방지
+    window.addEventListener('beforeunload', function (e) {
+      if (appState.shotImages.length > 0 || appState.selectedImages.length > 0) {
+        e.preventDefault();
+        e.returnValue = '저장하지 않은 사진이 날아갈 수 있습니다. 나가시겠습니까?';
+      }
+    });
+
     let historyStack = [];
     let redoStack = [];
 
@@ -562,6 +643,7 @@
         frameStyle: appState.frameStyle,
         frameThickness: appState.frameThickness,
         frameColor: appState.frameColor,
+        glowColor: appState.glowColor,
         activeFilter: appState.activeFilter,
         filters: appState.filters,
         showDate: appState.showDate,
@@ -581,6 +663,7 @@
         frameStyle: appState.frameStyle,
         frameThickness: appState.frameThickness,
         frameColor: appState.frameColor,
+        glowColor: appState.glowColor,
         activeFilter: appState.activeFilter,
         filters: appState.filters,
         showDate: appState.showDate,
@@ -588,7 +671,6 @@
         customTitle: document.getElementById('frameSignatureInput').value
       });
       redoStack.push(currentSnap);
-
       const prev = JSON.parse(historyStack.pop());
       applySnapshot(prev);
     }
@@ -601,6 +683,7 @@
         frameStyle: appState.frameStyle,
         frameThickness: appState.frameThickness,
         frameColor: appState.frameColor,
+        glowColor: appState.glowColor,
         activeFilter: appState.activeFilter,
         filters: appState.filters,
         showDate: appState.showDate,
@@ -608,7 +691,6 @@
         customTitle: document.getElementById('frameSignatureInput').value
       });
       historyStack.push(currentSnap);
-
       const next = JSON.parse(redoStack.pop());
       applySnapshot(next);
     }
@@ -619,6 +701,7 @@
       appState.frameStyle = snap.frameStyle;
       appState.frameThickness = snap.frameThickness;
       appState.frameColor = snap.frameColor;
+      appState.glowColor = snap.glowColor;
       appState.activeFilter = snap.activeFilter;
       appState.filters = snap.filters;
       appState.showDate = snap.showDate;
@@ -627,6 +710,13 @@
         document.getElementById('frameSignatureInput').value = snap.customTitle || '';
       }
       renderStrip();
+    }
+
+    // 통신 및 사운드 설정
+    function sendFeedbackEmail() {
+      const text = document.getElementById('feedbackText').value;
+      if (!text.trim()) { alert("내용을 입력해주세요."); return; }
+      window.location.href = `mailto:knsupolo@gmail.net?subject=[나만의 네컷 Studio 피드백]&body=${encodeURIComponent(text)}`;
     }
 
     let audioCtx = null;
@@ -682,7 +772,18 @@
       btn.className = "timer-chip bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm";
     }
 
-    // 1. 카메라 시작 및 컷별 비디오 녹화
+    function onZoomChange(val) {
+      appState.zoomLevel = parseFloat(val);
+      document.getElementById('valZoomLevel').textContent = `${appState.zoomLevel.toFixed(1)}x`;
+      const video = document.getElementById('liveWebcamVideo');
+      video.style.transform = `scale(${appState.zoomLevel}) ${appState.facingMode === 'user' ? 'scaleX(-1)' : ''}`;
+    }
+
+    function setZoomQuick(val) {
+      document.getElementById('zoomSlider').value = val;
+      onZoomChange(val);
+    }
+
     async function startPhotoSession() {
       initAudio();
       stopCameraAndAudio();
@@ -690,6 +791,8 @@
       appState.selectedImages = [];
       appState.selectedIndices = [0, 1, 2, 3];
       appState.shotVideoBlobs = [];
+      appState.zoomLevel = 1.0;
+      setZoomQuick(1.0);
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -704,7 +807,7 @@
         for (let i = 0; i < 6; i++) {
           const t = document.getElementById(`liveThumb${i}`);
           t.innerHTML = (i + 1).toString();
-          t.className = "w-12 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold";
+          t.className = "w-11 h-14 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500 font-bold";
         }
 
         showScreen('screenLiveShoot');
@@ -794,7 +897,6 @@
       }, 1000);
     }
 
-    // 🌟 3:2 가이드 박스 영역만 정확히 크롭하여 캡처 (화면에 보이는 그대로 1:1 저장)
     function captureWebcamFrame(shotIndex, onDone) {
       playRealisticShutter();
       flashScreen();
@@ -808,14 +910,14 @@
       const videoRatio = vWidth / vHeight;
 
       if (videoRatio > targetRatio) {
-        srcH = vHeight;
-        srcW = vHeight * targetRatio;
+        srcH = vHeight / appState.zoomLevel;
+        srcW = (vHeight * targetRatio) / appState.zoomLevel;
         srcX = (vWidth - srcW) / 2;
-        srcY = 0;
+        srcY = (vHeight - srcH) / 2;
       } else {
-        srcW = vWidth;
-        srcH = vWidth / targetRatio;
-        srcX = 0;
+        srcW = vWidth / appState.zoomLevel;
+        srcH = (vWidth / targetRatio) / appState.zoomLevel;
+        srcX = (vWidth - srcW) / 2;
         srcY = (vHeight - srcH) / 2;
       }
 
@@ -837,7 +939,7 @@
         appState.shotImages.push(img);
         const thumb = document.getElementById(`liveThumb${shotIndex}`);
         thumb.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`;
-        thumb.className = "w-12 h-14 border border-rose-500 rounded overflow-hidden shadow";
+        thumb.className = "w-11 h-14 border border-rose-500 rounded overflow-hidden shadow";
         if (onDone) onDone();
       };
       img.src = canvas.toDataURL('image/jpeg', 0.92);
@@ -867,7 +969,6 @@
       }
     }
 
-    // 2. 사진 선택 화면 (슬롯 터치 & 즉시 미리보기)
     function renderPickScreen() {
       showScreen('screenPick');
       appState.selectedIndices = [0, 1, 2, 3];
@@ -930,6 +1031,7 @@
       appState.frameStyle = 'simple';
       appState.frameThickness = 40;
       appState.frameColor = '#000000';
+      appState.glowColor = '#F43F5E';
       appState.customOverlayImage = null;
       appState.activeFilter = 'normal';
       appState.filters = { bright: 100, contrast: 100, saturate: 100 };
@@ -946,6 +1048,7 @@
       document.getElementById('labelCustomText').textContent = "상단 문구 설정";
       document.getElementById('sliderThickness').value = 40;
       document.getElementById('valThickness').textContent = "보통";
+      document.getElementById('glowColorPanel').classList.add('hidden');
       document.getElementById('filterFineTunePanel').classList.add('hidden');
       document.getElementById('stickerControlBar').classList.add('hidden');
       historyStack = [];
@@ -979,7 +1082,7 @@
       renderStrip();
     }
 
-    // 3. 프레임 테마 스타일 제어
+    // 스타일 제어
     function changeLayout(mode, btn) {
       saveStateForUndo();
       appState.layout = mode;
@@ -998,17 +1101,24 @@
       });
       btn.className = "style-btn bg-rose-600 text-white font-black py-2 rounded-xl border border-rose-500 shadow-sm";
 
+      const glowPanel = document.getElementById('glowColorPanel');
+      if (styleKey === 'glow') glowPanel.classList.remove('hidden');
+      else glowPanel.classList.add('hidden');
+
       const label = document.getElementById('labelCustomText');
       if (styleKey === 'simple') {
         label.textContent = "상단 문구 설정";
         document.getElementById('frameSignatureInput').value = "sangsngPhoto";
-      } else if (styleKey === 'bottom') {
+      } else {
         label.textContent = "하단 각인 문구 설정";
         document.getElementById('frameSignatureInput').value = "[ 인생네컷 ]";
-      } else {
-        label.textContent = "포토이즘 로고 문구";
-        document.getElementById('frameSignatureInput').value = "PHOTO.IS";
       }
+      renderStrip();
+    }
+
+    function setGlowColor(color) {
+      saveStateForUndo();
+      appState.glowColor = color;
       renderStrip();
     }
 
@@ -1016,7 +1126,7 @@
       appState.frameThickness = parseInt(val);
       const label = document.getElementById('valThickness');
       if (val < 25) label.textContent = "아주 얇게";
-      else if (val < 50) label.textContent = "보통";
+      else if (val < 45) label.textContent = "보통";
       else label.textContent = "두껍게";
       renderStrip();
     }
@@ -1036,7 +1146,6 @@
       renderStrip();
     }
 
-    // 🌟 투명 프레임 PNG 업로드 (사진 위에 액자처럼 합성)
     function handleCustomFrameUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1047,14 +1156,14 @@
           saveStateForUndo();
           appState.customOverlayImage = im;
           renderStrip();
-          alert("투명 프레임 PNG가 사진 위에 액자처럼 완벽히 입혀졌습니다!");
+          alert("투명 프레임 PNG가 사진 위에 완벽히 입혀졌습니다!");
         };
         im.src = ev.target.result;
       };
       r.readAsDataURL(file);
     }
 
-    // 4. 감성 필터 원터치 & 미세조정
+    // 필터
     function handleFilterClick(filterKey, btn) {
       const isAlreadyActive = (appState.activeFilter === filterKey);
       if (!isAlreadyActive) {
@@ -1093,7 +1202,7 @@
       document.getElementById('valSaturate').textContent = `${appState.filters.saturate}%`;
     }
 
-    // 5. 타이포그래피 & 날짜
+    // 타이포
     function setFontFamily(fontName, btn) {
       saveStateForUndo();
       appState.typography.fontFamily = fontName;
@@ -1134,7 +1243,7 @@
       renderStrip();
     }
 
-    // 6. 스티커 인터랙션
+    // 스티커
     function addTextSticker(text) {
       saveStateForUndo();
       const canvas = document.getElementById('photoCanvas');
@@ -1253,7 +1362,7 @@
       window.addEventListener('touchend', handleEnd);
     }
 
-    // 7. 메인 캔버스 렌더링 루프 (심플 상단문구 vs 하단문구 넓은여백)
+    // 🌟 캔버스 렌더링 (포토이즘 상단 vs 하단문구 넓은 여백)
     function renderStrip(isFinalExport = false) {
       const canvas = document.getElementById('photoCanvas');
       const ctx = canvas.getContext('2d');
@@ -1272,7 +1381,6 @@
         canvas.width = 1200; canvas.height = 1800;
       }
 
-      // 🌟 각진 직각 테두리
       ctx.fillStyle = appState.frameColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1323,28 +1431,21 @@
         const bottomFooterH = isBottomStyle ? 160 : 35;
         const imgH = (canvas.height - topHeaderH - bottomFooterH - 20 - (gap * 3)) / 4;
 
-        // 왼쪽 스트립
         renderFrameBordersAndHeader(ctx, 10, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottomStyle, true);
         for (let i = 0; i < 4; i++) {
           const y = 10 + topHeaderH + (i * (imgH + gap));
           drawFilteredSlotPhoto(ctx, appState.selectedImages[i], 10 + padX, y, imgW, imgH);
         }
-        if (isBottomStyle) {
-          drawBottomStyleFooter(ctx, stripW / 2, canvas.height - 70, customTitle, 26);
-        }
+        if (isBottomStyle) drawBottomStyleFooter(ctx, stripW / 2, canvas.height - 70, customTitle, 26);
 
-        // 오른쪽 스트립
         const rightStartX = canvas.width / 2 + 10;
         renderFrameBordersAndHeader(ctx, rightStartX, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottomStyle, true);
         for (let i = 0; i < 4; i++) {
           const y = 10 + topHeaderH + (i * (imgH + gap));
           drawFilteredSlotPhoto(ctx, appState.selectedImages[i], rightStartX + padX, y, imgW, imgH);
         }
-        if (isBottomStyle) {
-          drawBottomStyleFooter(ctx, rightStartX + (stripW / 2) - 10, canvas.height - 70, customTitle, 26);
-        }
+        if (isBottomStyle) drawBottomStyleFooter(ctx, rightStartX + (stripW / 2) - 10, canvas.height - 70, customTitle, 26);
 
-        // 절취선
         ctx.save();
         ctx.strokeStyle = 'rgba(255,255,255,0.35)';
         ctx.lineWidth = 2;
@@ -1361,12 +1462,10 @@
         ctx.restore();
       }
 
-      // 🌟 투명 프레임 PNG 합성 오버레이
       if (appState.customOverlayImage) {
         ctx.drawImage(appState.customOverlayImage, 0, 0, canvas.width, canvas.height);
       }
 
-      // 스티커 드로잉
       appState.stickers.forEach((st, idx) => {
         ctx.save();
         if (st.type === 'text') {
@@ -1429,7 +1528,15 @@
         ctx.font = `900 ${isTwin ? 9 : 12}px monospace`;
         ctx.fillText("PHOTO.IS", 0, 0);
         ctx.restore();
+        ctx.restore();
 
+      } else if (appState.frameStyle === 'glow') {
+        ctx.save();
+        ctx.strokeStyle = appState.glowColor;
+        ctx.lineWidth = 10;
+        ctx.shadowColor = appState.glowColor;
+        ctx.shadowBlur = 24;
+        ctx.strokeRect(bx + 6, by + 6, bw - 12, bh - 12);
         ctx.restore();
       }
     }
@@ -1490,26 +1597,15 @@
       const sMul = customAdjust.saturate / 100;
 
       for (let i = 0; i < len; i += 4) {
-        let r = d[i];
-        let g = d[i+1];
-        let b = d[i+2];
+        let r = d[i], g = d[i+1], b = d[i+2];
 
-        if (filterKey === 'bright') {
-          r = r * 1.1 + 10; g = g * 1.08 + 8; b = b * 1.05 + 6;
-        } else if (filterKey === 'radiant') {
-          r = r * 1.12 + 15; g = g * 1.1 + 12; b = b * 1.15 + 15;
-        } else if (filterKey === 'warm') {
-          r = r * 1.12 + 12; g = g * 1.05 + 6; b = b * 0.92;
-        } else if (filterKey === 'cool') {
-          r = r * 0.92; g = g * 1.02 + 4; b = b * 1.15 + 12;
-        } else if (filterKey === 'mood') {
-          r = r * 1.06 + 8; g = g * 0.98; b = b * 0.92 + 5;
-        } else if (filterKey === 'retro') {
-          r = r * 1.08 + 15; g = g * 0.95 + 8; b = b * 0.82 + 12;
-        } else if (filterKey === 'mono') {
-          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-          r = g = b = gray;
-        }
+        if (filterKey === 'bright') { r = r*1.1+10; g = g*1.08+8; b = b*1.05+6; }
+        else if (filterKey === 'radiant') { r = r*1.12+15; g = g*1.1+12; b = b*1.15+15; }
+        else if (filterKey === 'warm') { r = r*1.12+12; g = g*1.05+6; b = b*0.92; }
+        else if (filterKey === 'cool') { r = r*0.92; g = g*1.02+4; b = b*1.15+12; }
+        else if (filterKey === 'mood') { r = r*1.06+8; g = g*0.98; b = b*0.92+5; }
+        else if (filterKey === 'retro') { r = r*1.08+15; g = g*0.95+8; b = b*0.82+12; }
+        else if (filterKey === 'mono') { const gray = 0.299*r + 0.587*g + 0.114*b; r = g = b = gray; }
 
         r *= bMul; g *= bMul; b *= bMul;
         r = ((r / 255 - 0.5) * cFactor + 0.5) * 255;
@@ -1517,13 +1613,11 @@
         b = ((b / 255 - 0.5) * cFactor + 0.5) * 255;
 
         if (sMul !== 1 && filterKey !== 'mono') {
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          r = lum + (r - lum) * sMul;
-          g = lum + (g - lum) * sMul;
-          b = lum + (b - lum) * sMul;
+          const lum = 0.299*r + 0.587*g + 0.114*b;
+          r = lum + (r - lum)*sMul; g = lum + (g - lum)*sMul; b = lum + (b - lum)*sMul;
         }
 
-        d[i]   = Math.min(255, Math.max(0, r));
+        d[i] = Math.min(255, Math.max(0, r));
         d[i+1] = Math.min(255, Math.max(0, g));
         d[i+2] = Math.min(255, Math.max(0, b));
       }
@@ -1534,17 +1628,17 @@
       return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // 8. 4컷 실시간 촬영 영상 비디오 생성 및 저장
+    // 🌟 동시 재생 4컷 라이브 비디오 (자동저장)
     async function generateRealFourCutVideo() {
       const btn = document.getElementById('btnRealVideo');
       btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>비디오 합성 중...</span>`;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>비디오 합성 렌더링 중...</span>`;
       lucide.createIcons();
 
       if (appState.selectedIndices.length === 0 || !appState.shotVideoBlobs[appState.selectedIndices[0]]) {
         alert("카메라로 직접 촬영한 영상 클립이 필요합니다. [촬영 시작하기]로 다시 진행해 주세요!");
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="video" class="w-3.5 h-3.5"></i><span>실시간 영상 저장</span>`;
+        btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 실시간 촬영 영상 저장</span>`;
         lucide.createIcons();
         return;
       }
@@ -1585,7 +1679,7 @@
           const file = new File([blob], `Insaeng4cut_Video_${Date.now()}.${ext}`, { type: mimeType });
 
           btn.disabled = false;
-          btn.innerHTML = `<i data-lucide="video" class="w-3.5 h-3.5"></i><span>실시간 영상 저장</span>`;
+          btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 실시간 촬영 영상 저장</span>`;
           lucide.createIcons();
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -1671,12 +1765,11 @@
       } catch (err) {
         alert("비디오 생성 실패: " + err.message);
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="video" class="w-3.5 h-3.5"></i><span>실시간 영상 저장</span>`;
+        btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 실시간 촬영 영상 저장</span>`;
         lucide.createIcons();
       }
     }
 
-    // 9. 🌟 실물 포토 인쇄 고화질 PDF 생성 (여백 쏠림 원천 해결)
     function exportCenteredPDF() {
       renderStrip(true);
       const canvas = document.getElementById('photoCanvas');
@@ -1712,17 +1805,16 @@
       pdf.save(`Insaeng4cut_Print_${Date.now()}.pdf`);
     }
 
-    // 10. 🌟 QR코드 생성 & 스마트폰 직행 다운로드 (홈 화면 튕김 방지)
+    // 🌟 자동저장 적용 (결과 화면 진입 시 무조건 다운로드 트리거)
     async function saveAndGenerateQR() {
       const btn = document.getElementById('btnSaveQR');
       btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>QR 생성 중...</span>`;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>서버 전송 중...</span>`;
       lucide.createIcons();
 
       renderStrip(true);
       const canvas = document.getElementById('photoCanvas');
 
-      // 1순위: Google Apps Script Web App 연동 시도
       if (GAS_API_URL && !GAS_API_URL.includes("여기에_")) {
         const scale = Math.min(1, 1000 / canvas.width);
         const tempCanvas = document.createElement('canvas');
@@ -1733,7 +1825,7 @@
         const uploadBase64 = tempCanvas.toDataURL('image/jpeg', 0.88);
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
 
         try {
           const res = await fetch(GAS_API_URL, {
@@ -1750,7 +1842,7 @@
           clearTimeout(timeoutId);
           if (res && res.success && res.fileUrl) {
             btn.disabled = false;
-            btn.innerHTML = `<i data-lucide="qr-code" class="w-3.5 h-3.5"></i><span>QR코드 생성</span>`;
+            btn.innerHTML = `<span>📱 QR코드 생성 (스마트폰 사진 다운로드)</span>`;
             displayResultWithQR(res.fileUrl);
             return;
           }
@@ -1759,7 +1851,6 @@
         }
       }
 
-      // 2순위: 🌟 초고속 무료 이미지 클라우드 자동 직행 업로드
       canvas.toBlob(async (blob) => {
         try {
           const formData = new FormData();
@@ -1771,7 +1862,7 @@
           }).then(r => r.json());
 
           btn.disabled = false;
-          btn.innerHTML = `<i data-lucide="qr-code" class="w-3.5 h-3.5"></i><span>QR코드 생성</span>`;
+          btn.innerHTML = `<span>📱 QR코드 생성 (스마트폰 사진 다운로드)</span>`;
 
           if (uploadRes && uploadRes.status === 'success' && uploadRes.data.url) {
             const directUrl = uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
@@ -1781,25 +1872,20 @@
           }
         } catch (err) {
           btn.disabled = false;
-          btn.innerHTML = `<i data-lucide="qr-code" class="w-3.5 h-3.5"></i><span>QR코드 생성</span>`;
+          btn.innerHTML = `<span>📱 QR코드 생성 (스마트폰 사진 다운로드)</span>`;
           fallbackLocalDownload();
         }
       }, 'image/png');
     }
 
+    // 🌟 결과 화면 이동 및 자동 저장 실행
     function displayResultWithQR(url) {
       const qrBox = document.getElementById('qrcodeArea');
       qrBox.innerHTML = '';
-      
-      // qrcode.js와 img 백업 동시 지원
-      try {
-        new QRCode(qrBox, { text: url, width: 175, height: 175, correctLevel: QRCode.CorrectLevel.M });
-      } catch(e) {
-        qrBox.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}" class="w-44 h-44 mx-auto">`;
-      }
-      
+      new QRCode(qrBox, { text: url, width: 175, height: 175, correctLevel: QRCode.CorrectLevel.M });
       showScreen('screenResult');
       startAutoReset();
+      downloadLocalImage(); // 자동저장
     }
 
     function fallbackLocalDownload() {
@@ -1817,7 +1903,7 @@
       renderStrip();
     }
 
-    // 11. 네컷 사진 로컬 저장
+    // 네컷 사진 로컬 저장 (공유)
     async function downloadLocalImage() {
       renderStrip(true);
       const canvas = document.getElementById('photoCanvas');
@@ -1842,7 +1928,7 @@
             await navigator.share({
               files: [file],
               title: '인생네컷',
-              text: 'Insaeng4cut Studio에서 완성한 네컷 사진입니다!'
+              text: 'Insaeng4cut Studio에서 완성한 사진입니다!'
             });
             return;
           } catch (err) {
@@ -1860,9 +1946,8 @@
       document.getElementById('mobileSaveModal').classList.add('hidden');
     }
 
-    // 12. 초기화 및 제어
     function showScreen(id) {
-      ['screenHome', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'].forEach(s => {
+      ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'].forEach(s => {
         document.getElementById(s).classList.toggle('hidden', s !== id);
       });
       lucide.createIcons();
@@ -1879,7 +1964,8 @@
       appState.shotImages = [];
       appState.selectedImages = [];
       appState.selectedIndices = [0, 1, 2, 3];
-      appState.shotVideoBlobs = [];
+      appState.stickers = [];
+      appState.selectedStickerIdx = -1;
       showScreen('screenHome');
     }
 
