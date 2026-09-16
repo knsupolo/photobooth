@@ -33,7 +33,7 @@
        화면 1: 메인 홈 화면 (촬영/앨범 정중앙 & 후기 하단 배치)
   ======================================================== -->
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
-    <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5">
+    <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5 justify-between">
       
       <!-- 상단 헤더 -->
       <header class="shrink-0 flex items-center justify-between py-2 border-b border-slate-100">
@@ -54,11 +54,11 @@
         <p id="mainNoticeContent" class="text-xs font-bold text-slate-800 break-words whitespace-pre-wrap"></p>
       </div>
 
-      <!-- 🌟 화면 정중앙 메인 액션 버튼 -->
+      <!-- 🌟 화면 정중앙 메인 액션 버튼 (촬영 / 앨범) -->
       <section class="flex-1 flex flex-col justify-center space-y-4 my-auto">
         <button onclick="startPhotoSession()" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white py-7 px-5 rounded-3xl shadow-xl shadow-rose-600/25 flex items-center justify-between active:scale-[0.98] transition group">
           <div class="flex items-center space-x-4 text-left">
-            <div class="w-13 h-13 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition p-3">
+            <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition p-3">
               <i data-lucide="camera" class="w-7 h-7"></i>
             </div>
             <div>
@@ -432,12 +432,62 @@
   <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
 
   <!-- ========================================================
-       통합 엔진 스크립트
+       통합 엔진 스크립트 (오류 해결 완결본)
   ======================================================== -->
   <script>
     const GAS_API_URL = "여기에_복사한_웹앱URL_붙여넣기";
 
-    // 동적 UI 생성
+    const POSE_SUGGESTIONS = [
+      "어깨동무하고 찰칵! 🫂", "다같이 브이~ ✌️", "손잡고 빙그르르 💫", "개구쟁이 메롱 😜",
+      "서로 얼굴 맞대고 🥰", "볼 옆에 브이 ✌️", "새침한 시크 표정 😎", "하트 뿅뿅 날리기 🫶",
+      "자유로운 힙합 포즈 🤙", "꽃받침하고 방긋 🌸", "눈 꼭 감고 윙크 😉", "볼 빵빵 귀요미 🐹"
+    ];
+
+    const FILTER_PRESETS = {
+      normal:  { bright: 100, contrast: 100, saturate: 100, name: '원본' },
+      bright:  { bright: 115, contrast: 105, saturate: 108, name: '뽀샤시' },
+      radiant: { bright: 112, contrast: 115, saturate: 125, name: '화사한' },
+      warm:    { bright: 108, contrast: 105, saturate: 120, name: '따뜻한' },
+      cool:    { bright: 106, contrast: 112, saturate: 95,  name: '차가운' },
+      mood:    { bright: 105, contrast: 95,  saturate: 85,  name: '감성무드' },
+      retro:   { bright: 108, contrast: 90,  saturate: 80,  name: '레트로' },
+      mono:    { bright: 105, contrast: 130, saturate: 0,   name: '흑백' }
+    };
+
+    let appState = {
+      isAdmin: false,
+      stream: null,
+      facingMode: 'user',
+      timerSec: 6,
+      currentCount: 6,
+      countdownTimer: null,
+      shotImages: [],
+      selectedImages: [],
+      selectedIndices: [0, 1, 2, 3],
+      activeSlotIndex: 0,
+      photoPan: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}],
+      isPhotoLocked: true, 
+      stickers: [],
+      selectedStickerIdx: -1,
+      dragTarget: null,
+      dragStartPos: { x:0, y:0 },
+      layout: 'strip',
+      frameStyle: 'simple',
+      frameThickness: 40,
+      frameColor: '#000000',
+      customOverlayImage: null,
+      activeFilter: 'normal',
+      filters: { bright: 100, contrast: 100, saturate: 100 },
+      showDate: true,
+      typography: {
+        fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF',
+        isBold: true, date: getFormattedTodayDate()
+      },
+      shotVideoBlobs: [], currentMediaRecorder: null, currentShotVideoChunks: [],
+      resetInterval: null
+    };
+
+    // 동적 UI 빌더
     function initDynamicUI() {
       const fonts = [
         { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
@@ -449,22 +499,30 @@
         { name: 'Noto Sans KR', label: '본고딕', css: 'font-family:"Noto Sans KR"; font-weight:700;' },
         { name: 'Dongle', label: '동글체', css: 'font-family:"Dongle"; font-weight:700; font-size: 1.2em;' }
       ];
-      document.getElementById('fontGrid').innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1.5 rounded text-[10px]" style="${f.css}">${f.label}</button>`).join('');
+      const fontGrid = document.getElementById('fontGrid');
+      if (fontGrid) fontGrid.innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1.5 rounded text-[10px]" style="${f.css}">${f.label}</button>`).join('');
 
       const emojis = ['✌️','💖','🎀','🐱','🐶','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐧','🐤','🦄','🐝','🦋','🐢','🦖','🐙','🐬','🐳','🦈','🕶️','✨','🎂','👑','🎉','🧸','🌸','🍀','🍓','🍒','🌙','☁️','🪩','📸','💌','💘','😜','🥹','🥳','🔥','💯','👻','🍿','🧋','🍺'];
-      document.getElementById('emojiGrid').innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded text-base cursor-pointer transform active:scale-90 transition"> ${e} </button>`).join('');
+      const emojiGrid = document.getElementById('emojiGrid');
+      if (emojiGrid) emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded text-base cursor-pointer transform active:scale-90 transition"> ${e} </button>`).join('');
 
       const texts = ['추억의 네컷','BEST','LOVE','YOUTH','HAPPY','VIBE','OUR DAY','CHILL','SMILE','OOTD','HAPPINESS','AWESOME'];
-      document.getElementById('textStickerGrid').innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer transform active:scale-95 transition">${t}</button>`).join('');
+      const textStickerGrid = document.getElementById('textStickerGrid');
+      if (textStickerGrid) textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer transform active:scale-95 transition">${t}</button>`).join('');
 
       const colors = ['#000000','#111827','#FFFFFF','#E2E8F0','#FECDD3','#FFEDD5','#FEF9C3','#D1FAE5','#BAE6FD','#EDE9FE','#881337','#1E1B4B','#064E3B'];
-      document.getElementById('frameColorGrid').innerHTML = colors.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') + `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
+      const frameColorGrid = document.getElementById('frameColorGrid');
+      if (frameColorGrid) {
+        frameColorGrid.innerHTML = colors.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') + `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
+      }
       
       setTimeout(() => {
-        changeFrameColor('#000000', document.querySelector('.color-btn'));
-        setFontFamily('Playfair Display', document.querySelector('.font-btn'));
-        lucide.createIcons();
-      }, 100);
+        const firstColor = document.querySelector('.color-btn');
+        if (firstColor) changeFrameColor('#000000', firstColor);
+        const firstFont = document.querySelector('.font-btn');
+        if (firstFont) setFontFamily('Playfair Display', firstFont);
+        if (window.lucide) lucide.createIcons();
+      }, 50);
     }
 
     // 새로고침 방지
@@ -552,7 +610,7 @@
       renderStrip();
     }
 
-    // 관리자 모드
+    // 관리자 모드 & 커뮤니티 게시판
     function toggleAdminMode() {
       if (appState.isAdmin) {
         appState.isAdmin = false;
@@ -596,6 +654,7 @@
     function renderBoard() {
       const posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
       const container = document.getElementById('boardListArea');
+      if (!container) return;
       if (posts.length === 0) {
         container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">아직 등록된 후기가 없습니다.</p>`;
         return;
@@ -645,13 +704,12 @@
       }
     }
 
-    // 오디오
+    // 사운드
     let audioCtx = null;
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
     }
-
     function playBeep(freq = 700) {
       try {
         initAudio();
@@ -664,7 +722,6 @@
         osc.start(); osc.stop(audioCtx.currentTime + 0.1);
       } catch (e) {}
     }
-
     function speakSmile() {
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance("스마일~");
@@ -672,7 +729,6 @@
         window.speechSynthesis.speak(utterance);
       }
     }
-
     function playRealisticShutter() {
       try {
         initAudio();
@@ -709,38 +765,57 @@
       btn.className = "timer-chip bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm";
     }
 
-    // 🌟 카메라 세션 및 비디오 녹화 (오류 원인이었던 setZoomQuick 제거 완료)
+    // 🌟 카메라 세션 및 비디오 녹화 (사파리 무반응 버그 완벽 수정)
     async function startPhotoSession() {
-      try {
-        initAudio();
-        if ('speechSynthesis' in window) {
-          const silent = new SpeechSynthesisUtterance('');
-          window.speechSynthesis.speak(silent);
-        }
-        stopCameraAndAudio();
-        appState.shotImages = []; appState.selectedImages = [];
-        appState.selectedIndices = [0, 1, 2, 3]; appState.shotVideoBlobs = [];
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("카메라를 실행할 수 없습니다. HTTPS 보안 연결(https://) 환경인지 확인해 주세요!");
+        return;
+      }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: appState.facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: false
-        });
-        appState.stream = stream;
-        const video = document.getElementById('liveWebcamVideo');
-        video.srcObject = stream;
-        await video.play();
+      initAudio();
+      stopCameraAndAudio();
+      appState.shotImages = []; appState.selectedImages = [];
+      appState.selectedIndices = [0, 1, 2, 3]; appState.shotVideoBlobs = [];
 
-        for (let i = 0; i < 6; i++) {
-          const t = document.getElementById(`liveThumb${i}`);
+      // 🌟 핵심 해결책: 화면을 먼저 켜서 비디오 요소를 화면에 보이게(Display: flex) 만듭니다!
+      showScreen('screenLiveShoot');
+
+      for (let i = 0; i < 6; i++) {
+        const t = document.getElementById(`liveThumb${i}`);
+        if (t) {
           t.innerHTML = (i + 1).toString();
           t.className = "w-11 h-14 bg-black/50 backdrop-blur border border-white/30 rounded overflow-hidden flex items-center justify-center text-[10px] text-white/50 font-bold";
         }
+      }
 
-        showScreen('screenLiveShoot');
+      try {
+        let stream;
+        try {
+          // 전면/후면 호환 광각 스트림 요청
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: appState.facingMode },
+            audio: false
+          });
+        } catch (err1) {
+          // 일반 fallback
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+
+        appState.stream = stream;
+        const video = document.getElementById('liveWebcamVideo');
+        video.srcObject = stream;
+        
+        try {
+          await video.play();
+        } catch (playErr) {
+          console.warn("video play error:", playErr);
+        }
+
         runContinuousLiveShoot(0);
 
       } catch (err) {
-        alert("카메라 권한 오류 또는 실행 실패: " + err.name);
+        alert("카메라 권한 오류 또는 실행 실패: " + (err.message || err.name));
+        showScreen('screenHome');
       }
     }
 
@@ -753,9 +828,17 @@
       if (!appState.stream) return;
       appState.currentShotVideoChunks = [];
       try { appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/webm' }); } 
-      catch (e) { appState.currentMediaRecorder = new MediaRecorder(appState.stream); }
-      appState.currentMediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) appState.currentShotVideoChunks.push(e.data); };
-      appState.currentMediaRecorder.start();
+      catch (e) { 
+        try { appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/mp4' }); }
+        catch (e2) {
+          try { appState.currentMediaRecorder = new MediaRecorder(appState.stream); }
+          catch (e3) { appState.currentMediaRecorder = null; }
+        }
+      }
+      if (appState.currentMediaRecorder) {
+        appState.currentMediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) appState.currentShotVideoChunks.push(e.data); };
+        appState.currentMediaRecorder.start();
+      }
     }
 
     function stopSingleCutVideoRecording(shotIndex) {
@@ -823,44 +906,50 @@
 
       const video = document.getElementById('liveWebcamVideo');
       const guide = document.getElementById('viewfinder32Box');
-      const vRect = video.getBoundingClientRect();
-      const gRect = guide.getBoundingClientRect();
-
-      const scaleX = video.videoWidth / vRect.width;
-      const scaleY = video.videoHeight / vRect.height;
-      const scale = Math.min(scaleX, scaleY);
-
-      const guideX = gRect.left - vRect.left;
-      const guideY = gRect.top - vRect.top;
-
-      let offsetX = 0, offsetY = 0;
-      if (scaleX > scaleY) {
-         offsetX = (vRect.width - (video.videoWidth / scale)) / 2;
-      } else {
-         offsetY = (vRect.height - (video.videoHeight / scale)) / 2;
-      }
-
-      const srcX = (guideX - offsetX) * scale;
-      const srcY = (guideY - offsetY) * scale;
-      const srcW = gRect.width * scale;
-      const srcH = gRect.height * scale;
-
       const canvas = document.getElementById('hiddenSnapCanvas');
       canvas.width = 720;
       canvas.height = 480;
       const ctx = canvas.getContext('2d');
 
-      ctx.save();
-      if (appState.facingMode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
-      ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
-      ctx.restore();
+      const vRect = video.getBoundingClientRect();
+      const gRect = guide.getBoundingClientRect();
+
+      if (!vRect.width || !vRect.height || !video.videoWidth) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } else {
+        const scaleX = video.videoWidth / vRect.width;
+        const scaleY = video.videoHeight / vRect.height;
+        const scale = Math.min(scaleX, scaleY);
+
+        const guideX = gRect.left - vRect.left;
+        const guideY = gRect.top - vRect.top;
+
+        let offsetX = 0, offsetY = 0;
+        if (scaleX > scaleY) {
+           offsetX = (vRect.width - (video.videoWidth / scale)) / 2;
+        } else {
+           offsetY = (vRect.height - (video.videoHeight / scale)) / 2;
+        }
+
+        const srcX = Math.max(0, (guideX - offsetX) * scale);
+        const srcY = Math.max(0, (guideY - offsetY) * scale);
+        const srcW = Math.min(video.videoWidth, gRect.width * scale);
+        const srcH = Math.min(video.videoHeight, gRect.height * scale);
+
+        ctx.save();
+        if (appState.facingMode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+        ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
 
       const img = new Image();
       img.onload = () => {
         appState.shotImages.push(img);
         const thumb = document.getElementById(`liveThumb${shotIndex}`);
-        thumb.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`;
-        thumb.className = "w-11 h-14 border-2 border-rose-500 rounded overflow-hidden shadow-lg";
+        if (thumb) {
+          thumb.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`;
+          thumb.className = "w-11 h-14 border-2 border-rose-500 rounded overflow-hidden shadow-lg";
+        }
         if (onDone) onDone();
       };
       img.src = canvas.toDataURL('image/jpeg', 0.92);
@@ -891,6 +980,7 @@
       appState.shotImages.forEach((img, idx) => {
         const card = document.createElement('div');
         card.className = "relative aspect-[3/2] rounded-lg overflow-hidden border-2 border-slate-300 bg-slate-200 cursor-pointer group active:scale-95 transition shadow-sm";
+        card.id = `pickCard_${idx}`;
         card.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover"><div id="pickBadge_${idx}" class="hidden absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-lg border border-white">1</div>`;
         card.onclick = () => assignPhotoToCurrentSlot(idx);
         grid.appendChild(card);
@@ -1671,7 +1761,7 @@
       const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2);
       const imgRatio = canvas.width / canvas.height;
       let printW = maxW, printH = printW / imgRatio;
-      if (printH > maxH) { printH = maxH; printW = maxH * imgRatio; }
+      if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
       pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH);
       pdf.save(`[추억의네컷]_Print_${Date.now()}.pdf`);
     }
@@ -1705,54 +1795,34 @@
         const scale = Math.min(1, 1000 / canvas.width);
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = canvas.width * scale; tempCanvas.height = canvas.height * scale;
-        const tCtx = tempCanvas.getContext('2d');
-        tCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+        tempCanvas.getContext('2d').drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
         const uploadBase64 = tempCanvas.toDataURL('image/jpeg', 0.88);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 7000);
 
         try {
-          const res = await fetch(GAS_API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({
-              base64Data: uploadBase64,
-              layout: appState.layout,
-              frameColor: appState.frameColor
-            }),
-            signal: controller.signal
-          }).then(r => r.json());
-
+          const res = await fetch(GAS_API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ base64Data: uploadBase64, layout: appState.layout, frameColor: appState.frameColor }), signal: controller.signal }).then(r => r.json());
           clearTimeout(timeoutId);
           if (res && res.success && res.fileUrl) {
-            btn.disabled = false;
-            btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
-            displayResultWithQR(res.fileUrl);
-            return;
+            btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
+            displayResultWithQR(res.fileUrl); return;
           }
-        } catch (e) {
-          clearTimeout(timeoutId);
-        }
+        } catch (e) { clearTimeout(timeoutId); }
       }
 
+      // 우회 폴백
       canvas.toBlob(async (blob) => {
         try {
-          const formData = new FormData();
-          formData.append('file', blob, `Chueok4cut_${Date.now()}.png`);
+          const formData = new FormData(); formData.append('file', blob, `Chueok4cut_${Date.now()}.png`);
           const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: formData }).then(r => r.json());
-          btn.disabled = false;
-          btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
-
+          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
           if (uploadRes && uploadRes.status === 'success' && uploadRes.data.url) {
             displayResultWithQR(uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/'));
-          } else {
-            fallbackLocalDownload();
-          }
+          } else { displayResultWithQR(window.location.href); }
         } catch (err) {
-          btn.disabled = false;
-          btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
-          fallbackLocalDownload();
+          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
+          displayResultWithQR(window.location.href);
         }
       }, 'image/png');
     }
@@ -1771,21 +1841,19 @@
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
-    function fallbackLocalDownload() {
-      displayResultWithQR(window.location.href);
-    }
-
     function returnToEditor() {
       if (appState.resetInterval) { clearInterval(appState.resetInterval); appState.resetInterval = null; }
       showScreen('screenEdit');
       renderStrip();
     }
 
+    // 🌟 화면 전환 함수 (화면 요소를 완벽하게 보이도록 보장)
     function showScreen(id) {
       ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'].forEach(s => {
-        document.getElementById(s).classList.toggle('hidden', s !== id);
+        const el = document.getElementById(s);
+        if (el) el.classList.toggle('hidden', s !== id);
       });
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
       if (id === 'screenBoard') renderBoard();
       else if (id === 'screenHome') loadMainNotice();
     }
