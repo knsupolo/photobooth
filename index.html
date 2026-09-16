@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>추억의 네컷 Studio Pro v12.4</title>
+  <title>추억의 네컷 Studio Pro v12.5</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- 🌟 방문자 분석 차트용 라이브러리 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -22,7 +24,6 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .touch-scroll { -webkit-overflow-scrolling: touch; }
-    
     .hidden { display: none !important; }
 
     .stroke-countdown {
@@ -30,6 +31,18 @@
       -webkit-text-stroke: 5px #ffffff;
       text-stroke: 5px #ffffff;
     }
+
+    /* 🌟 테마 색상 변수 */
+    :root {
+      --theme-primary: #e11d48;
+      --theme-primary-hover: #be123c;
+      --theme-light: #ffe4e6;
+    }
+    .bg-theme { background-color: var(--theme-primary) !important; }
+    .bg-theme:hover { background-color: var(--theme-primary-hover) !important; }
+    .text-theme { color: var(--theme-primary) !important; }
+    .border-theme { border-color: var(--theme-primary) !important; }
+    .bg-theme-light { background-color: var(--theme-light) !important; }
   </style>
 </head>
 <body class="bg-white text-slate-900 h-screen w-screen overflow-hidden flex flex-col antialiased">
@@ -38,7 +51,7 @@
   <input type="file" id="customFrameInput" accept="image/png" class="hidden" onchange="handleCustomFrameUpload(event)">
 
   <!-- ========================================================
-       화면 1: 메인 홈 화면 (공지사항 3개 노출 & v12.4)
+       화면 1: 메인 홈 화면 (방문자수 카운터 & v12.5)
   ======================================================== -->
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
     <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5 justify-between">
@@ -47,36 +60,39 @@
       <header class="shrink-0 flex items-center justify-between py-2 border-b border-slate-100">
         <div class="flex items-center space-x-2">
           <!-- 5초 롱프레스 관리자 진입 카메라 아이콘 -->
-          <div id="cameraAdminIcon" class="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center shadow-md shadow-rose-600/20 cursor-pointer active:scale-95 transition">
+          <div id="cameraAdminIcon" class="w-8 h-8 rounded-lg bg-theme flex items-center justify-center shadow-md shadow-rose-600/20 cursor-pointer active:scale-95 transition" title="5초간 꾹 누르면 관리자 창 열림">
             <i data-lucide="camera" class="w-4 h-4 text-white pointer-events-none"></i>
           </div>
           
           <div class="flex items-center space-x-1.5">
             <span class="text-xl font-black tracking-tight text-slate-900">추억의 네컷</span>
             <span class="bg-rose-500 text-black text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm">Pro</span>
-            <span class="text-xs text-rose-500 font-extrabold tracking-tighter">v12.4</span>
+            <span class="text-xs text-theme font-extrabold tracking-tighter">v12.5</span>
           </div>
+        </div>
+
+        <!-- 🌟 우측 상단 방문자수 표시 배지 -->
+        <div class="flex items-center space-x-1 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-600 shadow-xs">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>오늘 <b id="statTodayCount" class="text-theme">0</b></span>
+          <span class="text-slate-300">|</span>
+          <span>누적 <b id="statTotalCount" class="text-slate-800">0</b></span>
         </div>
       </header>
 
-      <!-- 🌟 상위 3개 공지사항 노출 영역 (v12.4 자동 기입 + 관리자 등록 지원) -->
-      <div id="mainNoticeArea" class="shrink-0 mt-3 bg-rose-50/80 border border-rose-200 rounded-2xl p-3.5 shadow-sm">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="text-xs font-black text-rose-600 flex items-center">
-            <i data-lucide="bell" class="w-3.5 h-3.5 mr-1"></i> 공지사항 & 업데이트
+      <!-- 🌟 최근 2주 이내 공지사항 노출 영역 -->
+      <div id="mainNoticeArea" class="shrink-0 mt-3 hidden bg-theme-light border border-rose-200 rounded-2xl p-3 shadow-sm">
+        <div class="flex justify-between items-center mb-1.5">
+          <h3 class="text-xs font-black text-theme flex items-center">
+            <i data-lucide="bell" class="w-3.5 h-3.5 mr-1"></i> 최근 공지사항 (2주 이내)
           </h3>
-          <button id="adminNoticeBtn" onclick="writeAdminNotice()" class="hidden text-[10px] text-rose-600 font-bold bg-white px-2 py-0.5 rounded border border-rose-200 shadow-xs hover:bg-rose-50">
-            + 새 공지 등록
-          </button>
         </div>
-        <div id="noticeListContainer" class="space-y-1.5">
-          <!-- 3개 공지 동적 생성 -->
-        </div>
+        <div id="noticeListContainer" class="space-y-1.5"></div>
       </div>
 
       <!-- 메인 액션 버튼 -->
       <section class="flex-1 flex flex-col justify-center space-y-4 my-auto">
-        <button onclick="startPhotoSession()" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white py-7 px-5 rounded-3xl shadow-xl shadow-rose-600/25 flex items-center justify-between active:scale-[0.98] transition group">
+        <button onclick="startPhotoSession()" class="w-full bg-theme text-white py-7 px-5 rounded-3xl shadow-xl flex items-center justify-between active:scale-[0.98] transition group">
           <div class="flex items-center space-x-4 text-left">
             <div class="w-13 h-13 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition p-3">
               <i data-lucide="camera" class="w-7 h-7"></i>
@@ -96,7 +112,7 @@
             </div>
             <div>
               <h4 class="font-black text-base text-slate-900">앨범에서 선택</h4>
-              <p class="text-xs text-slate-500 mt-0.5">기존 사진 4장 불러오기 (1장씩 연속 촬영 가능)</p>
+              <p class="text-xs text-slate-500 mt-0.5">기존 사진 불러오기 (1장씩 연속 촬영 가능)</p>
             </div>
           </div>
           <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
@@ -107,12 +123,12 @@
       <div class="shrink-0 space-y-2.5 pt-3 border-t border-slate-100">
         <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
           <span class="text-slate-600 font-bold flex items-center space-x-1.5">
-            <i data-lucide="timer" class="w-4 h-4 text-rose-600"></i>
+            <i data-lucide="timer" class="w-4 h-4 text-theme"></i>
             <span>촬영 간격</span>
           </span>
           <div class="flex space-x-1.5">
             <button onclick="setTimerSec(4, this)" class="timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs">4초</button>
-            <button onclick="setTimerSec(6, this)" class="timer-chip bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm">6초</button>
+            <button onclick="setTimerSec(6, this)" class="timer-chip bg-theme text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm">6초</button>
             <button onclick="setTimerSec(8, this)" class="timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs">8초</button>
           </div>
         </div>
@@ -123,7 +139,7 @@
               <i data-lucide="message-square" class="w-4 h-4"></i>
             </div>
             <div>
-              <h4 class="font-bold text-xs text-slate-900">후기 & 고객 소리함</h4>
+              <h4 class="font-bold text-xs text-slate-900">후기 & 고객 소리함 (별점 남기기)</h4>
               <p class="text-[10px] text-slate-500">사용후기나 건의사항을 남겨주시면 큰 도움이 됩니다.</p>
             </div>
           </div>
@@ -139,7 +155,7 @@
   </main>
 
   <!-- ========================================================
-       화면 1-2: 고객 소리함 게시판
+       화면 1-2: 고객 소리함 게시판 (0.5점 단위 별점 시스템)
   ======================================================== -->
   <section id="screenBoard" class="hidden absolute inset-0 z-20 w-full flex flex-col bg-slate-50 overflow-hidden">
     <header class="flex items-center justify-between px-4 py-4 border-b border-slate-200 bg-white shrink-0">
@@ -154,7 +170,18 @@
 
     <div class="flex-1 overflow-y-auto p-4 space-y-4 max-w-md mx-auto w-full touch-scroll">
       <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-        <h3 class="text-xs font-black text-indigo-600 flex items-center"><i data-lucide="edit-3" class="w-3.5 h-3.5 mr-1"></i> 새 글 작성하기</h3>
+        <h3 class="text-xs font-black text-indigo-600 flex items-center"><i data-lucide="edit-3" class="w-3.5 h-3.5 mr-1"></i> 새 후기 작성하기</h3>
+        
+        <!-- 🌟 0.5점 단위 별점 선택기 -->
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-700">별점 평가:</span>
+          <div class="flex items-center space-x-2">
+            <span id="ratingStarDisplay" class="text-amber-500 font-black text-sm tracking-widest">⭐⭐⭐⭐⭐</span>
+            <span id="ratingValueText" class="text-xs font-black text-slate-800">5.0</span>
+          </div>
+        </div>
+        <input type="range" id="boardRatingSlider" min="0.5" max="5.0" step="0.5" value="5.0" oninput="updateRatingUI(this.value)" class="w-full accent-amber-500 h-1.5 bg-slate-200 rounded">
+
         <div class="flex items-center space-x-2">
           <input type="text" id="boardNickname" placeholder="닉네임" class="w-1/2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none">
           <input type="password" id="boardPassword" placeholder="비밀번호(비밀글용)" class="w-1/2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none">
@@ -163,17 +190,134 @@
           <input type="checkbox" id="boardIsPrivate" class="w-4 h-4 accent-indigo-600">
           <span>비밀글로 작성하기 (작성자/관리자만 열람)</span>
         </label>
-        <textarea id="boardContent" rows="3" placeholder="사용후기나 건의사항을 적어주세요!" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none resize-none"></textarea>
+        <textarea id="boardContent" rows="3" placeholder="사용후기나 건의사항을 남겨주세요!" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none resize-none"></textarea>
         <button onclick="submitBoardPost()" id="btnSubmitBoard" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition active:scale-95">
           게시글 등록하기
         </button>
       </div>
+
       <div>
         <h3 class="text-xs font-bold text-slate-500 mb-2 pl-1">등록된 소리함 목록</h3>
         <div id="boardListArea" class="space-y-2.5 pb-6"></div>
       </div>
     </div>
   </section>
+
+  <!-- ========================================================
+       화면 1-3: 🌟 [신설] 관리자 설정 대시보드 모달
+  ======================================================== -->
+  <div id="adminDashboardModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+    <div class="bg-white w-full max-w-2xl h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      <!-- 대시보드 헤더 -->
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-rose-600"></span>
+          <h2 class="text-base font-black text-slate-900">추억의 네컷 관리자 설정 센터</h2>
+        </div>
+        <button onclick="closeAdminDashboard()" class="text-slate-400 hover:text-slate-700 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 대시보드 탭 메뉴 -->
+      <div class="flex border-b border-slate-200 bg-white shrink-0 text-xs font-bold">
+        <button onclick="switchAdminTab('stats')" id="tabBtnStats" class="flex-1 py-3 border-b-2 border-theme text-theme">📊 방문자 통계 분석</button>
+        <button onclick="switchAdminTab('theme')" id="tabBtnTheme" class="flex-1 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-700">🎨 UI 색상 테마</button>
+        <button onclick="switchAdminTab('notices')" id="tabBtnNotices" class="flex-1 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-700">📢 공지 관리</button>
+      </div>
+
+      <!-- 탭 컨텐츠 영역 (스크롤) -->
+      <div class="flex-1 overflow-y-auto p-5 space-y-6 touch-scroll bg-slate-50 text-slate-800">
+        
+        <!-- 탭 1: 통계 분석 -->
+        <div id="adminTabStats" class="space-y-5">
+          <!-- 핵심 지표 카드 4개 -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+              <span class="text-[10px] font-bold text-slate-400">오늘 방문자</span>
+              <p id="dashToday" class="text-xl font-black text-theme mt-1">0</p>
+            </div>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+              <span class="text-[10px] font-bold text-slate-400">이번 주 방문자</span>
+              <p id="dashWeek" class="text-xl font-black text-slate-800 mt-1">0</p>
+            </div>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+              <span class="text-[10px] font-bold text-slate-400">이번 달 방문자</span>
+              <p id="dashMonth" class="text-xl font-black text-slate-800 mt-1">0</p>
+            </div>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+              <span class="text-[10px] font-bold text-slate-400">총 누적 방문자</span>
+              <p id="dashTotal" class="text-xl font-black text-indigo-600 mt-1">0</p>
+            </div>
+          </div>
+
+          <!-- 시간대별 차트 -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <h4 class="text-xs font-bold text-slate-700 mb-3 flex items-center">
+              <i data-lucide="clock" class="w-3.5 h-3.5 mr-1 text-theme"></i> 시간대별 방문 현황 (0시 ~ 23시)
+            </h4>
+            <div class="h-44 w-full">
+              <canvas id="chartHourly"></canvas>
+            </div>
+          </div>
+
+          <!-- 접속 기기 분포 차트 -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <h4 class="text-xs font-bold text-slate-700 mb-3 flex items-center">
+              <i data-lucide="smartphone" class="w-3.5 h-3.5 mr-1 text-theme"></i> 방문자 기기 분포
+            </h4>
+            <div class="h-44 w-full flex items-center justify-center">
+              <canvas id="chartDevice"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 2: UI 테마 색상 설정 -->
+        <div id="adminTabTheme" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <h4 class="text-xs font-bold text-slate-700">전체 UI 메인 테마 색상 선택</h4>
+            <p class="text-[11px] text-slate-400">선택한 색상이 앱 전체의 버튼, 포인트 및 배지에 즉시 적용됩니다.</p>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
+              <button onclick="applyAppTheme('rose')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-rose-50 hover:bg-rose-100">
+                <span class="w-4 h-4 rounded-full bg-rose-600"></span>
+                <span class="text-xs font-bold text-slate-800">로즈 핑크 (기본)</span>
+              </button>
+              <button onclick="applyAppTheme('black')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-slate-50 hover:bg-slate-100">
+                <span class="w-4 h-4 rounded-full bg-slate-900"></span>
+                <span class="text-xs font-bold text-slate-800">모던 블랙</span>
+              </button>
+              <button onclick="applyAppTheme('blue')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-sky-50 hover:bg-sky-100">
+                <span class="w-4 h-4 rounded-full bg-sky-600"></span>
+                <span class="text-xs font-bold text-slate-800">오션 블루</span>
+              </button>
+              <button onclick="applyAppTheme('purple')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-violet-50 hover:bg-violet-100">
+                <span class="w-4 h-4 rounded-full bg-purple-600"></span>
+                <span class="text-xs font-bold text-slate-800">라벤더 퍼플</span>
+              </button>
+              <button onclick="applyAppTheme('green')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-emerald-50 hover:bg-emerald-100">
+                <span class="w-4 h-4 rounded-full bg-emerald-600"></span>
+                <span class="text-xs font-bold text-slate-800">포레스트 그린</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 3: 공지사항 관리 -->
+        <div id="adminTabNotices" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div class="flex justify-between items-center">
+              <h4 class="text-xs font-bold text-slate-700">공지사항 등록 및 관리</h4>
+              <button onclick="writeAdminNotice()" class="bg-theme text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ 새 공지 작성</button>
+            </div>
+            <p class="text-[11px] text-slate-400">※ 작성일로부터 14일(2주일) 이내의 공지만 홈 화면에 최대 3개까지 자동 노출됩니다.</p>
+            <div id="adminNoticeManageList" class="space-y-2 pt-2"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <!-- ========================================================
        화면 2: 풀스크린 촬영 화면
@@ -183,7 +327,6 @@
 
     <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror"></video>
     
-    <!-- 3:2 크롭 마스킹 가이드 영역 -->
     <div class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
       <div class="w-full flex-1 bg-black/60"></div>
       <div id="viewfinder32Box" class="w-full aspect-[3/2] border border-white/50 relative flex items-center justify-center">
@@ -196,7 +339,7 @@
     </div>
 
     <div class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent pb-8">
-      <span id="liveProgressBadge" class="bg-rose-600 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg">1 / 6 컷</span>
+      <span id="liveProgressBadge" class="bg-theme text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg">1 / 6 컷</span>
       <div class="flex items-center space-x-2">
         <button onclick="flipCameraFacing()" class="bg-black/50 backdrop-blur border border-white/20 text-white px-3 py-1.5 rounded-full text-xs font-bold active:scale-95 transition"><i data-lucide="refresh-cw" class="w-3.5 h-3.5 inline mr-1"></i>전환</button>
         <button onclick="cancelSession()" class="text-white p-1.5 bg-black/50 backdrop-blur rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -231,12 +374,12 @@
   <section id="screenPick" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row items-center justify-between p-4 gap-4 bg-white text-slate-900 overflow-y-auto touch-scroll">
     <div class="w-full lg:w-1/2 flex flex-col items-center justify-center">
       <div class="text-center mb-2">
-        <span class="bg-rose-50 text-rose-600 font-black text-xs px-3 py-1 rounded-full border border-rose-200">배치 프리뷰</span>
+        <span class="bg-theme-light text-theme font-black text-xs px-3 py-1 rounded-full border border-rose-200">배치 프리뷰</span>
         <p class="text-xs text-slate-500 mt-1">슬롯을 누르고 우측 사진을 선택해 4장을 모두 채워주세요</p>
       </div>
       <div class="w-48 sm:w-56 bg-black p-2.5 shadow-2xl flex flex-col space-y-2 border border-slate-300">
         <div class="text-center text-white text-[10px] font-black font-serif py-0.5 border-b border-white/20">추억의 네컷</div>
-        <div onclick="selectSlotForAssignment(0)" id="previewSlot0" class="aspect-[3/2] bg-slate-900 border-2 border-rose-500 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">1번 선택 대기</div>
+        <div onclick="selectSlotForAssignment(0)" id="previewSlot0" class="aspect-[3/2] bg-slate-900 border-2 border-theme flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">1번 선택 대기</div>
         <div onclick="selectSlotForAssignment(1)" id="previewSlot1" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">2번 선택 대기</div>
         <div onclick="selectSlotForAssignment(2)" id="previewSlot2" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">3번 선택 대기</div>
         <div onclick="selectSlotForAssignment(3)" id="previewSlot3" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">4번 선택 대기</div>
@@ -246,11 +389,11 @@
     <div class="w-full lg:w-1/2 flex flex-col max-w-md mx-auto space-y-3">
       <div>
         <h3 class="font-black text-base">사진 목록 (터치하여 슬롯에 넣기)</h3>
-        <p class="text-xs text-slate-500">현재 <b id="currentActiveSlotLabel" class="text-rose-600 font-bold">1번 슬롯</b>에 들어갈 사진을 선택하세요</p>
+        <p class="text-xs text-slate-500">현재 <b id="currentActiveSlotLabel" class="text-theme font-bold">1번 슬롯</b>에 들어갈 사진을 선택하세요</p>
       </div>
       <div id="pickGrid" class="grid grid-cols-2 gap-2.5 max-h-80 overflow-y-auto p-2 border border-slate-200 rounded-2xl bg-slate-50 touch-scroll"></div>
       <div class="space-y-2 pt-2 border-t border-slate-200">
-        <button onclick="confirmSelectedFour()" id="btnConfirmPick" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-extrabold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition">
+        <button onclick="confirmSelectedFour()" id="btnConfirmPick" class="w-full bg-theme hover:bg-theme text-white font-extrabold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition">
           이 4장으로 꾸미기 (0/4장 선택됨)
         </button>
         <button onclick="startPhotoSession()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">
@@ -261,26 +404,24 @@
   </section>
 
   <!-- ========================================================
-       화면 4: 스튜디오 에디터 (스티커 글꼴·색상·회전 탑재)
+       화면 4: 스튜디오 에디터
   ======================================================== -->
   <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
     
-    <!-- 캔버스 작업대 -->
     <div class="w-full h-[45%] lg:h-full lg:w-1/2 flex flex-col items-center justify-center bg-[#F6F3EC] border-b lg:border-r border-[#EBE6DC] shadow-inner relative z-10 shrink-0 p-2">
       <div class="relative max-h-full max-w-full flex items-center justify-center">
         <canvas id="photoCanvas" class="max-h-[38vh] lg:max-h-[78vh] w-auto h-auto object-contain shadow-2xl cursor-pointer bg-white"></canvas>
       </div>
       <p class="text-[10px] text-slate-500 mt-1 flex items-center space-x-1">
-        <i data-lucide="hand" class="w-3 h-3 text-rose-600"></i>
+        <i data-lucide="hand" class="w-3 h-3 text-theme"></i>
         <span>스티커를 터치해 위치·크기·회전·색상·글꼴을 자유롭게 꾸며보세요</span>
       </p>
     </div>
 
-    <!-- 우측 컨트롤 패널 -->
     <div class="flex-1 lg:w-1/2 h-[55%] lg:h-full overflow-y-auto touch-scroll bg-white p-4 sm:p-6 pb-12 relative z-0">
       <div class="space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 sticky top-0 bg-white z-10">
-          <h2 class="text-sm font-black text-slate-900 flex items-center"><i data-lucide="sparkles" class="w-4 h-4 text-rose-600 mr-1.5"></i> 에디터 스튜디오</h2>
+          <h2 class="text-sm font-black text-slate-900 flex items-center"><i data-lucide="sparkles" class="w-4 h-4 text-theme mr-1.5"></i> 에디터 스튜디오</h2>
           <div class="flex items-center space-x-1.5">
             <button onclick="undo()" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"><i data-lucide="undo" class="w-4 h-4"></i></button>
             <button onclick="redo()" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"><i data-lucide="redo" class="w-4 h-4"></i></button>
@@ -291,7 +432,7 @@
         <div>
           <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 레이아웃</label>
           <div class="grid grid-cols-3 gap-1.5">
-            <button onclick="changeLayout('strip', this)" class="layout-btn bg-rose-600 text-white font-bold py-2 rounded-xl text-xs">1×4 스트립</button>
+            <button onclick="changeLayout('strip', this)" class="layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs">1×4 스트립</button>
             <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 격자</button>
             <button onclick="changeLayout('twin', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2줄 인쇄용</button>
           </div>
@@ -300,7 +441,7 @@
         <div>
           <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 테마</label>
           <div class="grid grid-cols-3 gap-1.5 text-[11px]">
-            <button onclick="setFrameStyle('simple', this)" class="style-btn bg-rose-600 text-white font-black py-2 rounded-xl border border-rose-500 shadow-sm">포토이지 (상단)</button>
+            <button onclick="setFrameStyle('simple', this)" class="style-btn bg-theme text-white font-black py-2 rounded-xl border border-theme shadow-sm">포토이지 (상단)</button>
             <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">추억의네컷 (중간)</button>
             <button onclick="setFrameStyle('bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">인생4컷 (하단)</button>
           </div>
@@ -308,11 +449,11 @@
 
         <div>
           <div class="flex justify-between items-center mb-1.5">
-            <label class="text-[11px] font-bold text-slate-600">감성 필터 (12종 - 재터치 시 미세조정)</label>
-            <span id="filterStateBadge" class="text-[10px] text-rose-600 font-bold">원본</span>
+            <label class="text-[11px] font-bold text-slate-600">감성 필터 (12종)</label>
+            <span id="filterStateBadge" class="text-[10px] text-theme font-bold">원본</span>
           </div>
           <div class="grid grid-cols-4 gap-1 text-xs">
-            <button onclick="handleFilterClick('normal', this)" class="filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg border border-rose-500">원본</button>
+            <button onclick="handleFilterClick('normal', this)" class="filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg border border-theme">원본</button>
             <button onclick="handleFilterClick('bright', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">뽀샤시</button>
             <button onclick="handleFilterClick('radiant', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">화사한</button>
             <button onclick="handleFilterClick('warm', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">따뜻한</button>
@@ -342,9 +483,9 @@
         <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
           <div class="flex items-center justify-between">
             <label class="text-[11px] font-bold text-slate-600" id="labelCustomText">문구 & 날짜 설정</label>
-            <button onclick="toggleFontBold()" id="btnFontBold" class="px-2 py-0.5 rounded text-[10px] font-black border border-rose-500 bg-rose-600 text-white">굵게 B</button>
+            <button onclick="toggleFontBold()" id="btnFontBold" class="px-2 py-0.5 rounded text-[10px] font-black border border-theme bg-theme text-white">굵게 B</button>
           </div>
-          <input type="text" id="frameSignatureInput" value="sangsangPhoto" oninput="renderStrip()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold outline-none focus:border-rose-500">
+          <input type="text" id="frameSignatureInput" value="sangsangPhoto" oninput="renderStrip()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold outline-none focus:border-theme">
           
           <div id="fontGrid" class="grid grid-cols-5 gap-1"></div>
 
@@ -360,41 +501,36 @@
           </div>
         </div>
 
-        <!-- 🌟 스티커 팩 (글자 31종 + 이모티콘 20종 + 직접입력 + 글꼴/색상/회전 툴바) -->
+        <!-- 스티커 팩 (글자 31종 + 이모티콘 20종 + 직접입력 + 글꼴/색상/회전 툴바) -->
         <div>
           <div class="flex justify-between items-center mb-1">
-            <label class="text-[11px] font-bold text-slate-600">이모티콘 & 글자 스티커 (한/영 50종+)</label>
-            <button onclick="clearAllStickers()" class="text-[10px] text-rose-600 hover:underline">전체 비우기</button>
+            <label class="text-[11px] font-bold text-slate-600">이모티콘 & 글자 스티커 (50종+)</label>
+            <button onclick="clearAllStickers()" class="text-[10px] text-theme hover:underline">전체 비우기</button>
           </div>
           
-          <!-- 최근 사용 5개 -->
           <div id="recentStickersBar" class="flex items-center space-x-1.5 mb-2 p-1.5 bg-slate-100 rounded-xl overflow-x-auto no-scrollbar">
             <span class="text-[10px] text-slate-400 font-bold shrink-0 mr-1">최근:</span>
             <div id="recentStickersList" class="flex items-center space-x-1"></div>
           </div>
 
-          <!-- 🌟 직접 입력창 (문자 입력 시 글자 스티커와 동일한 볼드 스탬프로 생성) -->
           <div class="flex items-center space-x-1.5 mb-2">
-            <input type="text" id="customEmojiInput" placeholder="단어나 이모티콘 직접 입력 후 추가" class="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-rose-500">
+            <input type="text" id="customEmojiInput" placeholder="단어나 이모티콘 직접 입력 후 추가" class="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-theme">
             <button onclick="addCustomInputSticker()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition active:scale-95">추가</button>
           </div>
 
-          <!-- 🌟 30여 종 감성 글자 스티커 가로 스크롤 -->
           <div id="textStickerGrid" class="flex items-center space-x-1.5 overflow-x-auto pb-1.5 no-scrollbar"></div>
-          <!-- 🌟 20종 이모티콘 그리드 -->
           <div id="emojiGrid" class="flex flex-wrap gap-1 p-2 bg-slate-50 rounded-2xl border border-slate-200 text-base max-h-24 overflow-y-auto no-scrollbar justify-center"></div>
 
-          <!-- 🌟 선택된 스티커 조절 바 (크기, 회전, 글자색, 글꼴) -->
-          <div id="stickerControlBar" class="hidden mt-2 p-2.5 bg-rose-50 rounded-xl border border-rose-200 space-y-2">
-            <div class="flex items-center justify-between text-[10px] text-rose-600 font-bold">
+          <!-- 스티커 조절 바 -->
+          <div id="stickerControlBar" class="hidden mt-2 p-2.5 bg-theme-light rounded-xl border border-rose-200 space-y-2">
+            <div class="flex items-center justify-between text-[10px] text-theme font-bold">
               <span>크기:</span>
               <input type="range" id="stickerSizeSlider" min="20" max="200" value="65" oninput="onSelectedStickerResize(this.value)" class="w-24 accent-rose-500 h-1 bg-slate-300 rounded">
               <span class="ml-2">회전:</span>
               <input type="range" id="stickerRotateSlider" min="0" max="360" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-20 accent-rose-500 h-1 bg-slate-300 rounded">
-              <button onclick="deleteSelectedSticker()" class="text-xs text-white font-bold px-2 py-1 rounded bg-rose-600 hover:bg-rose-500 ml-2">삭제</button>
+              <button onclick="deleteSelectedSticker()" class="text-xs text-white font-bold px-2 py-1 rounded bg-theme hover:bg-theme ml-2">삭제</button>
             </div>
             
-            <!-- 🌟 글자 스티커 전용: 색상 및 글꼴 변경 -->
             <div id="stickerTextCustomRow" class="flex items-center justify-between pt-1 border-t border-rose-200/60 text-[10px] text-slate-700 font-bold">
               <div class="flex items-center space-x-1.5">
                 <span>글자색:</span>
@@ -421,7 +557,7 @@
 
         <!-- 다운로드 & 저장 기능 영역 -->
         <div class="space-y-2 pt-3 border-t border-slate-200">
-          <button onclick="autoSaveVideo()" id="btnAutoVideo" class="w-full bg-gradient-to-r from-pink-600 to-rose-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+          <button onclick="autoSaveVideo()" id="btnAutoVideo" class="w-full bg-theme text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
             <i data-lucide="video" class="w-4 h-4"></i>
             <span>🎬 4컷 비디오 저장 (자동 다운로드)</span>
           </button>
@@ -437,7 +573,7 @@
             </button>
           </div>
 
-          <button onclick="saveAndGenerateQR()" id="btnSaveQR" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-lg active:scale-95 transition mt-2">
+          <button onclick="saveAndGenerateQR()" id="btnSaveQR" class="w-full bg-theme text-white font-black py-3.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-lg active:scale-95 transition mt-2">
             <i data-lucide="qr-code" class="w-4 h-4"></i>
             <span>📱 QR코드 생성 (구글 드라이브)</span>
           </button>
@@ -457,8 +593,8 @@
       </div>
       <h2 class="text-xl font-black text-slate-900">QR코드 생성 완료!</h2>
       
-      <div class="bg-rose-50 border border-rose-200 rounded-xl p-3 my-3 text-left w-full">
-        <p class="text-[11px] font-bold text-rose-600 mb-1">📸 사진 다운로드 방법</p>
+      <div class="bg-theme-light border border-rose-200 rounded-xl p-3 my-3 text-left w-full">
+        <p class="text-[11px] font-bold text-theme mb-1">📸 사진 다운로드 방법</p>
         <ol class="text-[10px] text-slate-700 space-y-1 font-bold pl-3 list-decimal">
           <li>스마트폰 기본 카메라로 QR 스캔</li>
           <li>열리는 링크(인터넷) 접속</li>
@@ -480,7 +616,7 @@
 
       <div class="pt-2 border-t border-slate-100 w-full flex items-center justify-between text-[11px] text-slate-400">
         <span>자동 초기화</span>
-        <span id="resetTimerText" class="font-black text-rose-600">120초</span>
+        <span id="resetTimerText" class="font-black text-theme">120초</span>
       </div>
       <button onclick="resetApp()" class="mt-3 w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs transition">
         처음 화면으로 복귀
@@ -488,10 +624,10 @@
     </div>
   </section>
 
-  <!-- 🌟 앨범 연속 촬영 수집 상태 안내 모달 -->
+  <!-- 앨범 연속 촬영 수집 상태 안내 모달 -->
   <div id="galleryCollectModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center space-y-4">
-      <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+      <div class="w-10 h-10 bg-theme-light text-theme rounded-full flex items-center justify-center mx-auto">
         <i data-lucide="image-plus" class="w-5 h-5"></i>
       </div>
       <div>
@@ -502,7 +638,7 @@
       <div id="collectThumbGrid" class="flex justify-center space-x-2 py-1"></div>
 
       <div class="space-y-2 pt-2">
-        <button onclick="triggerGalleryUpload()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+        <button onclick="triggerGalleryUpload()" class="w-full bg-theme text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
           <i data-lucide="camera" class="w-4 h-4"></i>
           <span>➕ 다음 사진 촬영 / 선택하기</span>
         </button>
@@ -519,184 +655,68 @@
        통합 자바스크립트 구동 엔진
   ======================================================== -->
   <script>
-    const GAS_API_URL = "여기에_복사한_웹앱URL_붙여넣기";
-    const CLOUD_SYNC_ENDPOINT = "https://kvdb.io/A2V8p7M5rZ9W4kL1xY6q3T/";
+    // 🌟 1. 접속 및 방문자 추적 시스템 (초기 화면 우측 상단 카운터 연동)
+    function trackVisitorAccess() {
+      const todayStr = getFormattedTodayDate();
+      let totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '0', 10);
+      let todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '0', 10);
+      let logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
 
-    const POSE_SUGGESTIONS = [
-      "어깨동무하고 찰칵! 🫂", "다같이 브이~ ✌️", "손잡고 빙그르르 💫", "개구쟁이 메롱 😜",
-      "서로 얼굴 맞대고 🥰", "볼 옆에 브이 ✌️", "새침한 시크 표정 😎", "하트 뿅뿅 날리기 🫶",
-      "자유로운 힙합 포즈 🤙", "꽃받침하고 방긋 🌸", "눈 꼭 감고 윙크 😉", "볼 빵빵 귀요미 🐹"
-    ];
+      // 세션당 1회 신규 카운트
+      if (!sessionStorage.getItem('chueok_session_logged')) {
+        sessionStorage.setItem('chueok_session_logged', 'true');
+        totalVisits++;
+        todayVisits++;
+        localStorage.setItem('chueok_stat_total', totalVisits);
+        localStorage.setItem('chueok_stat_today_' + todayStr, todayVisits);
 
-    const FILTER_PRESETS = {
-      normal:  { bright: 100, contrast: 100, saturate: 100, name: '원본' },
-      bright:  { bright: 115, contrast: 105, saturate: 108, name: '뽀샤시' },
-      radiant: { bright: 112, contrast: 115, saturate: 125, name: '화사한' },
-      warm:    { bright: 108, contrast: 105, saturate: 120, name: '따뜻한' },
-      cool:    { bright: 106, contrast: 112, saturate: 95,  name: '차가운' },
-      mood:    { bright: 105, contrast: 95,  saturate: 85,  name: '감성무드' },
-      retro:   { bright: 108, contrast: 90,  saturate: 80,  name: '레트로' },
-      mono:    { bright: 105, contrast: 130, saturate: 0,   name: '흑백' },
-      sunset:  { bright: 110, contrast: 110, saturate: 135, name: '노을빛' },
-      cyan:    { bright: 108, contrast: 115, saturate: 110, name: '청량블루' },
-      green:   { bright: 105, contrast: 100, saturate: 90,  name: '빈티지그린' },
-      pink:    { bright: 112, contrast: 108, saturate: 120, name: '로맨틱핑크' }
-    };
+        // 기기 감지
+        const ua = navigator.userAgent;
+        let deviceType = "기타 / PC";
+        if (/iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) deviceType = "아이패드";
+        else if (/iPhone/i.test(ua)) deviceType = "아이폰";
+        else if (/Android/i.test(ua)) deviceType = "안드로이드";
+        else if (/Mac/i.test(ua)) deviceType = "맥북";
+        else if (/Win/i.test(ua)) deviceType = "윈도우 PC";
 
-    // 🌟 기본 공지사항 (v12.4 업데이트 자동 등재)
-    const DEFAULT_NOTICES = [
-      {
-        id: 'v12_4',
-        date: '2026.09.17',
-        version: 'v12.4',
-        content: '글자 스티커 30여종 확장 & 스티커 글꼴·글자색 변경 기능 추가 완료!'
-      },
-      {
-        id: 'v12_3',
-        date: '2026.09.17',
-        version: 'v12.3',
-        content: '앨범 연속 촬영 수집 개선 및 캔버스 스티커 터치 감도 100% 최적화'
-      },
-      {
-        id: 'v12_0',
-        date: '2026.09.16',
-        version: 'v12.0',
-        content: '추억의 네컷 리브랜딩 & 3대 테마(포토이지, 추억의네컷, 인생4컷) 탑재'
+        const now = new Date();
+        logs.unshift({
+          id: Date.now(),
+          date: todayStr,
+          hour: now.getHours(),
+          device: deviceType,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul'
+        });
+        if (logs.length > 500) logs.pop();
+        localStorage.setItem('chueok_visitor_logs', JSON.stringify(logs));
       }
-    ];
 
-    let appState = {
-      isAdmin: false,
-      stream: null,
-      facingMode: 'user',
-      timerSec: 6,
-      currentCount: 6,
-      countdownTimer: null,
-      shotImages: [],
-      selectedImages: [],
-      selectedIndices: [null, null, null, null],
-      activeSlotIndex: 0,
-      stickers: [],
-      recentStickers: [],
-      selectedStickerIdx: -1,
-      dragTarget: null,
-      dragStartPos: { x:0, y:0 },
-      layout: 'strip',
-      frameStyle: 'simple', // 'simple' | 'middle' | 'bottom'
-      frameThickness: 40,
-      frameColor: '#000000',
-      activeFilter: 'normal',
-      filters: { bright: 100, contrast: 100, saturate: 100 },
-      showDate: true,
-      typography: {
-        fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF',
-        isBold: true, date: getFormattedTodayDate()
-      },
-      shotVideoBlobs: [], currentMediaRecorder: null, currentShotVideoChunks: [],
-      resetInterval: null
-    };
-
-    let galleryAccumulator = [];
-
-    // 동적 UI 구성
-    function initDynamicUI() {
-      // 10종 폰트
-      const fonts = [
-        { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
-        { name: 'Pretendard', label: '프리텐다드', css: 'font-family:"Pretendard"; font-weight:700;' },
-        { name: 'Do Hyeon', label: '도현체', css: 'font-family:"Do Hyeon";' },
-        { name: 'Jua', label: '주아체', css: 'font-family:"Jua";' },
-        { name: 'Gowun Batang', label: '고운바탕', css: 'font-family:"Gowun Batang"; font-weight:700;' },
-        { name: 'Gaegu', label: '개구쟁이', css: 'font-family:"Gaegu"; font-weight:700;' },
-        { name: 'Noto Sans KR', label: '본고딕', css: 'font-family:"Noto Sans KR"; font-weight:700;' },
-        { name: 'Dongle', label: '동글체', css: 'font-family:"Dongle"; font-weight:700; font-size: 1.2em;' },
-        { name: 'Nanum Pen Script', label: '나눔손글씨', css: 'font-family:"Nanum Pen Script"; font-size: 1.2em;' },
-        { name: 'Black Han Sans', label: '검은고딕', css: 'font-family:"Black Han Sans";' }
-      ];
-      const fontGrid = document.getElementById('fontGrid');
-      if (fontGrid) fontGrid.innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1 rounded text-[9px] truncate" style="${f.css}">${f.label}</button>`).join('');
-
-      // 🌟 이모티콘 20종 (10개 추가)
-      const emojis = ['✌️', '💖', '🎀', '🐱', '🐶', '🐰', '✨', '🎂', '🌸', '🍀', '🥳', '🧸', '🔥', '💯', '🕶️', '🍓', '👑', '🎉', '💌', '🍿'];
-      const emojiGrid = document.getElementById('emojiGrid');
-      if (emojiGrid) emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded text-base cursor-pointer active:scale-90 transition"> ${e} </button>`).join('');
-
-      // 🌟 감성 글자 31종 (한/영 믹스 20개 대폭 추가)
-      const texts = [
-        '추억의 네컷', 'BEST', 'LOVE', 'YOUTH', 'HAPPY', 'VIBE', 'OUR DAY', 'CHILL', 'SMILE', 'FOREVER',
-        '인생네컷', '오늘의 우리', '완벽한 하루', '찰칵', '행복만땅', '심쿵주의', '찐친바이브', '영원한 청춘',
-        '반짝반짝', '레전드', 'LUCKY DAY', 'SWEET', 'MEMORIES', 'SO CUTE', 'PERFECT', 'DAILY MOOD',
-        'WITH YOU', 'LOVE YA', 'GOOD VIBES', '달콤한 순간', 'SPECIAL'
-      ];
-      const textStickerGrid = document.getElementById('textStickerGrid');
-      if (textStickerGrid) textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer active:scale-95 transition">${t}</button>`).join('');
-
-      const colors = ['#000000','#111827','#FFFFFF','#E2E8F0','#FECDD3','#FFEDD5','#FEF9C3','#D1FAE5','#BAE6FD','#EDE9FE','#881337','#1E1B4B','#064E3B'];
-      const frameColorGrid = document.getElementById('frameColorGrid');
-      if (frameColorGrid) {
-        frameColorGrid.innerHTML = colors.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') + `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
-      }
-      
-      renderRecentStickers();
-
-      setTimeout(() => {
-        const firstColor = document.querySelector('.color-btn');
-        if (firstColor) changeFrameColor('#000000', firstColor);
-        const firstFont = document.querySelector('.font-btn');
-        if (firstFont) setFontFamily('Playfair Display', firstFont);
-        if (window.lucide) lucide.createIcons();
-      }, 50);
+      // 화면 우측 상단 표시
+      const todayEl = document.getElementById('statTodayCount');
+      const totalEl = document.getElementById('statTotalCount');
+      if (todayEl) todayEl.textContent = todayVisits;
+      if (totalEl) totalEl.textContent = totalVisits;
     }
 
-    function pushRecentSticker(type, text) {
-      appState.recentStickers = appState.recentStickers.filter(item => item.text !== text);
-      appState.recentStickers.unshift({ type, text });
-      if (appState.recentStickers.length > 5) appState.recentStickers.pop();
-      renderRecentStickers();
-    }
-
-    function renderRecentStickers() {
-      const listEl = document.getElementById('recentStickersList');
-      if (!listEl) return;
-      if (appState.recentStickers.length === 0) {
-        listEl.innerHTML = `<span class="text-[10px] text-slate-300 italic">없음</span>`;
-        return;
-      }
-      listEl.innerHTML = appState.recentStickers.map(item => {
-        if (item.type === 'emoji') {
-          return `<button onclick="addEmojiSticker('${item.text}')" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs active:scale-90">${item.text}</button>`;
-        } else {
-          return `<button onclick="addTextSticker('${item.text}')" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold truncate max-w-[75px] active:scale-95">${item.text}</button>`;
-        }
-      }).join('');
-    }
-
-    // 🌟 5초 롱프레스 관리자 모드
-    let adminPressTimer = null;
+    // 🌟 2. 5초 롱프레스 관리자 대시보드 열기
     function initAdminLongPress() {
       const icon = document.getElementById('cameraAdminIcon');
       if (!icon) return;
 
+      let pressTimer = null;
       function startPress() {
-        adminPressTimer = setTimeout(() => {
+        pressTimer = setTimeout(() => {
           const pw = prompt("관리자 비밀번호를 입력하세요 (4자리)");
           if (pw === "0724") {
             appState.isAdmin = true;
-            alert("개발자 관리모드가 활성화되었습니다.");
-            const btn = document.getElementById('adminNoticeBtn');
-            if (btn) btn.classList.remove('hidden');
-            renderBoard();
+            openAdminDashboard();
           } else if (pw !== null) {
-            alert("비밀번호가 틀렸습니다.");
+            alert("비밀번호가 올바르지 않습니다.");
           }
         }, 5000);
       }
-
       function cancelPress() {
-        if (adminPressTimer) {
-          clearTimeout(adminPressTimer);
-          adminPressTimer = null;
-        }
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
       }
 
       icon.addEventListener('mousedown', startPress);
@@ -707,34 +727,209 @@
       icon.addEventListener('touchcancel', cancelPress);
     }
 
-    // 🌟 [공지사항 3개 노출 시스템 & 관리자 등록]
+    let hourlyChartInstance = null;
+    let deviceChartInstance = null;
+
+    function openAdminDashboard() {
+      document.getElementById('adminDashboardModal').classList.remove('hidden');
+      updateAdminDashboardStats();
+      renderAdminNoticeManageList();
+      switchAdminTab('stats');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeAdminDashboard() {
+      document.getElementById('adminDashboardModal').classList.add('hidden');
+    }
+
+    function switchAdminTab(tabName) {
+      ['stats', 'theme', 'notices'].forEach(t => {
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        const content = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (t === tabName) {
+          btn.className = "flex-1 py-3 border-b-2 border-theme text-theme font-black";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "flex-1 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-700";
+          content.classList.add('hidden');
+        }
+      });
+      if (tabName === 'stats') {
+        setTimeout(renderCharts, 100);
+      }
+    }
+
+    function updateAdminDashboardStats() {
+      const todayStr = getFormattedTodayDate();
+      const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
+      const todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '0', 10);
+      const totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '0', 10);
+
+      // 7일간 / 30일간 계산
+      const now = new Date();
+      const weekAgo = new Date(); weekAgo.setDate(now.getDate() - 7);
+      const monthAgo = new Date(); monthAgo.setDate(now.getDate() - 30);
+
+      let weekVisits = 0;
+      let monthVisits = 0;
+
+      logs.forEach(l => {
+        const logDate = new Date(l.date.replace(/\./g, '-'));
+        if (logDate >= weekAgo) weekVisits++;
+        if (logDate >= monthAgo) monthVisits++;
+      });
+
+      document.getElementById('dashToday').textContent = todayVisits;
+      document.getElementById('dashWeek').textContent = Math.max(todayVisits, weekVisits);
+      document.getElementById('dashMonth').textContent = Math.max(todayVisits, monthVisits);
+      document.getElementById('dashTotal').textContent = totalVisits;
+    }
+
+    function renderCharts() {
+      const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
+      
+      // 1) 시간대별 카운트 (0~23시)
+      const hourlyCounts = Array(24).fill(0);
+      logs.forEach(l => {
+        if (typeof l.hour === 'number' && l.hour >= 0 && l.hour <= 23) {
+          hourlyCounts[l.hour]++;
+        }
+      });
+
+      const ctxHourly = document.getElementById('chartHourly').getContext('2d');
+      if (hourlyChartInstance) hourlyChartInstance.destroy();
+      hourlyChartInstance = new Chart(ctxHourly, {
+        type: 'bar',
+        data: {
+          labels: Array.from({length: 24}, (_, i) => i + '시'),
+          datasets: [{
+            label: '방문자수',
+            data: hourlyCounts,
+            backgroundColor: 'rgba(225, 29, 72, 0.7)',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+      });
+
+      // 2) 기기 분포 카운트
+      const deviceMap = {};
+      logs.forEach(l => {
+        deviceMap[l.device] = (deviceMap[l.device] || 0) + 1;
+      });
+      const devLabels = Object.keys(deviceMap);
+      const devData = Object.values(deviceMap);
+
+      const ctxDev = document.getElementById('chartDevice').getContext('2d');
+      if (deviceChartInstance) deviceChartInstance.destroy();
+      deviceChartInstance = new Chart(ctxDev, {
+        type: 'doughnut',
+        data: {
+          labels: devLabels.length ? devLabels : ['접속 없음'],
+          datasets: [{
+            data: devData.length ? devData : [1],
+            backgroundColor: ['#e11d48', '#0284c7', '#10b981', '#8b5cf6', '#f59e0b', '#64748b']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+
+    // 🌟 3. UI 테마 색상 실시간 변경
+    const APP_THEMES = {
+      rose:   { primary: '#e11d48', hover: '#be123c', light: '#ffe4e6' },
+      black:  { primary: '#0f172a', hover: '#020617', light: '#f1f5f9' },
+      blue:   { primary: '#0284c7', hover: '#0369a1', light: '#e0f2fe' },
+      purple: { primary: '#9333ea', hover: '#7e22ce', light: '#f3e8ff' },
+      green:  { primary: '#059669', hover: '#047857', light: '#d1fae5' }
+    };
+
+    function applyAppTheme(themeKey) {
+      const t = APP_THEMES[themeKey] || APP_THEMES.rose;
+      document.documentElement.style.setProperty('--theme-primary', t.primary);
+      document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
+      document.documentElement.style.setProperty('--theme-light', t.light);
+      localStorage.setItem('chueok_ui_theme', themeKey);
+      alert("UI 색상 테마가 적용되었습니다!");
+    }
+
+    function loadSavedTheme() {
+      const saved = localStorage.getItem('chueok_ui_theme') || 'rose';
+      if (APP_THEMES[saved]) {
+        const t = APP_THEMES[saved];
+        document.documentElement.style.setProperty('--theme-primary', t.primary);
+        document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
+        document.documentElement.style.setProperty('--theme-light', t.light);
+      }
+    }
+
+    // 🌟 4. 별점 UI 시스템 (0.5점 단위 조절)
+    function updateRatingUI(val) {
+      const num = parseFloat(val);
+      document.getElementById('ratingValueText').textContent = num.toFixed(1);
+
+      let stars = '';
+      const fullStars = Math.floor(num);
+      const hasHalf = (num % 1 !== 0);
+
+      for (let i = 0; i < fullStars; i++) stars += '⭐';
+      if (hasHalf) stars += '½';
+      document.getElementById('ratingStarDisplay').textContent = stars;
+    }
+
+    // 🌟 5. 최근 2주일(14일) 이내 공지만 노출 시스템
+    const DEFAULT_NOTICES = [
+      {
+        id: 'v12_5',
+        date: getFormattedTodayDate(),
+        version: 'v12.5',
+        content: '방문자수 분석 대시보드, UI 테마 변경, 0.5점 별점 후기 기능 추가 완료!'
+      }
+    ];
+
     function getStoredNotices() {
       const stored = localStorage.getItem('vibe_notices');
       if (!stored) {
         localStorage.setItem('vibe_notices', JSON.stringify(DEFAULT_NOTICES));
         return DEFAULT_NOTICES;
       }
-      try {
-        let list = JSON.parse(stored);
-        // v12.4 공지 누락 시 자동 보강
-        if (!list.some(n => n.version === 'v12.4')) {
-          list.unshift(DEFAULT_NOTICES[0]);
-          localStorage.setItem('vibe_notices', JSON.stringify(list));
-        }
-        return list;
-      } catch (e) {
-        return DEFAULT_NOTICES;
-      }
+      try { return JSON.parse(stored); } catch (e) { return DEFAULT_NOTICES; }
     }
 
     function renderMainNotices() {
       const container = document.getElementById('noticeListContainer');
-      if (!container) return;
-      const list = getStoredNotices().slice(0, 3); // 상위 3개만 노출
+      const area = document.getElementById('mainNoticeArea');
+      if (!container || !area) return;
 
-      container.innerHTML = list.map(n => `
-        <div class="bg-white/90 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-start space-x-2 text-left">
-          <span class="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 mt-0.5">${n.version || 'NOTICE'}</span>
+      const allNotices = getStoredNotices();
+      const now = new Date();
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(now.getDate() - 14);
+
+      // 🌟 최근 2주일(14일) 이내의 공지만 필터링 (최대 3개)
+      const validNotices = allNotices.filter(n => {
+        if (!n.date) return false;
+        const nDate = new Date(n.date.replace(/\./g, '-'));
+        return nDate >= twoWeeksAgo;
+      }).slice(0, 3);
+
+      if (validNotices.length === 0) {
+        area.classList.add('hidden'); // 2주 이내 공지가 없으면 깔끔하게 숨김!
+        return;
+      }
+
+      container.innerHTML = validNotices.map(n => `
+        <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-start space-x-2 text-left">
+          <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 mt-0.5">${n.version || '공지'}</span>
           <div class="flex-1 min-w-0">
             <p class="text-[11px] font-bold text-slate-800 leading-snug break-words">${n.content}</p>
             <span class="text-[9px] text-slate-400">${n.date}</span>
@@ -742,18 +937,34 @@
         </div>
       `).join('');
 
-      const area = document.getElementById('mainNoticeArea');
-      if (area) area.classList.remove('hidden');
+      area.classList.remove('hidden');
+    }
+
+    function renderAdminNoticeManageList() {
+      const listEl = document.getElementById('adminNoticeManageList');
+      if (!listEl) return;
+      const list = getStoredNotices();
+
+      listEl.innerHTML = list.map(n => `
+        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+          <div>
+            <span class="font-black text-theme text-[10px] mr-1">[${n.version}]</span>
+            <span class="font-bold text-slate-800">${n.content}</span>
+            <p class="text-[9px] text-slate-400 mt-0.5">${n.date}</p>
+          </div>
+          <button onclick="deleteNotice('${n.id}')" class="text-[10px] text-rose-600 underline font-bold ml-2 shrink-0">삭제</button>
+        </div>
+      `).join('');
     }
 
     async function writeAdminNotice() {
-      const content = prompt("홈 화면에 등록할 새 공지 내용을 입력하세요:\n(입력 시 자동으로 상단에 게시되며 3개가 노출됩니다)");
+      const content = prompt("새 공지사항 내용을 입력하세요:\n(작성일 기준 14일 동안 홈 화면에 최대 3개까지 노출됩니다)");
       if (!content || !content.trim()) return;
 
       const newNotice = {
         id: Date.now().toString(),
         date: getFormattedTodayDate(),
-        version: 'v12.4',
+        version: 'v12.5',
         content: content.trim()
       };
 
@@ -761,6 +972,7 @@
       list.unshift(newNotice);
       localStorage.setItem('vibe_notices', JSON.stringify(list));
       renderMainNotices();
+      renderAdminNoticeManageList();
 
       try {
         await fetch(CLOUD_SYNC_ENDPOINT + 'notices_v2', {
@@ -768,30 +980,23 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(list.slice(0, 10))
         });
-        alert("새 공지사항이 전체 기기에 동기화되었습니다.");
-      } catch (e) {
-        alert("새 공지사항이 등록되었습니다.");
+      } catch (e) {}
+      alert("새 공지가 등록되었습니다.");
+    }
+
+    function deleteNotice(id) {
+      if (confirm("이 공지를 삭제하시겠습니까?")) {
+        let list = getStoredNotices().filter(n => n.id !== id);
+        localStorage.setItem('vibe_notices', JSON.stringify(list));
+        renderMainNotices();
+        renderAdminNoticeManageList();
       }
     }
 
-    async function loadCloudNotices() {
-      renderMainNotices();
-      try {
-        const res = await fetch(CLOUD_SYNC_ENDPOINT + 'notices_v2');
-        if (res.ok) {
-          const cloudList = await res.json();
-          if (Array.isArray(cloudList) && cloudList.length > 0) {
-            localStorage.setItem('vibe_notices', JSON.stringify(cloudList));
-            renderMainNotices();
-          }
-        }
-      } catch (e) {}
-    }
-
-    // 고객 소리함 / 후기 게시판
+    // 🌟 6. 후기 / 고객 소리함 (별점 렌더링 지원)
     async function fetchCloudBoardPosts() {
       try {
-        const res = await fetch(CLOUD_SYNC_ENDPOINT + 'posts');
+        const res = await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v2');
         if (res.ok) {
           const cloudPosts = await res.json();
           localStorage.setItem('vibe_posts', JSON.stringify(cloudPosts));
@@ -818,10 +1023,27 @@
         }
         let deleteBtn = appState.isAdmin ? `<button onclick="deletePost(${p.id})" class="text-[10px] text-rose-500 underline ml-2">삭제</button>` : '';
 
-        return `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative">
-            <div class="flex justify-between items-center"><span class="font-bold text-[11px] text-slate-800">${p.nickname}</span><div class="flex items-center"><span class="text-[9px] text-slate-400">${p.date}</span>${deleteBtn}</div></div>
+        // 별점 시각화
+        const ratingNum = p.rating || 5.0;
+        let starStr = '';
+        for (let i = 0; i < Math.floor(ratingNum); i++) starStr += '⭐';
+        if (ratingNum % 1 !== 0) starStr += '½';
+
+        return `
+          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center space-x-1.5">
+                <span class="font-bold text-[11px] text-slate-800">${p.nickname}</span>
+                <span class="text-[10px] text-amber-500 font-black">${starStr} ${ratingNum.toFixed(1)}</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[9px] text-slate-400">${p.date}</span>
+                ${deleteBtn}
+              </div>
+            </div>
             ${contentHtml}
-        </div>`;
+          </div>
+        `;
       }).join('');
     }
 
@@ -830,6 +1052,8 @@
       const pw = document.getElementById('boardPassword').value.trim();
       const content = document.getElementById('boardContent').value.trim();
       const isPrivate = document.getElementById('boardIsPrivate').checked;
+      const rating = parseFloat(document.getElementById('boardRatingSlider').value || '5.0');
+
       if (!content) { alert("내용을 입력해주세요."); return; }
       if (isPrivate && !pw) { alert("비밀글 작성 시 비밀번호를 입력해주세요."); return; }
 
@@ -837,7 +1061,7 @@
       btn.disabled = true;
       btn.textContent = "등록 중...";
 
-      const newPost = { id: Date.now(), nickname, pw, content, isPrivate, date: getFormattedTodayDate() };
+      const newPost = { id: Date.now(), nickname, pw, content, isPrivate, rating, date: getFormattedTodayDate() };
       const posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
       posts.unshift(newPost);
       localStorage.setItem('vibe_posts', JSON.stringify(posts));
@@ -847,7 +1071,7 @@
       renderBoard();
 
       try {
-        await fetch(CLOUD_SYNC_ENDPOINT + 'posts', {
+        await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v2', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(posts.slice(0, 30))
@@ -866,7 +1090,7 @@
         localStorage.setItem('vibe_posts', JSON.stringify(posts));
         renderBoard();
         try {
-          await fetch(CLOUD_SYNC_ENDPOINT + 'posts', {
+          await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(posts)
@@ -875,61 +1099,7 @@
       }
     }
 
-    // 사운드
-    let audioCtx = null;
-    function initAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    function playBeep(freq = 700) {
-      try {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-      } catch (e) {}
-    }
-    function playRealisticShutter() {
-      try {
-        initAudio();
-        const now = audioCtx.currentTime;
-        const clickBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.03, audioCtx.sampleRate);
-        const clickData = clickBuf.getChannelData(0);
-        for (let i = 0; i < clickData.length; i++) clickData[i] = Math.random() * 2 - 1;
-        const click = audioCtx.createBufferSource();
-        click.buffer = clickBuf;
-        const clickGain = audioCtx.createGain();
-        clickGain.gain.setValueAtTime(0.35, now);
-        clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
-        click.connect(clickGain); clickGain.connect(audioCtx.destination);
-        click.start(now);
-
-        const shutBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.08, audioCtx.sampleRate);
-        const shutData = shutBuf.getChannelData(0);
-        for (let i = 0; i < shutData.length; i++) shutData[i] = Math.random() * 2 - 1;
-        const shut = audioCtx.createBufferSource();
-        shut.buffer = shutBuf;
-        const shutGain = audioCtx.createGain();
-        shutGain.gain.setValueAtTime(0.45, now + 0.05);
-        shutGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-        shut.connect(shutGain); shutGain.connect(audioCtx.destination);
-        shut.start(now + 0.05);
-      } catch (e) {}
-    }
-
-    function setTimerSec(sec, btn) {
-      appState.timerSec = sec;
-      document.querySelectorAll('.timer-chip').forEach(b => {
-        b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs";
-      });
-      btn.className = "timer-chip bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm";
-    }
-
-    // 카메라 시작
+    // 7. 카메라 세션 및 촬영 엔진
     async function startPhotoSession() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("카메라를 실행할 수 없습니다. HTTPS 환경인지 확인해 주세요!");
@@ -1099,7 +1269,7 @@
         const thumb = document.getElementById(`liveThumb${shotIndex}`);
         if (thumb) {
           thumb.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`;
-          thumb.className = "w-12 h-8 border border-rose-500 overflow-hidden";
+          thumb.className = "w-12 h-8 border border-theme overflow-hidden";
         }
         if (onDone) onDone();
       };
@@ -1119,7 +1289,7 @@
       if (audioCtx && audioCtx.state !== 'closed') { try { audioCtx.suspend(); } catch (e) {} }
     }
 
-    // 사진 선택
+    // 사진 선택 화면
     function renderPickScreen() {
       showScreen('screenPick');
       appState.selectedIndices = [null, null, null, null];
@@ -1135,7 +1305,7 @@
         card.innerHTML = `
           <img src="${img.src}" class="w-full h-full object-cover">
           <div class="absolute bottom-1 left-1.5 bg-black/70 text-white font-black text-[10px] px-1.5 py-0.5 rounded">#${idx + 1}</div>
-          <div id="pickBadge_${idx}" class="hidden absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white font-black text-xs flex items-center justify-center shadow-lg border border-white"></div>
+          <div id="pickBadge_${idx}" class="hidden absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-theme text-white font-black text-xs flex items-center justify-center shadow-lg border border-white"></div>
         `;
         card.onclick = () => assignPhotoToCurrentSlot(idx);
         grid.appendChild(card);
@@ -1149,8 +1319,8 @@
       for (let i = 0; i < 4; i++) {
         const el = document.getElementById(`previewSlot${i}`);
         if (el) {
-          if (i === slotIdx) el.classList.replace('border-transparent', 'border-rose-500');
-          else el.classList.replace('border-rose-500', 'border-transparent');
+          if (i === slotIdx) el.classList.replace('border-transparent', 'border-theme');
+          else el.classList.replace('border-theme', 'border-transparent');
         }
       }
     }
@@ -1159,11 +1329,8 @@
       appState.selectedIndices[appState.activeSlotIndex] = shotIdx;
       updatePreviewSlots();
       const nextEmpty = appState.selectedIndices.indexOf(null);
-      if (nextEmpty !== -1) {
-        selectSlotForAssignment(nextEmpty);
-      } else {
-        selectSlotForAssignment((appState.activeSlotIndex + 1) % 4);
-      }
+      if (nextEmpty !== -1) selectSlotForAssignment(nextEmpty);
+      else selectSlotForAssignment((appState.activeSlotIndex + 1) % 4);
       refreshPickUI();
     }
 
@@ -1194,11 +1361,11 @@
         if (!card || !badge) continue;
         const pos = appState.selectedIndices.indexOf(i);
         if (pos !== -1) {
-          card.classList.replace('border-slate-300', 'border-rose-500');
+          card.classList.replace('border-slate-300', 'border-theme');
           badge.textContent = (pos + 1).toString();
           badge.classList.remove('hidden');
         } else {
-          card.classList.replace('border-rose-500', 'border-slate-300');
+          card.classList.replace('border-theme', 'border-slate-300');
           badge.classList.add('hidden');
         }
       }
@@ -1207,7 +1374,7 @@
     function confirmSelectedFour() {
       const missing = appState.selectedIndices.filter(idx => idx === null).length;
       if (missing > 0) {
-        alert(`4장의 사진을 모두 채워주세요!\n(아직 ${missing}개 슬롯이 비어 있습니다. 사진을 눌러 넣어주세요)`);
+        alert(`4장의 사진을 모두 채워주세요!\n(아직 ${missing}개 슬롯이 비어 있습니다)`);
         return;
       }
       appState.selectedImages = appState.selectedIndices.map(idx => appState.shotImages[idx]);
@@ -1243,7 +1410,7 @@
       historyStack = []; redoStack = [];
     }
 
-    // 앨범 연속 수집
+    // 8. 앨범 및 연속 촬영 수집
     function triggerGalleryUpload() { 
       const input = document.getElementById('galleryInput'); 
       input.value = ''; 
@@ -1300,7 +1467,7 @@
 
       title.textContent = `사진 수집 중 ( ${galleryAccumulator.length} / 4 )`;
       grid.innerHTML = galleryAccumulator.map(img => `
-        <div class="w-12 h-14 rounded-lg overflow-hidden border-2 border-rose-500 shadow-sm">
+        <div class="w-12 h-14 rounded-lg overflow-hidden border-2 border-theme shadow-sm">
           <img src="${img.src}" class="w-full h-full object-cover">
         </div>
       `).join('');
@@ -1314,13 +1481,14 @@
       document.getElementById('galleryCollectModal').classList.add('hidden');
     }
 
+    // 9. 에디터 조작 (레이아웃, 프레임, 필터, 폰트)
     function changeLayout(mode, btn) {
       saveStateForUndo();
       appState.layout = mode;
       document.querySelectorAll('.layout-btn').forEach(b => {
         b.className = "layout-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs";
       });
-      btn.className = "layout-btn bg-rose-600 text-white font-bold py-2 rounded-xl text-xs";
+      btn.className = "layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs";
       renderStrip();
     }
 
@@ -1330,7 +1498,7 @@
       document.querySelectorAll('.style-btn').forEach(b => {
         b.className = "style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent";
       });
-      btn.className = "style-btn bg-rose-600 text-white font-black py-2 rounded-xl border border-rose-500 shadow-sm";
+      btn.className = "style-btn bg-theme text-white font-black py-2 rounded-xl border border-theme shadow-sm";
 
       const label = document.getElementById('labelCustomText');
       const sigInput = document.getElementById('frameSignatureInput');
@@ -1361,8 +1529,8 @@
     function changeFrameColor(color, btn) {
       saveStateForUndo();
       appState.frameColor = color;
-      document.querySelectorAll('.color-btn').forEach(b => b.classList.replace('border-rose-500', 'border-transparent'));
-      if (btn) btn.classList.replace('border-transparent', 'border-rose-500');
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.replace('border-theme', 'border-transparent'));
+      if (btn) btn.classList.replace('border-transparent', 'border-theme');
 
       if (['#FFFFFF','#E2E8F0','#FECDD3','#BAE6FD'].includes(color)) {
         appState.typography.fontColor = '#1E293B';
@@ -1385,7 +1553,7 @@
         document.querySelectorAll('.filter-btn').forEach(b => {
           b.className = "filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent";
         });
-        btn.className = "filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg border border-rose-500";
+        btn.className = "filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg border border-theme";
         const badge = document.getElementById('filterStateBadge');
         if (badge) badge.textContent = p.name;
 
@@ -1416,11 +1584,11 @@
       saveStateForUndo();
       appState.typography.fontFamily = fontName;
       document.querySelectorAll('.font-btn').forEach(b => {
-        b.classList.replace('border-rose-500', 'border-slate-200');
+        b.classList.replace('border-theme', 'border-slate-200');
         b.classList.replace('text-slate-900', 'text-slate-600');
       });
       if (btn) {
-        btn.classList.replace('border-slate-200', 'border-rose-500');
+        btn.classList.replace('border-slate-200', 'border-theme');
         btn.classList.replace('text-slate-600', 'text-slate-900');
       }
       renderStrip();
@@ -1432,7 +1600,7 @@
       const btn = document.getElementById('btnFontBold');
       if (btn) {
         if (appState.typography.isBold) {
-          btn.className = "px-2 py-0.5 rounded text-[10px] font-black border border-rose-500 bg-rose-600 text-white";
+          btn.className = "px-2 py-0.5 rounded text-[10px] font-black border border-theme bg-theme text-white";
         } else {
           btn.className = "px-2 py-0.5 rounded text-[10px] font-normal border border-slate-300 bg-white text-slate-700";
         }
@@ -1444,19 +1612,15 @@
     function onFontSizeChange(size) { appState.typography.fontSize = parseInt(size); renderStrip(); }
     function toggleShowDate(checked) { saveStateForUndo(); appState.showDate = checked; renderStrip(); }
 
-    // 🌟 [직접 입력창] 글자 입력 시 글자 스티커와 동일 적용
+    // 10. 스티커 직접 입력 및 개별 커스텀
     function addCustomInputSticker() {
       const input = document.getElementById('customEmojiInput');
       const val = input.value.trim();
       if (!val) return;
 
-      // 정규식으로 이모지 여부 확인
       const isPureEmoji = /^\p{Extended_Pictographic}+$/u.test(val);
-      if (isPureEmoji && val.length <= 4) {
-        addEmojiSticker(val);
-      } else {
-        addTextSticker(val);
-      }
+      if (isPureEmoji && val.length <= 4) addEmojiSticker(val);
+      else addTextSticker(val);
       input.value = '';
     }
 
@@ -1465,15 +1629,12 @@
       pushRecentSticker('text', text);
       const canvas = document.getElementById('photoCanvas');
       const newSticker = {
-        id: Date.now(),
-        type: 'text',
-        text,
+        id: Date.now(), type: 'text', text,
         x: canvas.width / 2 + (Math.random() * 60 - 30),
         y: canvas.height / 2 + (Math.random() * 60 - 30),
-        size: 55,
-        rotation: 0,
-        color: '#FFFFFF', // 🌟 기본 글자색 흰색
-        fontFamily: appState.typography.fontFamily || 'Pretendard' // 🌟 기본 글꼴
+        size: 55, rotation: 0,
+        color: '#FFFFFF',
+        fontFamily: appState.typography.fontFamily || 'Pretendard'
       };
       appState.stickers.push(newSticker);
       appState.selectedStickerIdx = appState.stickers.length - 1;
@@ -1486,13 +1647,10 @@
       pushRecentSticker('emoji', emoji);
       const canvas = document.getElementById('photoCanvas');
       const newSticker = {
-        id: Date.now(),
-        type: 'emoji',
-        text: emoji,
+        id: Date.now(), type: 'emoji', text: emoji,
         x: canvas.width / 2 + (Math.random() * 60 - 30),
         y: canvas.height / 2 + (Math.random() * 60 - 30),
-        size: 65,
-        rotation: 0
+        size: 65, rotation: 0
       };
       appState.stickers.push(newSticker);
       appState.selectedStickerIdx = appState.stickers.length - 1;
@@ -1538,7 +1696,6 @@
       }
     }
 
-    // 🌟 스티커 글자색 변경
     function onSelectedStickerColorChange(color) {
       if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) {
         saveStateForUndo();
@@ -1547,7 +1704,6 @@
       }
     }
 
-    // 🌟 스티커 글꼴 변경
     function onSelectedStickerFontChange(fontName) {
       if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) {
         saveStateForUndo();
@@ -1566,7 +1722,6 @@
       }
     }
 
-    // 스티커 인터랙션
     function initCanvasInteractions() {
       const canvas = document.getElementById('photoCanvas');
 
@@ -1584,7 +1739,6 @@
 
       function handleStart(e) {
         const t = getTouchData(e);
-        
         for (let i = appState.stickers.length - 1; i >= 0; i--) {
           const st = appState.stickers[i];
           const stScreenX = t.rect.left + st.x * (t.rect.width / canvas.width);
@@ -1601,7 +1755,6 @@
             return;
           }
         }
-
         appState.selectedStickerIdx = -1;
         appState.dragTarget = null;
         document.getElementById('stickerControlBar').classList.add('hidden');
@@ -1631,7 +1784,7 @@
       window.addEventListener('touchend', handleEnd);
     }
 
-    // 🌟 메인 캔버스 렌더링
+    // 11. 메인 캔버스 렌더링
     function renderStrip(isFinalExport = false) {
       const canvas = document.getElementById('photoCanvas');
       if (!canvas) return;
@@ -1760,7 +1913,6 @@
         ctx.restore();
       }
 
-      // 🌟 회전 + 개별 글꼴 및 색상 적용 스티커 렌더링
       appState.stickers.forEach((st, idx) => {
         ctx.save();
         ctx.translate(st.x, st.y);
@@ -1955,7 +2107,7 @@
       return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // 비디오 자동 저장
+    // 12. 비디오 / PDF / 공유 / QR
     async function autoSaveVideo() {
       if (appState.selectedIndices.some(idx => idx === null) || !appState.shotVideoBlobs[appState.selectedIndices[0]]) {
         alert("촬영한 동영상 클립이 부족합니다."); return;
@@ -1999,7 +2151,7 @@
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
-              await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 실시간 4컷 비디오입니다!' });
+              await navigator.share({ files: [file], title: '추억의 네컷 비디오', text: '추억의 네컷 실시간 4컷 비디오입니다!' });
               return;
             } catch (err) { if (err.name === 'AbortError') return; }
           }
@@ -2069,11 +2221,9 @@
       const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation, unit: 'mm', format: [102, 152] });
       const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight();
-      const margin = 2;
-      const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2);
       const imgRatio = canvas.width / canvas.height;
-      let printW = maxW, printH = printW / imgRatio;
-      if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
+      let printW = pdfW - 4, printH = printW / imgRatio;
+      if (printH > pdfH - 4) { printH = pdfH - 4; printW = printH * imgRatio; }
       pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH);
       pdf.save(`[추억의네컷]_Print_${Date.now()}.pdf`);
     }
@@ -2152,7 +2302,8 @@
     }
 
     function showScreen(id) {
-      ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'].forEach(s => {
+      const screenIds = ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'];
+      screenIds.forEach(s => {
         const el = document.getElementById(s);
         if (el) {
           if (s === id) {
@@ -2169,7 +2320,9 @@
         renderBoard();
         fetchCloudBoardPosts();
       } else if (id === 'screenHome') {
+        renderMainNotices();
         loadCloudNotices();
+        trackVisitorAccess();
       }
     }
 
@@ -2182,6 +2335,7 @@
       galleryAccumulator = [];
       showScreen('screenHome');
     }
+
     function startAutoReset() {
       if (appState.resetInterval) clearInterval(appState.resetInterval);
       let sec = 120;
@@ -2194,7 +2348,7 @@
       }, 1000);
     }
 
-    // 실행취소 / 다시실행
+    // 13. 실행취소 / 다시실행
     let historyStack = [];
     let redoStack = [];
 
@@ -2269,10 +2423,13 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      loadSavedTheme();
       initDynamicUI();
       initCanvasInteractions();
       initAdminLongPress();
+      renderMainNotices();
       loadCloudNotices();
+      trackVisitorAccess();
     });
   </script>
 </body>
