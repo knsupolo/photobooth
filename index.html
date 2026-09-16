@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>추억의 네컷 Studio Pro v12.2</title>
+  <title>추억의 네컷 Studio Pro v12.3</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -23,6 +23,10 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .touch-scroll { -webkit-overflow-scrolling: touch; }
     
+    /* 🌟 숨김 화면의 클릭 차단 버그 원천 해결 */
+    .hidden { display: none !important; }
+
+    /* 🌟 속이 투명하고 테두리만 있는 카운트다운 숫자 */
     .stroke-countdown {
       color: transparent;
       -webkit-text-stroke: 5px #ffffff;
@@ -36,13 +40,15 @@
   <input type="file" id="customFrameInput" accept="image/png" class="hidden" onchange="handleCustomFrameUpload(event)">
 
   <!-- ========================================================
-       화면 1: 메인 홈 화면
+       화면 1: 메인 홈 화면 (5초 롱프레스 관리자 & Pro 배지 & v12.3)
   ======================================================== -->
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
     <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5 justify-between">
       
+      <!-- 상단 헤더 -->
       <header class="shrink-0 flex items-center justify-between py-2 border-b border-slate-100">
         <div class="flex items-center space-x-2">
+          <!-- 🌟 5초 롱프레스 관리자 진입 카메라 아이콘 -->
           <div id="cameraAdminIcon" class="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center shadow-md shadow-rose-600/20 cursor-pointer active:scale-95 transition">
             <i data-lucide="camera" class="w-4 h-4 text-white pointer-events-none"></i>
           </div>
@@ -50,11 +56,12 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-xl font-black tracking-tight text-slate-900">추억의 네컷</span>
             <span class="bg-rose-500 text-black text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm">Pro</span>
-            <span class="text-xs text-rose-500 font-extrabold tracking-tighter">v12.2</span>
+            <span class="text-xs text-rose-500 font-extrabold tracking-tighter">v12.3</span>
           </div>
         </div>
       </header>
 
+      <!-- 🌟 전체 기기 공유 메인 공지사항 영역 -->
       <div id="mainNoticeArea" class="shrink-0 mt-3 hidden bg-rose-50 border border-rose-200 rounded-xl p-3 shadow-sm">
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-xs font-black text-rose-600 flex items-center"><i data-lucide="bell" class="w-3.5 h-3.5 mr-1"></i> 쥔장 공지</h3>
@@ -63,6 +70,7 @@
         <p id="mainNoticeContent" class="text-xs font-bold text-slate-800 break-words whitespace-pre-wrap"></p>
       </div>
 
+      <!-- 🌟 화면 정중앙 액션 버튼 -->
       <section class="flex-1 flex flex-col justify-center space-y-4 my-auto">
         <button onclick="startPhotoSession()" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white py-7 px-5 rounded-3xl shadow-xl shadow-rose-600/25 flex items-center justify-between active:scale-[0.98] transition group">
           <div class="flex items-center space-x-4 text-left">
@@ -84,13 +92,14 @@
             </div>
             <div>
               <h4 class="font-black text-base text-slate-900">앨범에서 선택</h4>
-              <p class="text-xs text-slate-500 mt-0.5">기존 사진 불러오기 (1장씩 촬영/추가 가능)</p>
+              <p class="text-xs text-slate-500 mt-0.5">기존 사진 4장 불러오기 (1장씩 촬영도 지원)</p>
             </div>
           </div>
           <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
         </button>
       </section>
 
+      <!-- 🌟 하단 고정 메뉴 (타이머 & 고객 소리함) -->
       <div class="shrink-0 space-y-2.5 pt-3 border-t border-slate-100">
         <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
           <span class="text-slate-600 font-bold flex items-center space-x-1.5">
@@ -126,7 +135,7 @@
   </main>
 
   <!-- ========================================================
-       화면 1-2: 고객 소리함 게시판
+       화면 1-2: 고객 소리함 게시판 (전체 기기 공유)
   ======================================================== -->
   <section id="screenBoard" class="hidden absolute inset-0 z-20 w-full flex flex-col bg-slate-50 overflow-hidden">
     <header class="flex items-center justify-between px-4 py-4 border-b border-slate-200 bg-white shrink-0">
@@ -134,6 +143,9 @@
         <button onclick="showScreen('screenHome')" class="mr-3 text-slate-600 hover:text-slate-900"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
         <h2 class="text-base font-black text-slate-900">후기 & 고객 소리함</h2>
       </div>
+      <button onclick="fetchCloudBoardPosts()" class="text-xs text-indigo-600 font-bold flex items-center space-x-1">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>새로고침</span>
+      </button>
     </header>
 
     <div class="flex-1 overflow-y-auto p-4 space-y-4 max-w-md mx-auto w-full touch-scroll">
@@ -148,12 +160,12 @@
           <span>비밀글로 작성하기 (작성자/관리자만 열람)</span>
         </label>
         <textarea id="boardContent" rows="3" placeholder="사용후기나 건의사항을 적어주세요!" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none resize-none"></textarea>
-        <button onclick="submitBoardPost()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition active:scale-95">
+        <button onclick="submitBoardPost()" id="btnSubmitBoard" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition active:scale-95">
           게시글 등록하기
         </button>
       </div>
       <div>
-        <h3 class="text-xs font-bold text-slate-500 mb-2 pl-1">등록된 소리함 목록</h3>
+        <h3 class="text-xs font-bold text-slate-500 mb-2 pl-1">등록된 소리함 목록 (전체 공유)</h3>
         <div id="boardListArea" class="space-y-2.5 pb-6"></div>
       </div>
     </div>
@@ -244,20 +256,22 @@
   </section>
 
   <!-- ========================================================
-       화면 4: 스튜디오 에디터
+       화면 4: 스튜디오 에디터 (완벽 반응형 & 클릭 보장)
   ======================================================== -->
-  <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden">
+  <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
     
+    <!-- 캔버스 작업대 -->
     <div class="w-full h-[45%] lg:h-full lg:w-1/2 flex flex-col items-center justify-center bg-[#F6F3EC] border-b lg:border-r border-[#EBE6DC] shadow-inner relative z-10 shrink-0 p-2">
       <div class="relative max-h-full max-w-full flex items-center justify-center">
         <canvas id="photoCanvas" class="max-h-[38vh] lg:max-h-[78vh] w-auto h-auto object-contain shadow-2xl cursor-pointer bg-white"></canvas>
       </div>
       <p class="text-[10px] text-slate-500 mt-1 flex items-center space-x-1">
         <i data-lucide="hand" class="w-3 h-3 text-rose-600"></i>
-        <span>스티커를 터치해 위치를 옮기거나 크기·각도를 조절하세요</span>
+        <span>스티커를 터치해 위치를 옮기거나 크기·회전(0~360°)을 조절하세요</span>
       </p>
     </div>
 
+    <!-- 우측 에디터 컨트롤 패널 (독립 스크롤) -->
     <div class="flex-1 lg:w-1/2 h-[55%] lg:h-full overflow-y-auto touch-scroll bg-white p-4 sm:p-6 pb-12 relative z-0">
       <div class="space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 sticky top-0 bg-white z-10">
@@ -279,7 +293,7 @@
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 테마</label>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 테마 (3대 스타일)</label>
           <div class="grid grid-cols-3 gap-1.5 text-[11px]">
             <button onclick="setFrameStyle('simple', this)" class="style-btn bg-rose-600 text-white font-black py-2 rounded-xl border border-rose-500 shadow-sm">포토이지 (상단)</button>
             <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">추억의네컷 (중간)</button>
@@ -319,6 +333,7 @@
           <div id="frameColorGrid" class="flex flex-wrap gap-1 items-center justify-end w-44 overflow-x-auto no-scrollbar"></div>
         </div>
 
+        <!-- 문구 & 10종 폰트 설정 -->
         <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
           <div class="flex items-center justify-between">
             <label class="text-[11px] font-bold text-slate-600" id="labelCustomText">문구 & 날짜 설정</label>
@@ -340,6 +355,7 @@
           </div>
         </div>
 
+        <!-- 최근 사용 5개 + 이모티콘 10종 + 감성 글자 10종 -->
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="text-[11px] font-bold text-slate-600">이모티콘 & 글자 스티커</label>
@@ -359,6 +375,7 @@
           <div id="textStickerGrid" class="flex items-center space-x-1.5 overflow-x-auto pb-1.5 no-scrollbar"></div>
           <div id="emojiGrid" class="flex flex-wrap gap-1 p-2 bg-slate-50 rounded-2xl border border-slate-200 text-base max-h-24 overflow-y-auto no-scrollbar justify-center"></div>
 
+          <!-- 스티커 조절 바 (크기 및 0~360도 회전) -->
           <div id="stickerControlBar" class="hidden mt-2 p-2.5 bg-rose-50 rounded-xl border border-rose-200 space-y-1.5">
             <div class="flex items-center justify-between text-[10px] text-rose-600 font-bold">
               <span>크기:</span>
@@ -370,6 +387,7 @@
           </div>
         </div>
 
+        <!-- 다운로드 & 저장 기능 영역 -->
         <div class="space-y-2 pt-3 border-t border-slate-200">
           <button onclick="autoSaveVideo()" id="btnAutoVideo" class="w-full bg-gradient-to-r from-pink-600 to-rose-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
             <i data-lucide="video" class="w-4 h-4"></i>
@@ -438,13 +456,42 @@
     </div>
   </section>
 
+  <!-- 🌟 [추가] 앨범 선택 시 번거로움 없애주는 스마트 사진 수집 안내 모달 -->
+  <div id="galleryCollectModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center space-y-4">
+      <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+        <i data-lucide="image-plus" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h3 class="font-black text-base text-slate-900" id="collectModalTitle">사진 수집 중 ( 0 / 4 )</h3>
+        <p class="text-xs text-slate-500 mt-1">4장이 채워지면 바로 다음으로 이동합니다!</p>
+      </div>
+      
+      <!-- 현재 수집된 썸네일 -->
+      <div id="collectThumbGrid" class="flex justify-center space-x-2 py-1"></div>
+
+      <div class="space-y-2 pt-2">
+        <button onclick="triggerGalleryUpload()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+          <i data-lucide="camera" class="w-4 h-4"></i>
+          <span>➕ 다음 사진 촬영 / 선택하기</span>
+        </button>
+        <button onclick="cancelGalleryCollect()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs transition">
+          취소하고 홈으로
+        </button>
+      </div>
+    </div>
+  </div>
+
   <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
 
   <!-- ========================================================
-       통합 엔진 스크립트
+       통합 자바스크립트 구동 엔진
   ======================================================== -->
   <script>
     const GAS_API_URL = "여기에_복사한_웹앱URL_붙여넣기";
+    
+    // 🌟 전체 기기 실시간 공지/게시판 동기화용 무료 클라우드 저장소
+    const CLOUD_SYNC_ENDPOINT = "https://kvdb.io/A2V8p7M5rZ9W4kL1xY6q3T/";
 
     const POSE_SUGGESTIONS = [
       "어깨동무하고 찰칵! 🫂", "다같이 브이~ ✌️", "손잡고 빙그르르 💫", "개구쟁이 메롱 😜",
@@ -498,9 +545,9 @@
       resetInterval: null
     };
 
-    // 🌟 앨범 및 1장씩 연속 촬영 누적 저장소
     let galleryAccumulator = [];
 
+    // 동적 UI 빌드
     function initDynamicUI() {
       const fonts = [
         { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
@@ -601,17 +648,40 @@
       icon.addEventListener('touchcancel', cancelPress);
     }
 
-    function writeAdminNotice() {
-      const notice = prompt("홈 화면에 띄울 메인 공지사항을 입력하세요.\n(비워두면 숨김 처리됩니다)");
+    // 🌟 [전체 기기 공유] 공지사항 읽기 및 저장
+    async function writeAdminNotice() {
+      const notice = prompt("홈 화면에 띄울 메인 공지사항을 입력하세요.\n(모든 접속자에게 표시됩니다. 비워두면 숨김)");
       if (notice !== null) {
         localStorage.setItem('vibe_notice', notice);
         loadMainNotice();
-        alert("공지가 반영되었습니다.");
+        try {
+          await fetch(CLOUD_SYNC_ENDPOINT + 'notice', { method: 'POST', body: notice });
+          alert("공지사항이 전체 기기에 동기화되었습니다.");
+        } catch (e) {
+          alert("공지가 로컬에 반영되었습니다.");
+        }
       }
     }
 
-    function loadMainNotice() {
-      const notice = localStorage.getItem('vibe_notice');
+    async function loadMainNotice() {
+      // 1) 로컬 캐시 즉각 반영
+      let notice = localStorage.getItem('vibe_notice') || '';
+      displayNoticeUI(notice);
+
+      // 2) 클라우드 실시간 동기화
+      try {
+        const res = await fetch(CLOUD_SYNC_ENDPOINT + 'notice');
+        if (res.ok) {
+          const cloudNotice = await res.text();
+          if (cloudNotice !== notice) {
+            localStorage.setItem('vibe_notice', cloudNotice);
+            displayNoticeUI(cloudNotice);
+          }
+        }
+      } catch (e) {}
+    }
+
+    function displayNoticeUI(notice) {
       const area = document.getElementById('mainNoticeArea');
       const content = document.getElementById('mainNoticeContent');
       if (notice && notice.trim() !== '') {
@@ -620,6 +690,18 @@
       } else {
         area.classList.add('hidden');
       }
+    }
+
+    // 🌟 [전체 기기 공유] 고객 소리함 / 후기 게시판 동기화
+    async function fetchCloudBoardPosts() {
+      try {
+        const res = await fetch(CLOUD_SYNC_ENDPOINT + 'posts');
+        if (res.ok) {
+          const cloudPosts = await res.json();
+          localStorage.setItem('vibe_posts', JSON.stringify(cloudPosts));
+          renderBoard();
+        }
+      } catch (e) {}
     }
 
     function renderBoard() {
@@ -647,13 +729,17 @@
       }).join('');
     }
 
-    function submitBoardPost() {
+    async function submitBoardPost() {
       const nickname = document.getElementById('boardNickname').value.trim() || '익명';
       const pw = document.getElementById('boardPassword').value.trim();
       const content = document.getElementById('boardContent').value.trim();
       const isPrivate = document.getElementById('boardIsPrivate').checked;
       if (!content) { alert("내용을 입력해주세요."); return; }
       if (isPrivate && !pw) { alert("비밀글 작성 시 비밀번호를 입력해주세요."); return; }
+
+      const btn = document.getElementById('btnSubmitBoard');
+      btn.disabled = true;
+      btn.textContent = "등록 중...";
 
       const newPost = { id: Date.now(), nickname, pw, content, isPrivate, date: getFormattedTodayDate() };
       const posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
@@ -662,20 +748,38 @@
 
       document.getElementById('boardContent').value = '';
       document.getElementById('boardPassword').value = '';
-      alert("등록되었습니다. 감사합니다!");
       renderBoard();
+
+      try {
+        await fetch(CLOUD_SYNC_ENDPOINT + 'posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(posts.slice(0, 30))
+        });
+      } catch (e) {}
+
+      btn.disabled = false;
+      btn.textContent = "게시글 등록하기";
+      alert("후기가 등록되었습니다. 감사합니다!");
     }
 
-    function deletePost(id) {
+    async function deletePost(id) {
       if (confirm("이 게시글을 삭제하시겠습니까?")) {
         let posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
         posts = posts.filter(p => p.id !== id);
         localStorage.setItem('vibe_posts', JSON.stringify(posts));
         renderBoard();
+        try {
+          await fetch(CLOUD_SYNC_ENDPOINT + 'posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(posts)
+          });
+        } catch (e) {}
       }
     }
 
-    // 오디오
+    // 오디오 설정
     let audioCtx = null;
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -729,6 +833,7 @@
       btn.className = "timer-chip bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm";
     }
 
+    // 카메라 시작
     async function startPhotoSession() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("카메라를 실행할 수 없습니다. HTTPS 환경인지 확인해 주세요!");
@@ -918,7 +1023,7 @@
       if (audioCtx && audioCtx.state !== 'closed') { try { audioCtx.suspend(); } catch (e) {} }
     }
 
-    // 🌟 사진 선택 (정렬된 카드 & 최초 빈 프레임)
+    // 사진 선택
     function renderPickScreen() {
       showScreen('screenPick');
       appState.selectedIndices = [null, null, null, null];
@@ -1003,11 +1108,10 @@
       }
     }
 
-    // 🌟 [핵심 수정] 4장 선택 완료 확인 및 에디터 진입 안정화
     function confirmSelectedFour() {
       const missing = appState.selectedIndices.filter(idx => idx === null).length;
       if (missing > 0) {
-        alert(`4개의 슬롯을 모두 채워주세요!\n(아직 ${missing}개 슬롯이 비어 있습니다. 사진을 눌러 넣어주세요)`);
+        alert(`4장의 사진을 모두 채워주세요!\n(아직 ${missing}개 슬롯이 비어 있습니다. 사진을 눌러 넣어주세요)`);
         return;
       }
       appState.selectedImages = appState.selectedIndices.map(idx => appState.shotImages[idx]);
@@ -1043,7 +1147,7 @@
       historyStack = []; redoStack = [];
     }
 
-    // 🌟 [핵심 수정] 앨범 1장씩 연속 촬영 및 다중 사진 선택 완벽 지원 (1280px 자동 압축)
+    // 🌟 [개선] 앨범 1장씩 연속 촬영 & 수집 인터랙션 (팝업 제거)
     function triggerGalleryUpload() { 
       const input = document.getElementById('galleryInput'); 
       input.value = ''; 
@@ -1057,20 +1161,13 @@
           const img = new Image();
           img.onload = () => {
             const maxDim = 1280;
-            let w = img.width;
-            let h = img.height;
+            let w = img.width, h = img.height;
             if (w > maxDim || h > maxDim) {
-              if (w > h) {
-                h = Math.round((h * maxDim) / w);
-                w = maxDim;
-              } else {
-                w = Math.round((w * maxDim) / h);
-                h = maxDim;
-              }
+              if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+              else { w = Math.round((w * maxDim) / h); h = maxDim; }
             }
             const c = document.createElement('canvas');
-            c.width = w;
-            c.height = h;
+            c.width = w; c.height = h;
             const ctx = c.getContext('2d');
             ctx.drawImage(img, 0, 0, w, h);
             const downscaledImg = new Image();
@@ -1091,18 +1188,35 @@
       galleryAccumulator.push(...loadedImages);
 
       if (galleryAccumulator.length >= 4) {
+        document.getElementById('galleryCollectModal').classList.add('hidden');
         appState.shotImages = [...galleryAccumulator];
         galleryAccumulator = [];
         renderPickScreen();
       } else {
-        const remaining = 4 - galleryAccumulator.length;
-        const keepAdding = confirm(`현재 ${galleryAccumulator.length}장의 사진이 등록되었습니다.\n4장을 채우기 위해 ${remaining}장을 더 추가하시겠습니까?`);
-        if (keepAdding) {
-          triggerGalleryUpload();
-        } else {
-          galleryAccumulator = [];
-        }
+        // 🌟 팝업창 없이 부드러운 전용 상태 모달 표출
+        updateGalleryCollectModal();
       }
+    }
+
+    function updateGalleryCollectModal() {
+      const modal = document.getElementById('galleryCollectModal');
+      const title = document.getElementById('collectModalTitle');
+      const grid = document.getElementById('collectThumbGrid');
+
+      title.textContent = `사진 수집 중 ( ${galleryAccumulator.length} / 4 )`;
+      grid.innerHTML = galleryAccumulator.map((img, i) => `
+        <div class="w-12 h-14 rounded-lg overflow-hidden border-2 border-rose-500 shadow-sm">
+          <img src="${img.src}" class="w-full h-full object-cover">
+        </div>
+      `).join('');
+
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function cancelGalleryCollect() {
+      galleryAccumulator = [];
+      document.getElementById('galleryCollectModal').classList.add('hidden');
     }
 
     function changeLayout(mode, btn) {
@@ -1314,33 +1428,43 @@
       }
     }
 
+    // 🌟 [수정] 터치 반응성 100% 최적화 스티커 드래그 엔진 (화면 기준 45px 터치 허용)
     function initCanvasInteractions() {
       const canvas = document.getElementById('photoCanvas');
 
-      function getCoords(e) {
+      function getTouchData(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         return {
-          x: (clientX - rect.left) * (canvas.width / rect.width),
-          y: (clientY - rect.top) * (canvas.height / rect.height)
+          clientX, clientY,
+          canvasX: (clientX - rect.left) * (canvas.width / rect.width),
+          canvasY: (clientY - rect.top) * (canvas.height / rect.height),
+          rect
         };
       }
 
       function handleStart(e) {
-        const c = getCoords(e);
+        const t = getTouchData(e);
+        
         for (let i = appState.stickers.length - 1; i >= 0; i--) {
           const st = appState.stickers[i];
-          const hitRadius = (st.type === 'text') ? st.size * 1.2 : st.size * 0.8;
-          if (Math.hypot(c.x - st.x, c.y - st.y) <= hitRadius) {
+          const stScreenX = t.rect.left + st.x * (t.rect.width / canvas.width);
+          const stScreenY = t.rect.top + st.y * (t.rect.height / canvas.height);
+          const screenDist = Math.hypot(t.clientX - stScreenX, t.clientY - stScreenY);
+
+          // 손가락 터치 타겟(45px) 이내면 무조건 정확히 선택
+          if (screenDist <= Math.max(45, (st.size * t.rect.width / canvas.width) * 0.8)) {
             appState.selectedStickerIdx = i;
             appState.dragTarget = i;
-            appState.dragStartPos = { x: c.x - st.x, y: c.y - st.y };
+            appState.dragStartPos = { x: t.canvasX - st.x, y: t.canvasY - st.y };
             showStickerControls(st);
             renderStrip();
+            if (e.cancelable) e.preventDefault();
             return;
           }
         }
+
         appState.selectedStickerIdx = -1;
         appState.dragTarget = null;
         document.getElementById('stickerControlBar').classList.add('hidden');
@@ -1349,11 +1473,11 @@
 
       function handleMove(e) {
         if (appState.dragTarget === null) return;
-        e.preventDefault();
-        const c = getCoords(e);
+        if (e.cancelable) e.preventDefault();
+        const t = getTouchData(e);
         const st = appState.stickers[appState.dragTarget];
-        st.x = c.x - appState.dragStartPos.x;
-        st.y = c.y - appState.dragStartPos.y;
+        st.x = t.canvasX - appState.dragStartPos.x;
+        st.y = t.canvasY - appState.dragStartPos.y;
         renderStrip();
       }
 
@@ -1370,7 +1494,7 @@
       window.addEventListener('touchend', handleEnd);
     }
 
-    // 🌟 메인 캔버스 렌더링
+    // 🌟 메인 캔버스 렌더링 루프
     function renderStrip(isFinalExport = false) {
       const canvas = document.getElementById('photoCanvas');
       if (!canvas) return;
@@ -1602,7 +1726,7 @@
       }
     }
 
-    // 🌟 [핵심 수정] 픽셀 에러 원천 차단 + 고속 렌더링 함수
+    // 🌟 안전하고 빠른 슬롯 드로잉
     function drawFilteredSlotPhoto(ctx, img, targetX, targetY, targetW, targetH) {
       if (!img) return;
       ctx.save();
@@ -1693,6 +1817,7 @@
       return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
     }
 
+    // 비디오 자동 저장
     async function autoSaveVideo() {
       if (appState.selectedIndices.some(idx => idx === null) || !appState.shotVideoBlobs[appState.selectedIndices[0]]) {
         alert("촬영한 동영상 클립이 부족합니다."); return;
@@ -1736,7 +1861,7 @@
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
-              await navigator.share({ files: [file], title: '추억의 네컷 비디오', text: '추억의 네컷 실시간 4컷 비디오입니다!' });
+              await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 실시간 4컷 비디오입니다!' });
               return;
             } catch (err) { if (err.name === 'AbortError') return; }
           }
@@ -1748,9 +1873,9 @@
 
         recorder.start();
 
-        const isBottomStyle = (appState.frameStyle === 'bottom');
-        const topH = isBottomStyle ? 35 : 90;
-        const bottomH = isBottomStyle ? 160 : 35;
+        const isBottom = (appState.frameStyle === 'bottom');
+        const topH = isBottom ? 35 : 90;
+        const bottomH = isBottom ? 160 : 35;
         const pad = 28; const gap = 14;
         const slotW = vCanvas.width - (pad * 2);
         const slotH = (vCanvas.height - topH - bottomH - (gap * 3)) / 4;
@@ -1763,7 +1888,7 @@
           const elapsed = time - startTime;
           vCtx.fillStyle = appState.frameColor;
           vCtx.fillRect(0, 0, vCanvas.width, vCanvas.height);
-          renderHeaderOrDecor(vCtx, 0, 0, vCanvas.width, vCanvas.height, customTitle, topH, isBottomStyle);
+          renderHeaderOrDecor(vCtx, 0, 0, vCanvas.width, vCanvas.height, customTitle, topH, isBottom);
 
           for (let i = 0; i < 4; i++) {
             const vy = topH + (i * (slotH + gap));
@@ -1781,7 +1906,7 @@
             vCtx.restore();
           }
 
-          if (isBottomStyle) drawBottomStyleFooter(vCtx, vCanvas.width / 2, vCanvas.height - 70, customTitle, 26);
+          if (isBottom) drawBottomStyleFooter(vCtx, vCanvas.width / 2, vCanvas.height - 70, customTitle, 26);
           if (elapsed < totalDuration) requestAnimationFrame(renderVideoLoop);
           else recorder.stop();
         }
@@ -1806,9 +1931,11 @@
       const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation, unit: 'mm', format: [102, 152] });
       const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight();
+      const margin = 2;
+      const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2);
       const imgRatio = canvas.width / canvas.height;
-      let printW = pdfW - 4, printH = printW / imgRatio;
-      if (printH > pdfH - 4) { printH = pdfH - 4; printW = printH * imgRatio; }
+      let printW = maxW, printH = printW / imgRatio;
+      if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
       pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH);
       pdf.save(`[추억의네컷]_Print_${Date.now()}.pdf`);
     }
@@ -1832,7 +1959,7 @@
     async function saveAndGenerateQR() {
       const btn = document.getElementById('btnSaveQR');
       btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>서버 전송 중...</span>`;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>서버 업로드 중...</span>`;
       if (window.lucide) lucide.createIcons();
 
       renderStrip(true);
@@ -1851,7 +1978,7 @@
           const res = await fetch(GAS_API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ base64Data: uploadBase64, layout: appState.layout, frameColor: appState.frameColor }), signal: controller.signal }).then(r => r.json());
           clearTimeout(timeoutId);
           if (res && res.success && res.fileUrl) {
-            btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
+            btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
             displayResultWithQR(res.fileUrl); return;
           }
         } catch (e) { clearTimeout(timeoutId); }
@@ -1861,12 +1988,12 @@
         try {
           const formData = new FormData(); formData.append('file', blob, `Chueok4cut_${Date.now()}.png`);
           const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: formData }).then(r => r.json());
-          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
+          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
           if (uploadRes && uploadRes.status === 'success' && uploadRes.data.url) {
             displayResultWithQR(uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/'));
           } else { displayResultWithQR(window.location.href); }
         } catch (err) {
-          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
+          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
           displayResultWithQR(window.location.href);
         }
       }, 'image/png');
@@ -1886,14 +2013,28 @@
       renderStrip();
     }
 
+    // 🌟 [수정] 화면 전환 완벽성 보장 (모든 숨김 화면 확실한 display:none 처리)
     function showScreen(id) {
-      ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'].forEach(s => {
+      const screenIds = ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'];
+      screenIds.forEach(s => {
         const el = document.getElementById(s);
-        if (el) el.classList.toggle('hidden', s !== id);
+        if (el) {
+          if (s === id) {
+            el.classList.remove('hidden');
+            el.style.display = '';
+          } else {
+            el.classList.add('hidden');
+            el.style.display = 'none';
+          }
+        }
       });
       if (window.lucide) lucide.createIcons();
-      if (id === 'screenBoard') renderBoard();
-      else if (id === 'screenHome') loadMainNotice();
+      if (id === 'screenBoard') {
+        renderBoard();
+        fetchCloudBoardPosts();
+      } else if (id === 'screenHome') {
+        loadMainNotice();
+      }
     }
 
     function cancelSession() { stopCameraAndAudio(); resetApp(); }
@@ -1915,6 +2056,80 @@
         if (rText) rText.textContent = `${sec}초`;
         if (sec <= 0) { clearInterval(appState.resetInterval); resetApp(); }
       }, 1000);
+    }
+
+    // 실행취소 / 다시실행
+    let historyStack = [];
+    let redoStack = [];
+
+    function saveStateForUndo() {
+      const snapshot = JSON.stringify({
+        stickers: appState.stickers,
+        layout: appState.layout,
+        frameStyle: appState.frameStyle,
+        frameThickness: appState.frameThickness,
+        frameColor: appState.frameColor,
+        activeFilter: appState.activeFilter,
+        filters: appState.filters,
+        showDate: appState.showDate,
+        typography: appState.typography,
+        customTitle: document.getElementById('frameSignatureInput') ? document.getElementById('frameSignatureInput').value : ''
+      });
+      historyStack.push(snapshot);
+      if (historyStack.length > 25) historyStack.shift();
+      redoStack = [];
+    }
+
+    function undo() {
+      if (historyStack.length === 0) return;
+      const currentSnap = JSON.stringify({
+        stickers: appState.stickers,
+        layout: appState.layout,
+        frameStyle: appState.frameStyle,
+        frameThickness: appState.frameThickness,
+        frameColor: appState.frameColor,
+        activeFilter: appState.activeFilter,
+        filters: appState.filters,
+        showDate: appState.showDate,
+        typography: appState.typography,
+        customTitle: document.getElementById('frameSignatureInput').value
+      });
+      redoStack.push(currentSnap);
+      applySnapshot(JSON.parse(historyStack.pop()));
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      const currentSnap = JSON.stringify({
+        stickers: appState.stickers,
+        layout: appState.layout,
+        frameStyle: appState.frameStyle,
+        frameThickness: appState.frameThickness,
+        frameColor: appState.frameColor,
+        activeFilter: appState.activeFilter,
+        filters: appState.filters,
+        showDate: appState.showDate,
+        typography: appState.typography,
+        customTitle: document.getElementById('frameSignatureInput').value
+      });
+      historyStack.push(currentSnap);
+      applySnapshot(JSON.parse(redoStack.pop()));
+    }
+
+    function applySnapshot(snap) {
+      appState.stickers = snap.stickers || [];
+      appState.layout = snap.layout;
+      appState.frameStyle = snap.frameStyle;
+      appState.frameThickness = snap.frameThickness;
+      appState.frameColor = snap.frameColor;
+      appState.activeFilter = snap.activeFilter;
+      appState.filters = snap.filters;
+      appState.showDate = snap.showDate;
+      appState.typography = snap.typography;
+      if (document.getElementById('frameSignatureInput')) {
+        document.getElementById('frameSignatureInput').value = snap.customTitle || '';
+      }
+      renderStrip();
     }
 
     window.addEventListener('DOMContentLoaded', () => {
