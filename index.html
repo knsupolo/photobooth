@@ -58,7 +58,7 @@
       <section class="flex-1 flex flex-col justify-center space-y-4 my-auto">
         <button onclick="startPhotoSession()" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white py-7 px-5 rounded-3xl shadow-xl shadow-rose-600/25 flex items-center justify-between active:scale-[0.98] transition group">
           <div class="flex items-center space-x-4 text-left">
-            <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition p-3">
+            <div class="w-13 h-13 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition p-3">
               <i data-lucide="camera" class="w-7 h-7"></i>
             </div>
             <div>
@@ -431,8 +431,72 @@
 
   <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
 
+  <!-- ========================================================
+       통합 엔진 스크립트 (단일 선언 완료)
+  ======================================================== -->
   <script>
-    // 🌟 실행취소/다시실행 스택
+    const GAS_API_URL = "여기에_복사한_웹앱URL_붙여넣기";
+
+    const POSE_SUGGESTIONS = [
+      "어깨동무하고 찰칵! 🫂",
+      "다같이 브이~ ✌️",
+      "손잡고 빙그르르 💫",
+      "개구쟁이 메롱 😜",
+      "서로 얼굴 맞대고 🥰",
+      "볼 옆에 브이 ✌️",
+      "새침한 시크 표정 😎",
+      "하트 뿅뿅 날리기 🫶",
+      "자유로운 힙합 포즈 🤙",
+      "꽃받침하고 방긋 🌸",
+      "눈 꼭 감고 윙크 😉",
+      "볼 빵빵 귀요미 🐹"
+    ];
+
+    const FILTER_PRESETS = {
+      normal:  { bright: 100, contrast: 100, saturate: 100, name: '원본' },
+      bright:  { bright: 115, contrast: 105, saturate: 108, name: '뽀샤시' },
+      radiant: { bright: 112, contrast: 115, saturate: 125, name: '화사한' },
+      warm:    { bright: 108, contrast: 105, saturate: 120, name: '따뜻한' },
+      cool:    { bright: 106, contrast: 112, saturate: 95,  name: '차가운' },
+      mood:    { bright: 105, contrast: 95,  saturate: 85,  name: '감성무드' },
+      retro:   { bright: 108, contrast: 90,  saturate: 80,  name: '레트로' },
+      mono:    { bright: 105, contrast: 130, saturate: 0,   name: '흑백' }
+    };
+
+    let appState = {
+      isAdmin: false,
+      stream: null,
+      facingMode: 'user',
+      timerSec: 6,
+      currentCount: 6,
+      countdownTimer: null,
+      zoomLevel: 1.0,
+      shotImages: [],
+      selectedImages: [],
+      selectedIndices: [0, 1, 2, 3],
+      activeSlotIndex: 0,
+      photoPan: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}],
+      isPhotoLocked: true, 
+      stickers: [],
+      selectedStickerIdx: -1,
+      dragTarget: null,
+      dragStartPos: { x:0, y:0 },
+      layout: 'strip',
+      frameStyle: 'simple',
+      frameThickness: 40,
+      frameColor: '#000000',
+      customOverlayImage: null,
+      activeFilter: 'normal',
+      filters: { bright: 100, contrast: 100, saturate: 100 },
+      showDate: true,
+      typography: {
+        fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF',
+        isBold: true, date: getFormattedTodayDate()
+      },
+      shotVideoBlobs: [], currentMediaRecorder: null, currentShotVideoChunks: [],
+      resetInterval: null
+    };
+
     let historyStack = [];
     let redoStack = [];
 
@@ -510,7 +574,6 @@
       renderStrip();
     }
 
-    // 관리자 모드
     function toggleAdminMode() {
       if (appState.isAdmin) {
         appState.isAdmin = false;
@@ -522,7 +585,7 @@
       const pw = prompt("관리자 비밀번호를 입력하세요");
       if (pw === "0724") {
         appState.isAdmin = true;
-        alert("개발자 관리모드가 활성화되었습니다. (글 삭제/공지 작성 가능)");
+        alert("개발자 관리모드가 활성화되었습니다.");
         document.getElementById('adminNoticeBtn').classList.remove('hidden');
         renderBoard();
       } else if (pw !== null) {
@@ -604,7 +667,6 @@
       }
     }
 
-    // 오디오
     let audioCtx = null;
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -665,18 +727,24 @@
       btn.className = "timer-chip bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm";
     }
 
-    // 🌟 카메라 세션 및 비디오 녹화
+    // 🌟 카메라 세션 및 뷰파인더 구동 (사파리/크롬 100% 보장)
     async function startPhotoSession() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("카메라를 실행할 수 없습니다. HTTPS 보안 연결(https://) 환경인지 확인해 주세요!");
+        alert("카메라를 실행할 수 없습니다. HTTPS 환경(깃허브 주소)인지 확인해 주세요!");
         return;
       }
 
       initAudio();
+      if ('speechSynthesis' in window) {
+        const silent = new SpeechSynthesisUtterance('');
+        window.speechSynthesis.speak(silent);
+      }
+
       stopCameraAndAudio();
       appState.shotImages = []; appState.selectedImages = [];
       appState.selectedIndices = [0, 1, 2, 3]; appState.shotVideoBlobs = [];
 
+      // 화면을 먼저 켜서 비디오 요소가 브라우저에 표시되도록 설정 (사파리 차단 방지)
       showScreen('screenLiveShoot');
 
       for (let i = 0; i < 6; i++) {
@@ -796,6 +864,7 @@
       }, 1000);
     }
 
+    // 🌟 WYSWYG 완벽 3:2 크롭 캡처 엔진
     function captureWebcamFrame(shotIndex, onDone) {
       playRealisticShutter();
       flashScreen();
@@ -864,7 +933,7 @@
       if (audioCtx && audioCtx.state !== 'closed') { try { audioCtx.suspend(); } catch (e) {} }
     }
 
-    // 🌟 사진 선택 (card.id 복원 완료)
+    // 🌟 사진 선택 (ID 누락 해결 & 완벽 복원)
     function renderPickScreen() {
       showScreen('screenPick');
       appState.selectedIndices = [0, 1, 2, 3];
@@ -875,7 +944,7 @@
       grid.innerHTML = '';
       appState.shotImages.forEach((img, idx) => {
         const card = document.createElement('div');
-        card.id = `pickCard_${idx}`; // 🌟 누락되었던 ID 복원!
+        card.id = `pickCard_${idx}`; 
         card.className = "relative aspect-[3/2] rounded-lg overflow-hidden border-2 border-slate-300 bg-slate-200 cursor-pointer group active:scale-95 transition shadow-sm";
         card.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover"><div id="pickBadge_${idx}" class="hidden absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-lg border border-white">1</div>`;
         card.onclick = () => assignPhotoToCurrentSlot(idx);
@@ -1648,10 +1717,7 @@
 
           for (let i = 0; i < 4; i++) {
             const vy = topH + (i * (slotH + gap));
-            vCtx.save();
-            vCtx.beginPath();
-            vCtx.rect(pad, vy, slotW, slotH);
-            vCtx.clip();
+            vCtx.save(); vCtx.beginPath(); vCtx.rect(pad, vy, slotW, slotH); vCtx.clip();
             const v = videoElements[i];
             const vW = v.videoWidth || 1280; const vH = v.videoHeight || 720;
             const vRatio = vW / vH; const targetRatio = slotW / slotH;
@@ -1688,9 +1754,11 @@
       const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation: orientation, unit: 'mm', format: [102, 152] });
       const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight();
+      const margin = 2;
+      const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2);
       const imgRatio = canvas.width / canvas.height;
-      let printW = pdfW - 4, printH = printW / imgRatio;
-      if (printH > pdfH - 4) { printH = pdfH - 4; printW = printH * imgRatio; }
+      let printW = maxW, printH = printW / imgRatio;
+      if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
       pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH);
       pdf.save(`[추억의네컷]_Print_${Date.now()}.pdf`);
     }
