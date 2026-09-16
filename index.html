@@ -58,7 +58,7 @@
       <section class="flex-1 flex flex-col justify-center space-y-4 my-auto">
         <button onclick="startPhotoSession()" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white py-7 px-5 rounded-3xl shadow-xl shadow-rose-600/25 flex items-center justify-between active:scale-[0.98] transition group">
           <div class="flex items-center space-x-4 text-left">
-            <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition p-3">
+            <div class="w-13 h-13 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition p-3">
               <i data-lucide="camera" class="w-7 h-7"></i>
             </div>
             <div>
@@ -432,15 +432,25 @@
   <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
 
   <!-- ========================================================
-       통합 엔진 스크립트 (오류 해결 완결본)
+       통합 엔진 스크립트 (ReferenceError 방어 완료)
   ======================================================== -->
   <script>
     const GAS_API_URL = "여기에_복사한_웹앱URL_붙여넣기";
 
+    // 🌟 [핵심 수정] 누락되었던 필수 전역 데이터 정의 복원
     const POSE_SUGGESTIONS = [
-      "어깨동무하고 찰칵! 🫂", "다같이 브이~ ✌️", "손잡고 빙그르르 💫", "개구쟁이 메롱 😜",
-      "서로 얼굴 맞대고 🥰", "볼 옆에 브이 ✌️", "새침한 시크 표정 😎", "하트 뿅뿅 날리기 🫶",
-      "자유로운 힙합 포즈 🤙", "꽃받침하고 방긋 🌸", "눈 꼭 감고 윙크 😉", "볼 빵빵 귀요미 🐹"
+      "어깨동무하고 찰칵! 🫂",
+      "다같이 브이~ ✌️",
+      "손잡고 빙그르르 💫",
+      "개구쟁이 메롱 😜",
+      "서로 얼굴 맞대고 🥰",
+      "볼 옆에 브이 ✌️",
+      "새침한 시크 표정 😎",
+      "하트 뿅뿅 날리기 🫶",
+      "자유로운 힙합 포즈 🤙",
+      "꽃받침하고 방긋 🌸",
+      "눈 꼭 감고 윙크 😉",
+      "볼 빵빵 귀요미 🐹"
     ];
 
     const FILTER_PRESETS = {
@@ -487,7 +497,6 @@
       resetInterval: null
     };
 
-    // 동적 UI 빌더
     function initDynamicUI() {
       const fonts = [
         { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
@@ -610,7 +619,7 @@
       renderStrip();
     }
 
-    // 관리자 모드 & 커뮤니티 게시판
+    // 관리자 모드
     function toggleAdminMode() {
       if (appState.isAdmin) {
         appState.isAdmin = false;
@@ -704,7 +713,7 @@
       }
     }
 
-    // 사운드
+    // 오디오
     let audioCtx = null;
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -765,7 +774,7 @@
       btn.className = "timer-chip bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm";
     }
 
-    // 🌟 카메라 세션 및 비디오 녹화 (사파리 무반응 버그 완벽 수정)
+    // 🌟 카메라 세션 및 비디오 녹화 (ReferenceError 원천 방지)
     async function startPhotoSession() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("카메라를 실행할 수 없습니다. HTTPS 보안 연결(https://) 환경인지 확인해 주세요!");
@@ -777,7 +786,6 @@
       appState.shotImages = []; appState.selectedImages = [];
       appState.selectedIndices = [0, 1, 2, 3]; appState.shotVideoBlobs = [];
 
-      // 🌟 핵심 해결책: 화면을 먼저 켜서 비디오 요소를 화면에 보이게(Display: flex) 만듭니다!
       showScreen('screenLiveShoot');
 
       for (let i = 0; i < 6; i++) {
@@ -791,13 +799,11 @@
       try {
         let stream;
         try {
-          // 전면/후면 호환 광각 스트림 요청
           stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: appState.facingMode },
             audio: false
           });
         } catch (err1) {
-          // 일반 fallback
           stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         }
 
@@ -899,7 +905,6 @@
       }, 1000);
     }
 
-    // 🌟 WYSWYG 완벽 3:2 크롭 캡처 엔진
     function captureWebcamFrame(shotIndex, onDone) {
       playRealisticShutter();
       flashScreen();
@@ -1081,7 +1086,6 @@
       renderStrip();
     }
 
-    // 사진 잠금 모드 제어
     function setEditorLockMode(isLocked) {
       appState.isPhotoLocked = isLocked;
       const btnPan = document.getElementById('btnModePan');
@@ -1100,7 +1104,7 @@
         document.getElementById('stickerControlBar').classList.add('hidden');
         renderStrip();
       }
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     }
 
     function changeLayout(mode, btn) {
@@ -1307,7 +1311,6 @@
       }
     }
 
-    // 캔버스 인터랙션
     let slotBoxes = [];
     function initCanvasInteractions() {
       const canvas = document.getElementById('photoCanvas');
@@ -1392,7 +1395,6 @@
       window.addEventListener('touchend', handleEnd);
     }
 
-    // 캔버스 렌더링
     function renderStrip(isFinalExport = false) {
       const canvas = document.getElementById('photoCanvas');
       const ctx = canvas.getContext('2d');
@@ -1644,14 +1646,13 @@
       return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // 비디오 자동 저장
     async function autoSaveVideo() {
       if (appState.selectedIndices.length === 0 || !appState.shotVideoBlobs[appState.selectedIndices[0]]) {
         alert("촬영한 동영상 클립이 없습니다."); return;
       }
       const btn = document.getElementById('btnAutoVideo');
       btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>비디오 합성 렌더링 중...</span>`;
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
 
       try {
         const videoElements = await Promise.all(appState.selectedIndices.map(shotIdx => {
@@ -1684,7 +1685,7 @@
           const file = new File([blob], `[추억의네컷]_Video_${Date.now()}.${ext}`, { type: mimeType });
 
           btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 저장 (자동 다운로드)</span>`;
-          lucide.createIcons();
+          if (window.lucide) lucide.createIcons();
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
@@ -1720,7 +1721,10 @@
 
           for (let i = 0; i < 4; i++) {
             const vy = topH + (i * (slotH + gap));
-            vCtx.save(); vCtx.beginPath(); vCtx.rect(pad, vy, slotW, slotH); vCtx.clip();
+            vCtx.save();
+            vCtx.beginPath();
+            vCtx.rect(pad, vy, slotW, slotH);
+            vCtx.clip();
             const v = videoElements[i];
             const vW = v.videoWidth || 1280; const vH = v.videoHeight || 720;
             const vRatio = vW / vH; const targetRatio = slotW / slotH;
@@ -1740,7 +1744,7 @@
       } catch (err) {
         alert("비디오 생성 실패: " + err.message);
         btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 저장 (자동 다운로드)</span>`;
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
       }
     }
 
@@ -1757,11 +1761,9 @@
       const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation: orientation, unit: 'mm', format: [102, 152] });
       const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight();
-      const margin = 2;
-      const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2);
       const imgRatio = canvas.width / canvas.height;
-      let printW = maxW, printH = printW / imgRatio;
-      if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
+      let printW = pdfW - 4, printH = printW / imgRatio;
+      if (printH > pdfH - 4) { printH = pdfH - 4; printW = printH * imgRatio; }
       pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH);
       pdf.save(`[추억의네컷]_Print_${Date.now()}.pdf`);
     }
@@ -1786,7 +1788,7 @@
       const btn = document.getElementById('btnSaveQR');
       btn.disabled = true;
       btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>서버 전송 중...</span>`;
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
 
       renderStrip(true);
       const canvas = document.getElementById('photoCanvas');
@@ -1800,29 +1802,27 @@
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 7000);
-
         try {
           const res = await fetch(GAS_API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ base64Data: uploadBase64, layout: appState.layout, frameColor: appState.frameColor }), signal: controller.signal }).then(r => r.json());
           clearTimeout(timeoutId);
           if (res && res.success && res.fileUrl) {
-            btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
+            btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
             displayResultWithQR(res.fileUrl); return;
           }
         } catch (e) { clearTimeout(timeoutId); }
       }
 
-      // 우회 폴백
       canvas.toBlob(async (blob) => {
         try {
           const formData = new FormData(); formData.append('file', blob, `Chueok4cut_${Date.now()}.png`);
           const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: formData }).then(r => r.json());
-          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
+          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
           if (uploadRes && uploadRes.status === 'success' && uploadRes.data.url) {
             displayResultWithQR(uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/'));
-          } else { displayResultWithQR(window.location.href); }
+          } else { fallbackLocalDownload(); }
         } catch (err) {
-          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 완료</span>`;
-          displayResultWithQR(window.location.href);
+          btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`;
+          fallbackLocalDownload();
         }
       }, 'image/png');
     }
@@ -1841,13 +1841,16 @@
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
+    function fallbackLocalDownload() {
+      displayResultWithQR(window.location.href);
+    }
+
     function returnToEditor() {
       if (appState.resetInterval) { clearInterval(appState.resetInterval); appState.resetInterval = null; }
       showScreen('screenEdit');
       renderStrip();
     }
 
-    // 🌟 화면 전환 함수 (화면 요소를 완벽하게 보이도록 보장)
     function showScreen(id) {
       ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'].forEach(s => {
         const el = document.getElementById(s);
