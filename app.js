@@ -1,76 +1,73 @@
 /* ==========================================================================
-   인생네컷 Pro Studio v13.1 - Master Controller (app.js)
+   추억의 네컷 Pro Studio v12.7 - 통합 컨트롤러 엔진 (app.js)
    ========================================================================== */
 
-// 1. 애플리케이션 전역 상태 (Global State)
+// 1. 전역 애플리케이션 상태 (Global State)
 const appState = {
   stream: null,
-  facingMode: 'user', // 'user' (전면) or 'environment' (후면)
+  facingMode: 'user', // 'user' (전면) | 'environment' (후면)
   timerSec: 6,
   currentCount: 6,
   countdownTimer: null,
-  zoomLevel: 1.0,
   
-  // 촬영된 원본 이미지 및 비디오 클립 Blob
+  // 촬영 컷 & 비디오 버퍼
   shotImages: [],
   shotVideoBlobs: [],
   currentMediaRecorder: null,
   currentShotVideoChunks: [],
   
-  // 6-Pick-4 슬롯 선택
+  // 사진 선택 (6-Pick-4)
   selectedIndices: [0, 1, 2, 3],
   activeSlotIndex: 0,
-  galleryUploadQueue: [],
-
+  
   // 캔버스 에디터 설정
-  layout: 'strip', // 'strip'(1x4), 'grid'(2x2), 'twin'(2줄 인쇄용)
-  frameStyle: 'simple', // 'simple', 'middle', 'bottom'
-  frameThickness: 36,
+  layout: 'strip', // 'strip'(1x4) | 'grid'(2x2) | 'twin'(2줄 인쇄)
+  frameStyle: 'simple', // 'simple' | 'middle' | 'bottom'
+  frameThickness: 40,
   frameColor: '#000000',
   customFrameImg: null,
   
+  // 12종 감성 필터 및 세부 파라미터
   activeFilter: 'normal',
   filters: { bright: 100, contrast: 100, saturate: 100 },
   
+  // 타이포그래피 및 날짜
   showDate: true,
   typography: {
     fontFamily: 'Pretendard',
-    fontSize: 42,
-    fontColor: '#ffffff',
+    fontSize: 40,
+    fontColor: '#FFFFFF',
     isBold: true
   },
   
   // 스티커 시스템
   stickers: [],
   selectedStickerIdx: -1,
-  recentStickers: ['💖', '✨', '📸', 'HAPPY'],
-
-  // 인터랙션 (드래그/핀치)
+  recentStickers: ['💖', '✨', '📸', 'HAPPY', 'BEST DAY'],
+  
+  // 인터랙션
   isDraggingSticker: false,
-  dragOffset: { x: 0, y: 0 },
-  initialPinchDist: 0,
-  initialStickerScale: 1
+  dragOffset: { x: 0, y: 0 }
 };
 
-// Undo / Redo 스택
+// 되돌리기 / 다시실행 히스토리 스택
 const historyStack = [];
 let redoStack = [];
 
-// 추천 포즈 목록
+// 프리셋 데이터
 const POSE_SUGGESTIONS = [
   "볼콕 찌르며 상큼하게! 👈😊",
   "어깨동무하고 다정하게! 🫂",
   "손하트 날리기! 🫰💖",
   "브이(V) 포즈로 활짝 웃기! ✌️",
   "꽃받침하고 사랑스럽게! 🌸",
-  "자유로운 힙한 포즈! 😎"
+  "자유롭고 힙한 포즈! 😎"
 ];
 
-// 이모티콘 및 레터링 프리셋
 const EMOJI_PRESETS = [
   '💖', '🎀', '✨', '🌸', '👑', '🎉', '🍀', '🧸', 
   '🐶', '🐱', '🐰', '🍒', '🍓', '🧁', '🕶️', '✌️', 
-  '🫰', '🥳', '🔥', '⭐'
+  '🫰', '🥳', '🔥', '⭐', '🎈', '🤍', '🍰', '🌿'
 ];
 
 const TEXT_STICKER_PRESETS = [
@@ -94,7 +91,7 @@ const FONT_PRESETS = [
 ];
 
 /* ==========================================================================
-   2. 초기화 및 사운드 엔진 (Web Audio API)
+   2. 오디오 효과음 & 화면 네비게이션
    ========================================================================== */
 let audioCtx = null;
 
@@ -133,7 +130,7 @@ function playShutterSound() {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.setValueAtTime(140, now);
     osc.frequency.exponentialRampToValueAtTime(30, now + 0.12);
     gain.gain.setValueAtTime(0.4, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
@@ -144,24 +141,20 @@ function playShutterSound() {
   } catch (e) { }
 }
 
-// 화면 전환 헬퍼
 function showScreen(screenId) {
   const screens = ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'];
   screens.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      if (id === screenId) {
-        el.classList.remove('hidden');
-      } else {
-        el.classList.add('hidden');
-      }
+      if (id === screenId) el.classList.remove('hidden');
+      else el.classList.add('hidden');
     }
   });
   if (window.lucide) lucide.createIcons();
 }
 
 /* ==========================================================================
-   3. 카메라 촬영 시퀀스 & 비디오 녹화
+   3. 카메라 구동 & 카운트다운 & 4컷 비디오 녹화
    ========================================================================== */
 async function startPhotoSession() {
   initAudioContext();
@@ -376,7 +369,7 @@ function setTimerSec(sec, btn) {
 }
 
 /* ==========================================================================
-   4. 사진 선택 화면 (6-Pick-4) & 앨범 업로드
+   4. 사진 선택 & 앨범 연속 업로드 모달
    ========================================================================== */
 function renderPickScreen() {
   showScreen('screenPick');
@@ -434,7 +427,7 @@ function confirmSelectedFour() {
   renderStrip();
 }
 
-// 앨범 파일 업로드
+// 앨범 업로드 (다중 또는 단일 1장씩 순차 수집)
 function triggerGalleryUpload() {
   document.getElementById('galleryInput').click();
 }
@@ -443,27 +436,16 @@ function handleGalleryUpload(e) {
   const files = Array.from(e.target.files);
   if (!files || files.length === 0) return;
 
-  let loadedCount = 0;
-  const tempImgs = [];
-
+  let loaded = 0;
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = evt => {
       const img = new Image();
       img.onload = () => {
-        tempImgs.push(img);
-        loadedCount++;
-        if (loadedCount === files.length) {
-          appState.shotImages = tempImgs;
-          appState.selectedIndices = [0, 1, 2, 3];
-          if (appState.shotImages.length < 4) {
-            while (appState.shotImages.length < 4) {
-              appState.shotImages.push(appState.shotImages[0]);
-            }
-          }
-          showScreen('screenEdit');
-          setupEditorTools();
-          renderStrip();
+        appState.shotImages.push(img);
+        loaded++;
+        if (loaded === files.length) {
+          checkGalleryCollectProgress();
         }
       };
       img.src = evt.target.result;
@@ -471,6 +453,36 @@ function handleGalleryUpload(e) {
     reader.readAsDataURL(file);
   });
   e.target.value = '';
+}
+
+function checkGalleryCollectProgress() {
+  const modal = document.getElementById('galleryCollectModal');
+  const total = appState.shotImages.length;
+
+  if (total >= 4) {
+    modal.classList.add('hidden');
+    appState.selectedIndices = [0, 1, 2, 3];
+    showScreen('screenEdit');
+    setupEditorTools();
+    renderStrip();
+  } else {
+    modal.classList.remove('hidden');
+    document.getElementById('collectModalTitle').textContent = `사진 수집 중 ( ${total} / 4 )`;
+    const grid = document.getElementById('collectThumbGrid');
+    grid.innerHTML = '';
+    appState.shotImages.forEach(img => {
+      const d = document.createElement('div');
+      d.className = "w-12 h-12 rounded-lg overflow-hidden border border-rose-300 shadow-xs";
+      d.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`;
+      grid.appendChild(d);
+    });
+  }
+}
+
+function cancelGalleryCollect() {
+  document.getElementById('galleryCollectModal').classList.add('hidden');
+  appState.shotImages = [];
+  showScreen('screenHome');
 }
 
 function handleCustomFrameUpload(e) {
@@ -490,7 +502,7 @@ function handleCustomFrameUpload(e) {
 }
 
 /* ==========================================================================
-   5. 캔버스 에디터 렌더링 엔진 (Strip, Grid, Twin)
+   5. 캔버스 에디터 렌더링 & 12종 감성 필터 수치 연산
    ========================================================================== */
 function setupEditorTools() {
   // 프레임 색상 팔레트 채우기
@@ -525,7 +537,6 @@ function setupEditorTools() {
     });
   }
 
-  // 스티커 프리셋 구성
   setupStickerPalettes();
   setupCanvasInteractions();
 }
@@ -539,7 +550,7 @@ function renderStrip() {
 
   const gap = Number(appState.frameThickness);
   const photoW = 800;
-  const photoH = 533; // 3:2 비율
+  const photoH = 533; // 3:2 규격 비율
 
   if (appState.layout === 'strip') {
     // 1x4 세로 스트립
@@ -579,7 +590,7 @@ function renderStrip() {
     renderFrameTextAndDate(ctx, canvas.width, canvas.height, bottomAreaH);
 
   } else if (appState.layout === 'twin') {
-    // 실물 4x6 포토프린터 규격 (1x4 스트립 2줄 나란히 + 가운데 절취선)
+    // 4x6 포토프린터 규격 2줄 인쇄 모드
     const bottomAreaH = 260;
     const singleStripW = photoW + (gap * 2);
     canvas.width = (singleStripW * 2) + 20;
@@ -588,22 +599,22 @@ function renderStrip() {
     ctx.fillStyle = appState.frameColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 좌측 스트립
+    // 좌측 열
     for (let i = 0; i < 4; i++) {
       drawFilteredPhoto(ctx, photos[i], gap, gap + (i * (photoH + gap)), photoW, photoH);
     }
     renderFrameTextAndDate(ctx, singleStripW, canvas.height, bottomAreaH, 0);
 
-    // 우측 스트립
+    // 우측 열
     const offsetX = singleStripW + 20;
     for (let i = 0; i < 4; i++) {
       drawFilteredPhoto(ctx, photos[i], offsetX + gap, gap + (i * (photoH + gap)), photoW, photoH);
     }
     renderFrameTextAndDate(ctx, singleStripW, canvas.height, bottomAreaH, offsetX);
 
-    // 가운데 점선 절취선 (✂️)
+    // 중앙 절취선 점선 (✂️)
     ctx.save();
-    ctx.setLineDash([12, 12]);
+    ctx.setLineDash([14, 14]);
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -613,12 +624,12 @@ function renderStrip() {
     ctx.restore();
   }
 
-  // 사용자 커스텀 투명 PNG 프레임 합성
+  // PNG 커스텀 프레임 얹기
   if (appState.customFrameImg) {
     ctx.drawImage(appState.customFrameImg, 0, 0, canvas.width, canvas.height);
   }
 
-  // 스티커 일괄 렌더링
+  // 스티커 합성
   renderAllStickers(ctx);
 }
 
@@ -656,7 +667,7 @@ function renderFrameTextAndDate(ctx, stripW, stripH, bottomH, offsetX = 0) {
   const fontWeight = appState.typography.isBold ? 'bold' : 'normal';
 
   if (appState.frameStyle === 'simple') {
-    // 심플 모드: 하단 깔끔한 텍스트 배치
+    // 포토이지 (상단 문구 & 하단 날짜)
     ctx.font = `${fontWeight} ${appState.typography.fontSize}px "${appState.typography.fontFamily}"`;
     ctx.textAlign = 'center';
     ctx.fillText(titleText, offsetX + (stripW / 2), stripH - (bottomH / 2) - 15);
@@ -667,7 +678,7 @@ function renderFrameTextAndDate(ctx, stripW, stripH, bottomH, offsetX = 0) {
       ctx.fillText(dateStr, offsetX + (stripW / 2), stripH - (bottomH / 2) + 35);
     }
   } else if (appState.frameStyle === 'middle') {
-    // 클래식 브랜드 모드
+    // 추억의네컷 (중간 브랜드 로고 스타일)
     ctx.font = `${fontWeight} ${appState.typography.fontSize + 4}px "${appState.typography.fontFamily}"`;
     ctx.textAlign = 'center';
     ctx.fillText(titleText, offsetX + (stripW / 2), stripH - (bottomH / 2));
@@ -677,7 +688,7 @@ function renderFrameTextAndDate(ctx, stripW, stripH, bottomH, offsetX = 0) {
       ctx.fillText(dateStr, offsetX + (stripW / 2), stripH - 30);
     }
   } else {
-    // 와이드 감성 모드
+    // 인생4컷 (하단 와이드 좌우 분할 배치)
     ctx.textAlign = 'left';
     ctx.font = `${fontWeight} ${appState.typography.fontSize}px "${appState.typography.fontFamily}"`;
     ctx.fillText(titleText, offsetX + 40, stripH - (bottomH / 2) + 10);
@@ -697,19 +708,20 @@ function isColorDark(hexColor) {
   const r = (rgb >> 16) & 0xff;
   const g = (rgb >> 8) & 0xff;
   const b = (rgb >> 0) & 0xff;
-  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luma < 128;
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128;
 }
 
 /* ==========================================================================
-   6. 스티커 드래그 & 회전 & 조작 엔진
+   6. 스티커 드래그 & 회전 & 맞춤 레터링
    ========================================================================== */
 function setupStickerPalettes() {
+  updateRecentStickersBar();
+
   const emojiGrid = document.getElementById('emojiGrid');
   if (emojiGrid && emojiGrid.children.length === 0) {
     EMOJI_PRESETS.forEach(em => {
       const btn = document.createElement('button');
-      btn.className = "w-8 h-8 flex items-center justify-center text-xl hover:scale-125 active:scale-95 transition";
+      btn.className = "w-8 h-8 flex items-center justify-center text-lg hover:scale-125 active:scale-95 transition";
       btn.textContent = em;
       btn.onclick = () => addSticker('emoji', em);
       emojiGrid.appendChild(btn);
@@ -728,15 +740,28 @@ function setupStickerPalettes() {
   }
 }
 
+function updateRecentStickersBar() {
+  const container = document.getElementById('recentStickersList');
+  if (!container) return;
+  container.innerHTML = '';
+  appState.recentStickers.slice(-5).forEach(st => {
+    const btn = document.createElement('button');
+    btn.className = "px-2 py-0.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 active:scale-95 transition";
+    btn.textContent = st;
+    btn.onclick = () => addSticker(st.length > 2 ? 'text' : 'emoji', st);
+    container.appendChild(btn);
+  });
+}
+
 function addSticker(type, content) {
   saveStateForUndo();
   const canvas = document.getElementById('photoCanvas');
   const newSticker = {
     id: Date.now(),
-    type: type, // 'emoji' | 'text'
+    type: type,
     content: content,
-    x: canvas.width / 2 + (Math.random() * 80 - 40),
-    y: canvas.height / 2 + (Math.random() * 80 - 40),
+    x: canvas.width / 2 + (Math.random() * 60 - 30),
+    y: canvas.height / 2 + (Math.random() * 60 - 30),
     size: 70,
     rotation: 0,
     color: '#FFFFFF',
@@ -744,8 +769,22 @@ function addSticker(type, content) {
   };
   appState.stickers.push(newSticker);
   appState.selectedStickerIdx = appState.stickers.length - 1;
+  
+  if (!appState.recentStickers.includes(content)) {
+    appState.recentStickers.push(content);
+    updateRecentStickersBar();
+  }
+
   showStickerControls(newSticker);
   renderStrip();
+}
+
+function addCustomInputSticker() {
+  const input = document.getElementById('customEmojiInput');
+  const val = input.value.trim();
+  if (!val) return;
+  addSticker('text', val);
+  input.value = '';
 }
 
 function renderAllStickers(ctx) {
@@ -760,16 +799,15 @@ function renderAllStickers(ctx) {
       ctx.textBaseline = 'middle';
       ctx.fillText(st.content, 0, 0);
     } else {
-      ctx.font = `bold ${st.size * 0.75}px "${st.font || 'Pretendard'}"`;
+      ctx.font = `bold ${st.size * 0.7}px "${st.font || 'Pretendard'}"`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = st.color || '#ffffff';
+      ctx.fillStyle = st.color || '#FFFFFF';
       ctx.shadowColor = 'rgba(0,0,0,0.5)';
       ctx.shadowBlur = 6;
       ctx.fillText(st.content, 0, 0);
     }
 
-    // 선택된 스티커 강조 외곽 점선
     if (idx === appState.selectedStickerIdx) {
       ctx.strokeStyle = '#f43f5e';
       ctx.lineWidth = 3;
@@ -788,11 +826,8 @@ function showStickerControls(st) {
   document.getElementById('stickerRotateSlider').value = st.rotation || 0;
   
   const textRow = document.getElementById('stickerTextCustomRow');
-  if (st.type === 'text') {
-    textRow.classList.remove('hidden');
-  } else {
-    textRow.classList.add('hidden');
-  }
+  if (st.type === 'text') textRow.classList.remove('hidden');
+  else textRow.classList.add('hidden');
 }
 
 function setupCanvasInteractions() {
@@ -816,8 +851,7 @@ function setupCanvasInteractions() {
 
     for (let i = appState.stickers.length - 1; i >= 0; i--) {
       const st = appState.stickers[i];
-      const dist = Math.hypot(st.x - x, st.y - y);
-      if (dist <= st.size) {
+      if (Math.hypot(st.x - x, st.y - y) <= st.size) {
         hitIndex = i;
         break;
       }
@@ -908,7 +942,7 @@ function clearAllStickers() {
 }
 
 /* ==========================================================================
-   7. 에디터 조절 핸들러 (레이아웃, 필터, 여백, 되돌리기)
+   7. 에디터 UI 조작 핸들러 & Undo/Redo
    ========================================================================== */
 function changeLayout(layoutType, btn) {
   saveStateForUndo();
@@ -933,9 +967,7 @@ function setFrameStyle(style, btn) {
 function handleFilterClick(filterName, btn) {
   saveStateForUndo();
   if (appState.activeFilter === filterName) {
-    // 동일 필터 재터치 시 미세조정 패널 토글
-    const panel = document.getElementById('filterFineTunePanel');
-    panel.classList.toggle('hidden');
+    document.getElementById('filterFineTunePanel').classList.toggle('hidden');
   } else {
     appState.activeFilter = filterName;
     document.querySelectorAll('.filter-btn').forEach(b => {
@@ -956,6 +988,12 @@ function onFineTuneSliderChange() {
 
 function onThicknessChange(val) {
   appState.frameThickness = Number(val);
+  const tag = document.getElementById('valThickness');
+  if (tag) {
+    if (val < 25) tag.textContent = '얇음';
+    else if (val > 55) tag.textContent = '두꺼움';
+    else tag.textContent = '보통';
+  }
   renderStrip();
 }
 
@@ -1059,7 +1097,7 @@ function applySnapshot(snap) {
 }
 
 /* ==========================================================================
-   8. 다운로드 & 비디오/PDF & QR코드 공유 엔진
+   8. 이미지 / 비디오 / PDF 저장 & QR 공유
    ========================================================================== */
 function downloadLocalImage() {
   const canvas = document.getElementById('photoCanvas');
@@ -1091,11 +1129,10 @@ function autoSavePDF() {
   const canvas = document.getElementById('photoCanvas');
   const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
-  // 4x6 인치 규격 PDF (102 x 152 mm)
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: [102, 152]
+    format: [102, 152] // 4x6 인치 규격
   });
 
   pdf.addImage(imgData, 'JPEG', 0, 0, 102, 152);
@@ -1104,11 +1141,10 @@ function autoSavePDF() {
 
 function autoSaveVideo() {
   if (appState.shotVideoBlobs.length === 0) {
-    alert("녹화된 비디오 클립이 없습니다. 사진으로 저장합니다.");
+    alert("녹화된 비디오 클립이 없습니다. 이미지로 저장합니다.");
     downloadLocalImage();
     return;
   }
-  // 가장 첫 번째 또는 최근 컷의 고화질 비디오 다운로드
   const blob = appState.shotVideoBlobs[0];
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1126,15 +1162,14 @@ function saveAndGenerateQR() {
   qrContainer.innerHTML = '';
 
   const canvas = document.getElementById('photoCanvas');
-  // GitHub Pages 정적 환경: Data URL을 기반으로 초고속 QR 생성
-  const downloadUrl = canvas.toDataURL('image/png', 0.9);
+  const downloadUrl = canvas.toDataURL('image/png', 0.85);
 
   new QRCode(qrContainer, {
-    text: downloadUrl.slice(0, 1800), // QR 규격 내 데이터 인코딩
+    text: downloadUrl.slice(0, 1800),
     width: 170,
     height: 170,
     colorDark: "#020617",
-    colorLight: "#ffffff",
+    colorLight: "#FFFFFF",
     correctLevel: QRCode.CorrectLevel.M
   });
 
@@ -1168,7 +1203,7 @@ function resetApp() {
 }
 
 /* ==========================================================================
-   9. 후기 게시판 & 관리자 통계 대시보드
+   9. 후기 게시판 & 5초 롱프레스 관리자 센터
    ========================================================================== */
 function fetchCloudBoardPosts() {
   const list = document.getElementById('boardListArea');
@@ -1196,8 +1231,7 @@ function fetchCloudBoardPosts() {
 
 function updateRatingUI(val) {
   document.getElementById('ratingValueText').textContent = Number(val).toFixed(1);
-  const stars = '⭐'.repeat(Math.round(val));
-  document.getElementById('ratingStarDisplay').textContent = stars;
+  document.getElementById('ratingStarDisplay').textContent = '⭐'.repeat(Math.round(val));
 }
 
 function submitBoardPost() {
@@ -1220,33 +1254,45 @@ function submitBoardPost() {
 
   localStorage.setItem('studio_reviews', JSON.stringify(stored));
   document.getElementById('boardContent').value = '';
-  alert("소중한 후기가 등록되었습니다!");
+  alert("후기가 등록되었습니다!");
   fetchCloudBoardPosts();
 }
 
-// 관리자 모드
-let adminAttempts = 0;
-let adminLockoutUntil = 0;
+// 5초 롱프레스 관리자 진입 엔진
+let adminLongPressTimer = null;
 
-function promptAdminMode() {
-  if (Date.now() < adminLockoutUntil) {
-    const remainSec = Math.ceil((adminLockoutUntil - Date.now()) / 1000);
-    alert(`5회 연속 오류로 잠겨있습니다. ${remainSec}초 후 다시 시도하세요.`);
-    return;
+function setupAdminLongPress() {
+  const icon = document.getElementById('cameraAdminIcon');
+  if (!icon) return;
+
+  function startPress() {
+    adminLongPressTimer = setTimeout(() => {
+      openAdminWithAuth();
+    }, 5000); // 5초 유지 시 실행
   }
 
+  function cancelPress() {
+    if (adminLongPressTimer) {
+      clearTimeout(adminLongPressTimer);
+      adminLongPressTimer = null;
+    }
+  }
+
+  icon.addEventListener('mousedown', startPress);
+  icon.addEventListener('mouseup', cancelPress);
+  icon.addEventListener('mouseleave', cancelPress);
+
+  icon.addEventListener('touchstart', startPress, { passive: true });
+  icon.addEventListener('touchend', cancelPress);
+  icon.addEventListener('touchcancel', cancelPress);
+}
+
+function openAdminWithAuth() {
   const pw = prompt("관리자 비밀번호를 입력하세요:");
   if (pw === '1234' || pw === 'admin') {
-    adminAttempts = 0;
     openAdminDashboard();
   } else if (pw !== null) {
-    adminAttempts++;
-    if (adminAttempts >= 5) {
-      adminLockoutUntil = Date.now() + (5 * 60 * 1000); // 5분 차단
-      alert("비밀번호 5회 오류! 보안을 위해 5분간 접근이 차단됩니다.");
-    } else {
-      alert(`비밀번호가 일치하지 않습니다. (${adminAttempts}/5)`);
-    }
+    alert("비밀번호가 올바르지 않습니다.");
   }
 }
 
@@ -1261,22 +1307,18 @@ function closeAdminDashboard() {
 }
 
 function switchAdminTab(tabName) {
-  ['stats', 'theme', 'notices', 'reviews'].forEach(t => {
+  ['stats', 'theme', 'notices'].forEach(t => {
     const el = document.getElementById(`adminTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
     const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
     if (el) el.classList.toggle('hidden', t !== tabName);
     if (btn) {
-      if (t === tabName) {
-        btn.className = "flex-1 py-3 border-b-2 border-theme text-theme font-black";
-      } else {
-        btn.className = "flex-1 py-3 border-b-2 border-transparent text-slate-400 font-bold";
-      }
+      if (t === tabName) btn.className = "flex-1 py-3 border-b-2 border-theme text-theme font-black";
+      else btn.className = "flex-1 py-3 border-b-2 border-transparent text-slate-400 font-bold";
     }
   });
 }
 
 function initAdminStats() {
-  // 모의 방문자 통계 업데이트
   const today = Math.floor(Math.random() * 50) + 120;
   document.getElementById('statTodayCount').textContent = today;
   document.getElementById('statTotalCount').textContent = today * 14;
@@ -1285,16 +1327,15 @@ function initAdminStats() {
   document.getElementById('dashMonth').textContent = today * 25;
   document.getElementById('dashTotal').textContent = today * 75;
 
-  // Chart.js 렌더링
   const hourlyCanvas = document.getElementById('chartHourly');
-  if (hourlyCanvas) {
-    new Chart(hourlyCanvas, {
+  if (hourlyCanvas && !hourlyCanvas.chartInstance) {
+    hourlyCanvas.chartInstance = new Chart(hourlyCanvas, {
       type: 'line',
       data: {
         labels: ['09시', '11시', '13시', '15시', '17시', '19시', '21시'],
         datasets: [{
-          label: '방문자 수',
-          data: [12, 35, 68, 85, 92, 110, 74],
+          label: '시간대별 방문자',
+          data: [15, 38, 72, 88, 95, 120, 80],
           borderColor: '#e11d48',
           tension: 0.3,
           fill: false
@@ -1305,13 +1346,13 @@ function initAdminStats() {
   }
 
   const deviceCanvas = document.getElementById('chartDevice');
-  if (deviceCanvas) {
-    new Chart(deviceCanvas, {
+  if (deviceCanvas && !deviceCanvas.chartInstance) {
+    deviceCanvas.chartInstance = new Chart(deviceCanvas, {
       type: 'doughnut',
       data: {
-        labels: ['아이패드', '아이폰', 'PC 웹캠'],
+        labels: ['아이패드', '스마트폰', 'PC 웹캠'],
         datasets: [{
-          data: [65, 25, 10],
+          data: [60, 30, 10],
           backgroundColor: ['#e11d48', '#fb7185', '#cbd5e1']
         }]
       },
@@ -1322,32 +1363,22 @@ function initAdminStats() {
 
 function applyAppTheme(colorName) {
   const root = document.documentElement;
-  if (colorName === 'rose') {
-    root.style.setProperty('--theme-primary', '#e11d48');
-    root.style.setProperty('--theme-primary-hover', '#be123c');
-    root.style.setProperty('--theme-light', '#ffe4e6');
-  } else if (colorName === 'black') {
-    root.style.setProperty('--theme-primary', '#0f172a');
-    root.style.setProperty('--theme-primary-hover', '#020617');
-    root.style.setProperty('--theme-light', '#f1f5f9');
-  } else if (colorName === 'blue') {
-    root.style.setProperty('--theme-primary', '#0284c7');
-    root.style.setProperty('--theme-primary-hover', '#0369a1');
-    root.style.setProperty('--theme-light', '#e0f2fe');
-  } else if (colorName === 'purple') {
-    root.style.setProperty('--theme-primary', '#7c3aed');
-    root.style.setProperty('--theme-primary-hover', '#6d28d9');
-    root.style.setProperty('--theme-light', '#ede9fe');
-  } else if (colorName === 'green') {
-    root.style.setProperty('--theme-primary', '#059669');
-    root.style.setProperty('--theme-primary-hover', '#047857');
-    root.style.setProperty('--theme-light', '#d1fae5');
-  }
-  alert("메인 UI 테마 색상이 변경되었습니다.");
+  const themeMap = {
+    rose: { primary: '#e11d48', hover: '#be123c', light: '#ffe4e6' },
+    black: { primary: '#0f172a', hover: '#020617', light: '#f1f5f9' },
+    blue: { primary: '#0284c7', hover: '#0369a1', light: '#e0f2fe' },
+    purple: { primary: '#7c3aed', hover: '#6d28d9', light: '#ede9fe' },
+    green: { primary: '#059669', hover: '#047857', light: '#d1fae5' }
+  };
+  const selected = themeMap[colorName] || themeMap.rose;
+  root.style.setProperty('--theme-primary', selected.primary);
+  root.style.setProperty('--theme-primary-hover', selected.hover);
+  root.style.setProperty('--theme-light', selected.light);
+  alert("UI 메인 테마 색상이 변경되었습니다.");
 }
 
 function writeAdminNotice() {
-  const msg = prompt("홈 화면에 띄울 새 공지사항 문구를 입력하세요:");
+  const msg = prompt("홈 화면에 띄울 공지사항 문구를 입력하세요:");
   if (!msg) return;
   const banner = document.getElementById('mainNoticeArea');
   const container = document.getElementById('noticeListContainer');
@@ -1356,9 +1387,10 @@ function writeAdminNotice() {
   alert("공지사항이 등록되었습니다.");
 }
 
-// 초기 로딩 시 Lucide 아이콘 활성화
+// 10. 초기 로딩 이벤트 바인딩
 window.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) lucide.createIcons();
   fetchCloudBoardPosts();
   initAdminStats();
+  setupAdminLongPress();
 });
