@@ -4,17 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>추억의 네컷 Studio Pro</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- jsPDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- 스타일시트 연동 -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-rose-100 selection:text-rose-700">
@@ -22,15 +15,15 @@
   <!-- 플래시 효과 오버레이 -->
   <div id="flashOverlay" class="fixed inset-0 bg-white z-50 pointer-events-none hidden"></div>
 
-  <!-- 숨겨진 캡처용 캔버스 및 앨범 입력 -->
+  <!-- 숨겨진 캡처용 캔버스 및 파일 입력 -->
   <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
   <!-- ================= HEADER ================= -->
-  <header class="bg-white border-b border-slate-200 px-4 py-2.5 sticky top-0 z-30 shadow-2xs">
+  <header class="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-30 shadow-2xs">
     <div class="max-w-md mx-auto flex items-center justify-between">
       <div class="flex items-center space-x-2">
-        <!-- 3초 롱프레스 관리자 진입 버튼 -->
+        <!-- 관리자 진입용 3초 롱프레스 아이콘 -->
         <div id="cameraAdminIcon" class="w-9 h-9 bg-rose-500 rounded-xl flex items-center justify-center text-white shadow-sm cursor-pointer active:scale-95 transition">
           <i data-lucide="camera" class="w-5 h-5"></i>
         </div>
@@ -39,15 +32,15 @@
             <h1 class="font-black text-base tracking-tight text-slate-900">추억의 네컷</h1>
             <span class="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-2xs">Pro</span>
           </div>
-          <p class="text-[10px] text-slate-400 font-medium">v14.1 Studio Edition</p>
+          <p class="text-[10px] text-slate-400 font-medium">v14.0 Base Studio</p>
         </div>
       </div>
-      <!-- 실시간 공통 누적 현황 -->
+      <!-- 누적 현황 배지 및 관리자 버튼 -->
       <div class="flex items-center space-x-2 text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
         <span>오늘 <b id="statTodayCount" class="text-rose-600">--</b></span>
         <span class="text-slate-300">|</span>
         <span>누적 <b id="statTotalCount" class="text-slate-800">--</b></span>
-        <button onclick="openAdminDashboard()" class="text-slate-400 hover:text-slate-700 transition ml-1" title="관리자 센터">
+        <button onclick="openAdminDashboard()" class="text-slate-400 hover:text-slate-700 transition ml-1">
           <i data-lucide="settings" class="w-4 h-4"></i>
         </button>
       </div>
@@ -55,26 +48,26 @@
   </header>
 
   <!-- ================= MAIN CONTAINER ================= -->
-  <main class="max-w-md w-full mx-auto p-3 flex-1 flex flex-col justify-center">
+  <main class="max-w-md w-full mx-auto p-4 flex-1 flex flex-col justify-center">
 
-    <!-- 1. 홈 화면 (Home UI) -->
+    <!-- 1. 홈 화면 (v14.0 기본 UI) -->
     <section id="screenHome" class="space-y-4">
-      <!-- 실시간 동기화 공지사항 배너 -->
-      <div id="mainNoticeArea" class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 shadow-xs space-y-1.5">
+      <!-- 공지사항 배너 -->
+      <div id="mainNoticeArea" class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 shadow-xs space-y-1">
         <div class="flex items-center justify-between">
           <span class="text-[11px] font-black text-amber-800 uppercase tracking-wider flex items-center gap-1">
-            <i data-lucide="bell" class="w-3.5 h-3.5"></i> 실시간 공지사항
+            <i data-lucide="bell" class="w-3.5 h-3.5"></i> 공지사항
           </span>
-          <span id="noticeDateBadge" class="text-[10px] text-amber-600 font-bold">LIVE UPDATE</span>
+          <span class="text-[10px] text-amber-600 font-bold">2026.06.08</span>
         </div>
-        <div id="noticeListContainer" class="space-y-1">
-          <!-- JS 동적 로드 -->
+        <div id="noticeListContainer">
+          <p class="text-xs font-bold text-slate-800">📌 추억의 네컷 v14.0 기본 베이스 복구 완료! 15열 이모티콘과 캔버스 핀치 줌이 활성화되었습니다.</p>
         </div>
       </div>
 
-      <!-- 메인 액션 카드 (촬영 & 간격 선택) -->
+      <!-- 메인 촬영 액션 & 촬영 간격 3단 박스 -->
       <div class="grid grid-cols-2 gap-3">
-        <button onclick="startPhotoSession()" class="bg-theme hover:bg-theme-hover text-white p-5 rounded-2xl shadow-lg flex flex-col items-center justify-center space-y-2 active:scale-95 transition group">
+        <button onclick="startPhotoSession()" class="bg-theme hover:bg-theme-hover text-white p-5 rounded-2xl shadow-lg flex flex-col items-center justify-center space-y-2 active:scale-95 transition text-left group">
           <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
             <i data-lucide="camera" class="w-6 h-6 text-white"></i>
           </div>
@@ -84,7 +77,7 @@
           </div>
         </button>
 
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-1">
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-1.5">
           <span class="text-[11px] font-black text-slate-700 flex items-center gap-1">
             <i data-lucide="timer" class="w-3.5 h-3.5 text-rose-500"></i> 촬영 간격
           </span>
@@ -97,61 +90,61 @@
       </div>
 
       <!-- 갤러리 합성 버튼 -->
-      <button onclick="triggerGalleryUpload()" class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-3.5 rounded-2xl shadow-xs flex items-center justify-center space-x-2 active:scale-98 transition">
+      <button onclick="triggerGalleryUpload()" class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-4 rounded-2xl shadow-xs flex items-center justify-center space-x-2 active:scale-98 transition">
         <i data-lucide="image" class="w-5 h-5 text-rose-500"></i>
         <span class="font-black text-xs">갤러리 앨범에서 4장 선택하여 합성하기</span>
       </button>
 
-      <!-- 🌟 완전 공개형 이용 후기 & 별점 게시판 -->
+      <!-- 🌟 100% 완전 공개 이용 후기 & 터치 별점 시스템 -->
       <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-3">
         <div class="flex items-center justify-between border-b border-slate-100 pb-2">
           <div class="flex items-center space-x-1.5">
             <i data-lucide="message-square-heart" class="w-4 h-4 text-rose-500"></i>
-            <h3 class="font-black text-xs text-slate-800">모두의 소리함 & 후기</h3>
+            <h3 class="font-black text-xs text-slate-800">이용 후기 & 고객 소리함</h3>
           </div>
           <div class="flex items-center space-x-1 text-xs font-bold text-amber-500">
-            <span id="avgStarIcon">⭐</span>
-            <span id="avgRatingText" class="text-slate-800 font-black">5.0</span>
-            <span id="totalReviewCount" class="text-slate-400 text-[10px]">(0개)</span>
+            <span id="ratingStarDisplay">⭐</span>
+            <span id="ratingValueText" class="text-slate-800 font-black">5.0</span>
+            <span id="totalReviewCountText" class="text-slate-400 text-[10px]">(0개)</span>
           </div>
         </div>
 
-        <!-- 후기 작성 폼 (비밀번호, 비밀글 제거된 100% 공개 폼) -->
+        <!-- 공개 후기 입력 폼 (비밀번호, 삭제, 비밀글 완전 제거) -->
         <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
           <div class="flex items-center justify-between gap-2">
             <input type="text" id="boardNickname" placeholder="닉네임 (미입력시 익명)" class="w-1/2 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold outline-none focus:border-rose-500">
             
-            <!-- 🌟 별점 5개 클릭 선택기 (1번 반채움 / 2번 완채움) -->
-            <div class="flex items-center space-x-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200 select-none">
+            <!-- 🌟 1번 터치 반별 / 2번 터치 완별 별점 UI -->
+            <div class="flex items-center space-x-1 bg-white px-2 py-1 rounded-lg border border-slate-200 select-none">
               <span id="starRatingBox" class="flex space-x-0.5 text-base cursor-pointer">
-                <span onclick="handleStarClick(1)" id="star1" class="hover:scale-110 transition">★</span>
-                <span onclick="handleStarClick(2)" id="star2" class="hover:scale-110 transition">★</span>
-                <span onclick="handleStarClick(3)" id="star3" class="hover:scale-110 transition">★</span>
-                <span onclick="handleStarClick(4)" id="star4" class="hover:scale-110 transition">★</span>
-                <span onclick="handleStarClick(5)" id="star5" class="hover:scale-110 transition">★</span>
+                <span onclick="handleStarClick(1)" id="star1" class="transition hover:scale-110">★</span>
+                <span onclick="handleStarClick(2)" id="star2" class="transition hover:scale-110">★</span>
+                <span onclick="handleStarClick(3)" id="star3" class="transition hover:scale-110">★</span>
+                <span onclick="handleStarClick(4)" id="star4" class="transition hover:scale-110">★</span>
+                <span onclick="handleStarClick(5)" id="star5" class="transition hover:scale-110">★</span>
               </span>
               <span id="starScoreValue" class="text-xs font-black text-amber-600 ml-1">5.0</span>
             </div>
           </div>
 
-          <textarea id="boardContent" placeholder="추억의 네컷 이용 소감을 자유롭게 남겨주세요! (Gemini AI가 실시간으로 소중한 감사 코멘트를 달아드립니다)" class="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-xs outline-none focus:border-rose-500 resize-none h-14"></textarea>
+          <textarea id="boardContent" placeholder="추억의 네컷 이용 소감을 남겨주세요! (Gemini AI가 실시간으로 감사 코멘트를 작성해 드립니다)" class="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-xs outline-none focus:border-rose-500 resize-none h-14"></textarea>
 
-          <div class="flex justify-between items-center pt-1">
-            <span class="text-[10px] text-slate-400">※ 모든 후기는 누구나 볼 수 있는 공개 모드로 등록됩니다.</span>
-            <button onclick="submitBoardPost()" id="btnSubmitReview" class="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black shadow-xs active:scale-95 transition flex items-center space-x-1">
-              <span>후기 등록</span>
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] text-slate-400">※ 등록된 후기는 모든 접속자가 함께 볼 수 있도록 공개됩니다.</span>
+            <button onclick="submitBoardPost()" id="btnSubmitReview" class="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black shadow-xs active:scale-95 transition">
+              후기 등록
             </button>
           </div>
         </div>
 
-        <!-- 실시간 후기 목록 -->
-        <div id="boardListArea" class="space-y-2 max-h-44 overflow-y-auto no-scrollbar pt-1">
+        <!-- 공개 후기 목록 -->
+        <div id="boardListArea" class="space-y-2 max-h-40 overflow-y-auto no-scrollbar">
           <!-- 동적 로드 -->
         </div>
       </div>
     </section>
 
-    <!-- 2. 실시간 촬영 뷰파인더 (Live Shoot Screen) -->
+    <!-- 2. 실시간 촬영 화면 -->
     <section id="screenLiveShoot" class="hidden space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-2">
@@ -190,16 +183,16 @@
         <div class="flex justify-between items-center">
           <div>
             <h2 class="font-black text-sm text-slate-900">베스트 4컷 고르기</h2>
-            <p class="text-[11px] text-slate-400">슬롯을 터치하고 아래 사진을 골라 채워주세요.</p>
+            <p class="text-[11px] text-slate-400">슬롯을 누른 후 채울 사진을 선택하세요.</p>
           </div>
           <button onclick="confirmSelectedFour()" class="bg-theme text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm active:scale-95 transition">꾸미기 시작 ➔</button>
         </div>
 
         <div class="grid grid-cols-4 gap-2 bg-slate-900 p-2.5 rounded-xl">
-          <div id="previewSlot0" onclick="selectSlotForAssignment(0)" class="aspect-[3/2] bg-slate-800 border-2 border-theme rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative shadow-md">1번</div>
-          <div id="previewSlot1" onclick="selectSlotForAssignment(1)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">2번</div>
-          <div id="previewSlot2" onclick="selectSlotForAssignment(2)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">3번</div>
-          <div id="previewSlot3" onclick="selectSlotForAssignment(3)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">4번</div>
+          <div id="previewSlot0" onclick="selectSlotForAssignment(0)" class="aspect-[3/2] bg-slate-800 border-2 border-theme rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative shadow-md">1번 슬롯</div>
+          <div id="previewSlot1" onclick="selectSlotForAssignment(1)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">2번 슬롯</div>
+          <div id="previewSlot2" onclick="selectSlotForAssignment(2)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">3번 슬롯</div>
+          <div id="previewSlot3" onclick="selectSlotForAssignment(3)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">4번 슬롯</div>
         </div>
       </div>
 
@@ -208,120 +201,112 @@
       </div>
     </section>
 
-    <!-- 4. 🌟 에디터 스튜디오 화면 (세로모드 7:3 분할 + 핀치 줌 캔버스) -->
-    <section id="screenEdit" class="hidden flex flex-col h-full">
-      <!-- 상단 컨트롤 툴바 -->
-      <div class="bg-white px-3 py-2 border-b border-slate-200 flex items-center justify-between shrink-0 rounded-t-2xl shadow-2xs">
+    <!-- 4. 에디터 스튜디오 화면 (v14.0 레이아웃 + 핀치 줌 캔버스) -->
+    <section id="screenEdit" class="hidden flex flex-col h-[85vh]">
+      <!-- 고정 상단 툴바 -->
+      <div class="bg-white px-4 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0 rounded-t-2xl shadow-2xs">
         <div class="flex items-center space-x-1.5">
           <button onclick="undo()" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 text-xs font-bold"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
           <button onclick="redo()" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 text-xs font-bold"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i></button>
-          <button onclick="resetCanvasZoom()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-bold text-slate-600">줌 리셋 (100%)</button>
+          <button onclick="resetCanvasZoom()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-bold text-slate-600">줌 리셋</button>
         </div>
-        <div class="flex items-center space-x-1.5">
-          <button onclick="showScreen('screenPick')" class="px-2.5 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">사진 재선택</button>
-          <button onclick="saveAndGenerateQR()" class="px-3.5 py-1.5 bg-theme text-white rounded-xl text-xs font-black shadow-sm">완료 및 QR</button>
+        <div class="flex items-center space-x-2">
+          <button onclick="showScreen('screenPick')" class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">사진 재선택</button>
+          <button onclick="saveAndGenerateQR()" class="px-4 py-1.5 bg-theme text-white rounded-xl text-xs font-black shadow-sm">완료 및 QR</button>
         </div>
       </div>
 
-      <!-- 7:3 컨테이너 (모바일에서 캔버스 70% : 툴 30%) -->
-      <div class="editor-container-portrait flex-1 overflow-hidden bg-slate-200 relative">
-        
-        <!-- 캔버스 작업대 영역 (7 비율, 터치 핀치 줌 지원) -->
-        <div id="canvasViewport" class="editor-canvas-box w-full flex items-center justify-center overflow-hidden p-2 relative touch-none select-none">
-          <div id="canvasZoomWrapper" class="relative flex items-center justify-center">
-            <canvas id="photoCanvas" class="shadow-2xl rounded-lg bg-white max-h-full max-w-full object-contain cursor-grab"></canvas>
-          </div>
-          <!-- 핀치 줌 힌트 -->
-          <div class="absolute bottom-2 left-2 pointer-events-none bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-xs">
-            🤏 두 손가락으로 확대 / 축소
+      <!-- 🌟 핀치 줌(확대/축소) 지원 캔버스 작업 영역 -->
+      <div id="canvasViewport" class="flex-1 bg-slate-200 overflow-hidden relative p-4 flex items-center justify-center select-none touch-none">
+        <div id="canvasZoomWrapper" class="relative flex items-center justify-center">
+          <canvas id="photoCanvas" class="shadow-2xl rounded-lg bg-white max-w-full max-h-[50vh] object-contain"></canvas>
+        </div>
+        <div class="absolute bottom-2 left-2 pointer-events-none bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-xs">
+          🤏 두 손가락으로 사진 확대 / 축소
+        </div>
+      </div>
+
+      <!-- 하단 편집 패널 -->
+      <div class="bg-white border-t border-slate-200 p-3 shrink-0 rounded-b-2xl space-y-3 max-h-[38vh] overflow-y-auto">
+        <!-- 탭 메뉴 -->
+        <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-black">
+          <button onclick="switchEditTab('layout')" id="editTabBtnLayout" class="flex-1 py-1.5 bg-white text-slate-900 rounded-lg shadow-2xs">레이아웃</button>
+          <button onclick="switchEditTab('frame')" id="editTabBtnFrame" class="flex-1 py-1.5 text-slate-500 rounded-lg">프레임</button>
+          <button onclick="switchEditTab('filter')" id="editTabBtnFilter" class="flex-1 py-1.5 text-slate-500 rounded-lg">감성필터</button>
+          <button onclick="switchEditTab('sticker')" id="editTabBtnSticker" class="flex-1 py-1.5 text-slate-500 rounded-lg">스티커</button>
+        </div>
+
+        <!-- 1. 레이아웃 탭 -->
+        <div id="editTabContentLayout" class="space-y-2">
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="changeLayout('strip', this)" class="layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs shadow-sm">1×4 세로스트립</button>
+            <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 바둑판</button>
+            <button onclick="changeLayout('twin', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">4×6 2줄인쇄</button>
           </div>
         </div>
 
-        <!-- 하단 에디터 툴 영역 (3 비율, 스크롤 완벽 지원) -->
-        <div class="editor-tools-box w-full bg-white border-t border-slate-200 p-3 space-y-3 shadow-lg">
-          <!-- 탭 버튼 (레이아웃 / 프레임 / 필터 / 스티커) -->
-          <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-black shrink-0">
-            <button onclick="switchEditTab('layout')" id="editTabBtnLayout" class="flex-1 py-1.5 bg-white text-slate-900 rounded-lg shadow-2xs">레이아웃</button>
-            <button onclick="switchEditTab('frame')" id="editTabBtnFrame" class="flex-1 py-1.5 text-slate-500 rounded-lg">프레임</button>
-            <button onclick="switchEditTab('filter')" id="editTabBtnFilter" class="flex-1 py-1.5 text-slate-500 rounded-lg">감성필터</button>
-            <button onclick="switchEditTab('sticker')" id="editTabBtnSticker" class="flex-1 py-1.5 text-slate-500 rounded-lg">스티커</button>
+        <!-- 2. 프레임 탭 -->
+        <div id="editTabContentFrame" class="hidden space-y-2">
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="setFrameStyle('simple', this)" class="style-btn bg-theme text-white font-black py-2 rounded-xl text-xs border border-theme shadow-sm">포토이지 (상단)</button>
+            <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs border border-transparent">추억의네컷 (중간)</button>
+            <button onclick="setFrameStyle('bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs border border-transparent">인생4컷 (하단)</button>
+          </div>
+          <div id="frameColorGrid" class="flex items-center space-x-1.5 overflow-x-auto py-1 no-scrollbar"></div>
+        </div>
+
+        <!-- 3. 필터 탭 -->
+        <div id="editTabContentFilter" class="hidden space-y-2">
+          <div class="grid grid-cols-4 gap-1.5">
+            <button onclick="handleFilterClick('normal', this)" class="filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg text-xs border border-theme">원본</button>
+            <button onclick="handleFilterClick('bright', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">뽀샤시</button>
+            <button onclick="handleFilterClick('radiant', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">화사한</button>
+            <button onclick="handleFilterClick('warm', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">따뜻한</button>
+            <button onclick="handleFilterClick('cool', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">차가운</button>
+            <button onclick="handleFilterClick('mood', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">감성무드</button>
+            <button onclick="handleFilterClick('retro', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">레트로</button>
+            <button onclick="handleFilterClick('mono', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">흑백</button>
+          </div>
+        </div>
+
+        <!-- 4. 🌟 스티커 탭 (이모티콘 60개 15열 4줄 배열) -->
+        <div id="editTabContentSticker" class="hidden space-y-2.5">
+          <div class="flex space-x-1.5">
+            <input type="text" id="customEmojiInput" placeholder="문구 또는 이모지 직접 입력" class="flex-1 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold outline-none focus:border-rose-500">
+            <button onclick="addCustomInputSticker()" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-xs">추가</button>
           </div>
 
-          <!-- 1. 레이아웃 탭 -->
-          <div id="editTabContentLayout" class="space-y-2">
-            <div class="grid grid-cols-3 gap-2">
-              <button onclick="changeLayout('strip', this)" class="layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs shadow-sm">1×4 세로스트립</button>
-              <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 바둑판</button>
-              <button onclick="changeLayout('twin', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">4×6 2줄인쇄</button>
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-[10px] font-bold text-slate-500">이모티콘 팩 (60종 - 가로 15열 정렬)</span>
             </div>
+            <div id="emojiGrid" class="emoji-grid-15 bg-slate-50 p-2 rounded-xl border border-slate-200"></div>
           </div>
 
-          <!-- 2. 프레임 탭 -->
-          <div id="editTabContentFrame" class="hidden space-y-2">
-            <div class="grid grid-cols-3 gap-2">
-              <button onclick="setFrameStyle('simple', this)" class="style-btn bg-theme text-white font-black py-2 rounded-xl text-xs border border-theme shadow-sm">포토이지 (상단)</button>
-              <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs border border-transparent">추억의네컷 (중간)</button>
-              <button onclick="setFrameStyle('bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs border border-transparent">인생4컷 (하단)</button>
-            </div>
-            <div id="frameColorGrid" class="flex items-center space-x-1.5 overflow-x-auto py-1 no-scrollbar"></div>
+          <div>
+            <span class="text-[10px] font-bold text-slate-500 block mb-1">감성 레터링 (20종)</span>
+            <div id="textStickerGrid" class="flex flex-wrap gap-1"></div>
           </div>
+        </div>
 
-          <!-- 3. 필터 탭 -->
-          <div id="editTabContentFilter" class="hidden space-y-2">
-            <div class="grid grid-cols-4 gap-1.5">
-              <button onclick="handleFilterClick('normal', this)" class="filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg text-xs border border-theme">원본</button>
-              <button onclick="handleFilterClick('bright', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">뽀샤시</button>
-              <button onclick="handleFilterClick('radiant', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">화사한</button>
-              <button onclick="handleFilterClick('warm', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">따뜻한</button>
-              <button onclick="handleFilterClick('cool', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">차가운</button>
-              <button onclick="handleFilterClick('mood', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">감성무드</button>
-              <button onclick="handleFilterClick('retro', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">레트로</button>
-              <button onclick="handleFilterClick('mono', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">흑백</button>
+        <!-- 선택된 스티커 컨트롤 바 -->
+        <div id="stickerControlBar" class="hidden bg-rose-50 border border-rose-200 p-2.5 rounded-xl space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold text-rose-900">
+            <span>✨ 선택된 스티커 조절</span>
+            <div class="space-x-1">
+              <button onclick="deleteSelectedSticker()" class="px-2.5 py-0.5 bg-rose-600 text-white rounded-lg text-[10px] font-black">삭제</button>
+              <button onclick="clearAllStickers()" class="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-lg text-[10px]">전체삭제</button>
             </div>
           </div>
-
-          <!-- 4. 🌟 스티커 탭 (60종 이모티콘 가로 15열 4줄 배열) -->
-          <div id="editTabContentSticker" class="hidden space-y-2.5">
-            <div class="flex space-x-1.5">
-              <input type="text" id="customEmojiInput" placeholder="나만의 문구 또는 이모지 입력" class="flex-1 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold outline-none focus:border-rose-500">
-              <button onclick="addCustomInputSticker()" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-xs">추가</button>
-            </div>
-
-            <!-- 이모티콘 팩 (가로 15열 4줄) -->
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-[10px] font-bold text-slate-500">이모티콘 팩 (60종) - 가로 15개 배열</span>
-                <span class="text-[9px] text-slate-400">터치하여 스티커 추가</span>
-              </div>
-              <div id="emojiGrid" class="emoji-grid-15 bg-slate-50 p-2 rounded-xl border border-slate-200"></div>
-            </div>
-
-            <!-- 감성 레터링 20종 -->
-            <div>
-              <span class="text-[10px] font-bold text-slate-500 block mb-1">감성 레터링 (20종)</span>
-              <div id="textStickerGrid" class="flex flex-wrap gap-1"></div>
-            </div>
-          </div>
-
-          <!-- 선택된 스티커 컨트롤 바 -->
-          <div id="stickerControlBar" class="hidden bg-rose-50 border border-rose-200 p-2.5 rounded-xl space-y-2">
-            <div class="flex justify-between items-center text-xs font-bold text-rose-900">
-              <span>✨ 선택된 스티커 조절</span>
-              <div class="space-x-1">
-                <button onclick="deleteSelectedSticker()" class="px-2.5 py-0.5 bg-rose-600 text-white rounded-lg text-[10px] font-black">삭제</button>
-                <button onclick="clearAllStickers()" class="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-lg text-[10px]">전체삭제</button>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div class="flex items-center space-x-1.5"><span class="text-[10px]">크기</span><input type="range" id="stickerSizeSlider" min="20" max="200" value="70" oninput="onSelectedStickerResize(this.value)" class="w-full accent-rose-500"></div>
-              <div class="flex items-center space-x-1.5"><span class="text-[10px]">회전</span><input type="range" id="stickerRotateSlider" min="0" max="360" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-full accent-rose-500"></div>
-            </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="flex items-center space-x-1.5"><span class="text-[10px]">크기</span><input type="range" id="stickerSizeSlider" min="20" max="200" value="70" oninput="onSelectedStickerResize(this.value)" class="w-full accent-rose-500"></div>
+            <div class="flex items-center space-x-1.5"><span class="text-[10px]">회전</span><input type="range" id="stickerRotateSlider" min="0" max="360" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-full accent-rose-500"></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 5. 결과 및 QR코드 화면 (Result Screen) -->
+    <!-- 5. 결과 및 QR 화면 (Result Screen) -->
     <section id="screenResult" class="hidden space-y-4 text-center">
       <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl space-y-4 max-w-xs mx-auto">
         <div class="space-y-1">
@@ -335,7 +320,7 @@
 
         <div class="bg-rose-50 border border-rose-200 p-3 rounded-2xl text-rose-900 text-xs font-bold space-y-1 text-left">
           <p class="font-black text-rose-600">💡 스마트폰 사진 다운로드 안내</p>
-          <p class="text-[11px] leading-relaxed">카메라 앱으로 QR을 비춘 뒤 열린 페이지에서 사진을 <b class="text-rose-700">길게 눌러 [사진 앱에 저장]</b>해 주세요!</p>
+          <p class="text-[11px] leading-relaxed">카메라 앱으로 QR을 비춘 뒤 연결된 페이지에서 사진을 <b class="text-rose-700">길게 눌러 [사진 앱에 저장]</b>을 선택해 주세요!</p>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -359,20 +344,20 @@
   </footer>
 
   <!-- ================= MODALS ================= -->
-  <!-- 갤러리 업로드 수집 모달 -->
+  <!-- 갤러리 업로드 모달 -->
   <div id="galleryCollectModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white max-w-xs w-full rounded-3xl p-5 shadow-2xl space-y-4 text-center">
       <h3 id="collectModalTitle" class="font-black text-sm text-slate-900">사진 수집 중 ( 0 / 4 )</h3>
       <div id="collectThumbGrid" class="flex justify-center space-x-2 py-2"></div>
-      <p class="text-xs text-slate-500">인생네컷 완성을 위해 총 4장의 사진을 골라주세요.</p>
+      <p class="text-xs text-slate-500">4장의 사진을 선택해 주세요.</p>
       <div class="grid grid-cols-2 gap-2">
-        <button onclick="triggerGalleryUpload()" class="bg-theme text-white py-2 rounded-xl text-xs font-bold">사진 추가하기</button>
+        <button onclick="triggerGalleryUpload()" class="bg-theme text-white py-2 rounded-xl text-xs font-bold">사진 추가</button>
         <button onclick="cancelGalleryCollect()" class="bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold">취소</button>
       </div>
     </div>
   </div>
 
-  <!-- 관리자 대시보드 모달 (비번 0724) -->
+  <!-- 관리자 모달 (비밀번호 0724) -->
   <div id="adminDashboardModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white max-w-md w-full rounded-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -389,7 +374,6 @@
         <button onclick="switchAdminTab('notices')" id="tabBtnNotices" class="flex-1 py-2.5 border-b-2 border-transparent text-slate-400">공지 관리</button>
       </div>
 
-      <!-- 누적 현황 탭 -->
       <div id="adminTabStats" class="space-y-3 text-xs">
         <div class="grid grid-cols-4 gap-2 text-center">
           <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400">오늘</p><b id="dashToday" class="text-rose-600 text-sm">--</b></div>
@@ -403,7 +387,6 @@
         </div>
       </div>
 
-      <!-- 테마 설정 탭 -->
       <div id="adminTabTheme" class="hidden space-y-3 text-xs">
         <p class="font-bold text-slate-700">전체 UI 메인 컬러 테마</p>
         <div class="grid grid-cols-5 gap-2">
@@ -415,9 +398,8 @@
         </div>
       </div>
 
-      <!-- 공지 관리 탭 -->
       <div id="adminTabNotices" class="hidden space-y-3 text-xs">
-        <p class="font-bold text-slate-700">새 공지 등록 (모든 방문자에게 노출)</p>
+        <p class="font-bold text-slate-700">새 공지 등록</p>
         <button onclick="writeAdminNotice()" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-black shadow-xs">새 공지사항 등록하기</button>
       </div>
     </div>
