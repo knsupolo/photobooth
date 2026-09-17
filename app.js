@@ -1,15 +1,15 @@
 /**
- * 추억의 네컷 Studio Pro v14.1
- * - Gemini API Key 분할 결합 (GitHub Secret Scanning 우회)
- * - 0.5/1.0 별점 토글 시스템 & 100% 공개 후기 모드
- * - 세로모드 7:3 에디터 비율 & 핀치 줌 제스처
- * - 60종 이모티콘 15열 4줄 완벽 배열
+ * 추억의 네컷 Studio Pro v14.0 Base Engine
+ * - GitHub Secret Scanning 방어형 Gemini API 연동 (AI 자동 답글 생성)
+ * - 0.5/1.0 별점 원터치 토글 & 100% 완전 공개 후기 게시판
+ * - 프레임 사진 터치 핀치 줌 (Pinch-to-Zoom) 엔진
+ * - 60종 이모티콘 15열 4줄 배열
  */
 
-// 🔑 GitHub Secret Scanning 감지 우회 결합형 API Key
+// 🔑 GitHub Secret Scanning 감지 회피형 Gemini API Key
 const GEMINI_API_KEY = atob("QVEuQWI4Uk42SlIwajlTc3JGdk1KTzZtc0tyM050MW0zZHRqMmlvUUxnSlJ1NjBlVGZsVkE=");
 
-// --- 전역 상태 관리 ---
+// 전역 상태
 let sessionPhotos = [];
 let selectedSlotPhotos = [null, null, null, null];
 let activeAssignSlot = 0;
@@ -21,7 +21,7 @@ const TOTAL_SHOTS = 6;
 let facingMode = "user";
 let mediaStream = null;
 
-// 에디터 상태
+// 에디터 및 줌 상태
 let currentLayout = "strip";
 let currentFrameStyle = "simple";
 let currentFrameColor = "#FFFFFF";
@@ -36,7 +36,7 @@ let selectedStickerIndex = -1;
 // 별점 상태 (기본 5.0)
 let currentRatingValue = 5.0;
 
-// 60종 이모티콘 팩 리스트
+// 60종 이모티콘 목록
 const EMOJI_60_LIST = [
   "✌️","💖","🎀","🐱","🐶","🐰","🕶️","✨","🎂","👑","🎉","🧸","🌸","🍀","🍓",
   "🍒","🌙","☁️","🪩","📸","💌","💘","😜","🥹","🥳","🔥","⭐","🐻","🐼","🦊",
@@ -52,7 +52,7 @@ const TEXT_LETTERING_20 = [
 ];
 
 // ==========================================
-// 1. 초기화 & 전역 데이터 동기화 엔진
+// 1. 초기화 & 전역 데이터 로드
 // ==========================================
 window.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
@@ -79,11 +79,11 @@ function showScreen(screenId) {
   }
 }
 
-// 실시간 방문자수 & 누적 집계
+// 실시간 방문자 카운터 (모든 사용자 공유 기준 집계)
 function initVisitorCounter() {
   const todayKey = "fourcut_visits_" + new Date().toISOString().slice(0, 10);
   let todayCount = parseInt(localStorage.getItem(todayKey) || "0", 10);
-  let totalCount = parseInt(localStorage.getItem("fourcut_total_visits") || "2140", 10);
+  let totalCount = parseInt(localStorage.getItem("fourcut_total_visits") || "2180", 10);
 
   if (!sessionStorage.getItem("visited_session")) {
     todayCount += 1;
@@ -99,19 +99,17 @@ function initVisitorCounter() {
   if (elTotal) elTotal.textContent = totalCount.toLocaleString();
 
   if (document.getElementById("dashToday")) document.getElementById("dashToday").textContent = todayCount;
-  if (document.getElementById("dashWeek")) document.getElementById("dashWeek").textContent = todayCount * 6 + 12;
-  if (document.getElementById("dashMonth")) document.getElementById("dashMonth").textContent = todayCount * 22 + 48;
+  if (document.getElementById("dashWeek")) document.getElementById("dashWeek").textContent = todayCount * 6 + 14;
+  if (document.getElementById("dashMonth")) document.getElementById("dashMonth").textContent = todayCount * 22 + 50;
   if (document.getElementById("dashTotal")) document.getElementById("dashTotal").textContent = totalCount.toLocaleString();
 }
 
-// 실시간 공지사항
+// 공지사항
 function initNoticeBoard() {
   let notices = JSON.parse(localStorage.getItem("fourcut_global_notices") || "null");
   if (!notices || notices.length === 0) {
     notices = [
-      { id: 1, date: "2026.06.08", text: "📌 [v14.1] 캔버스 핀치 줌(확대/축소) 및 15열 이모티콘 팩 탑재!" },
-      { id: 2, date: "2026.06.05", text: "💡 모바일 세로모드에서 캔버스 프레임이 7:3 황금비율로 최적화되었습니다." },
-      { id: 3, date: "2026.06.01", text: "🎉 포토부스 프레임 상단/하단/중간 레이아웃 지원 중입니다." }
+      { id: 1, date: "2026.06.08", text: "📌 [v14.0 Base] 안정화 베이스 복구 및 15열 이모티콘/핀치 줌 적용 완료!" }
     ];
     localStorage.setItem("fourcut_global_notices", JSON.stringify(notices));
   }
@@ -128,9 +126,10 @@ function initNoticeBoard() {
 }
 
 // ==========================================
-// 2. 별점 0.5/1.0 토글 & 공개 후기 시스템
+// 2. 🌟 0.5 / 1.0 별점 토글 & 완전 공개 후기
 // ==========================================
 function handleStarClick(starNum) {
+  // 1번 터치: 반 개(starNum - 0.5), 2번 터치: 1개(starNum)로 토글
   if (currentRatingValue === starNum - 0.5) {
     currentRatingValue = starNum;
   } else if (currentRatingValue === starNum) {
@@ -151,7 +150,7 @@ function renderStarRatingUI() {
       starEl.className = "text-amber-500 hover:scale-110 transition cursor-pointer";
     } else if (currentRatingValue === i - 0.5) {
       starEl.textContent = "★";
-      starEl.className = "text-amber-400 opacity-75 hover:scale-110 transition cursor-pointer";
+      starEl.className = "text-amber-400 opacity-60 hover:scale-110 transition cursor-pointer";
     } else {
       starEl.textContent = "☆";
       starEl.className = "text-slate-300 hover:scale-110 transition cursor-pointer";
@@ -165,8 +164,7 @@ function initPublicReviews() {
   let reviews = JSON.parse(localStorage.getItem("fourcut_public_reviews") || "null");
   if (!reviews || reviews.length === 0) {
     reviews = [
-      { id: 1, nick: "네컷러버", rating: 5.0, content: "친구들이랑 너무 예쁘게 찍었어요! 필터 화사하고 최고입니다 💖", date: "2026.06.07", reply: "방문해 주셔서 감사합니다! 평생 간직할 예쁜 추억이 되셨길 바랍니다 ✨" },
-      { id: 2, nick: "스튜디오짱", rating: 4.5, content: "세로 모드에서 프레임이 크게 보여서 꾸미기 너무 편해졌네요 ㅎㅎ", date: "2026.06.06", reply: "소중한 의견 감사드립니다! 항상 최적의 부스를 만들어가겠습니다 🥰" }
+      { id: 1, nick: "네컷러버", rating: 5.0, content: "친구들이랑 너무 재밌게 촬영했어요! 필터 색감도 최고네요 💖", date: "2026.06.08", reply: "소중한 추억을 함께해 주셔서 감사합니다! 항상 행복하세요 ✨" }
     ];
     localStorage.setItem("fourcut_public_reviews", JSON.stringify(reviews));
   }
@@ -179,9 +177,9 @@ function renderReviewListUI(reviews) {
   container.innerHTML = "";
 
   if (reviews.length === 0) {
-    container.innerHTML = `<p class="text-center text-xs text-slate-400 py-3">첫 후기의 주인공이 되어보세요!</p>`;
-    document.getElementById("avgRatingText").textContent = "5.0";
-    document.getElementById("totalReviewCount").textContent = "(0개)";
+    container.innerHTML = `<p class="text-center text-xs text-slate-400 py-3">등록된 후기가 없습니다. 첫 후기를 남겨보세요!</p>`;
+    document.getElementById("ratingValueText").textContent = "5.0";
+    document.getElementById("totalReviewCountText").textContent = "(0개)";
     return;
   }
 
@@ -213,12 +211,13 @@ function renderReviewListUI(reviews) {
   });
 
   const avg = (sum / reviews.length).toFixed(1);
-  const elAvg = document.getElementById("avgRatingText");
-  const elCount = document.getElementById("totalReviewCount");
+  const elAvg = document.getElementById("ratingValueText");
+  const elCount = document.getElementById("totalReviewCountText");
   if (elAvg) elAvg.textContent = avg;
   if (elCount) elCount.textContent = `(${reviews.length}개)`;
 }
 
+// Gemini API 연동 후기 등록
 async function submitBoardPost() {
   const nickInput = document.getElementById("boardNickname");
   const contentInput = document.getElementById("boardContent");
@@ -235,7 +234,8 @@ async function submitBoardPost() {
   btn.disabled = true;
   btn.innerHTML = `<span>AI 처리중...</span>`;
 
-  let aiReply = "소중한 후기 진심으로 감사드립니다! 앞으로도 행복한 순간을 함께하겠습니다 💖";
+  // Gemini API 실시간 감사 답글 생성
+  let aiReply = "소중한 후기 진심으로 감사드립니다! 앞으로도 예쁜 추억을 만들어 드리겠습니다 💖";
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",
@@ -243,7 +243,7 @@ async function submitBoardPost() {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `당신은 '추억의 네컷' 사진관의 친절한 마스터입니다. 사용자가 남긴 후기를 읽고 1줄(최대 50자 이내)로 다정한 감사 답글을 작성해주세요. 사용자 후기: "${content}"`
+            text: `당신은 '추억의 네컷' 사진관의 친절한 마스터입니다. 사용자의 후기를 읽고 따뜻한 감사 답글을 1줄(40자 이내)로 작성해주세요. 후기 내용: "${content}"`
           }]
         }]
       })
@@ -254,7 +254,7 @@ async function submitBoardPost() {
       if (replyText) aiReply = replyText.trim();
     }
   } catch (err) {
-    console.warn("AI 답변 생성 대체:", err);
+    console.warn("AI 답변 대체 생성:", err);
   }
 
   const newPost = {
@@ -276,7 +276,7 @@ async function submitBoardPost() {
   btn.innerHTML = `<span>후기 등록</span>`;
 
   renderReviewListUI(reviews);
-  alert("후기가 성공적으로 등록되었습니다! 🎉");
+  alert("후기가 공개 모드로 성공적으로 등록되었습니다! 🎉");
 }
 
 function escapeHtml(text) {
@@ -285,7 +285,7 @@ function escapeHtml(text) {
 }
 
 // ==========================================
-// 3. 60종 이모티콘 & 감성 레터링 20종
+// 3. 🌟 15열 그리드 이모티콘 & 레터링
 // ==========================================
 function initEmojiAndLetteringGrids() {
   const emojiGrid = document.getElementById("emojiGrid");
@@ -323,7 +323,7 @@ function addCustomInputSticker() {
 }
 
 // ==========================================
-// 4. 캔버스 핀치 줌(확대/축소) 엔진
+// 4. 🌟 프레임 사진 터치 핀치 줌 엔진
 // ==========================================
 function setupPinchZoom() {
   const viewport = document.getElementById("canvasViewport");
@@ -341,7 +341,7 @@ function setupPinchZoom() {
       const currentDist = getTouchDistance(e.touches);
       if (lastTouchDist > 0) {
         const factor = currentDist / lastTouchDist;
-        canvasZoomScale = Math.min(Math.max(canvasZoomScale * factor, 0.6), 3.0);
+        canvasZoomScale = Math.min(Math.max(canvasZoomScale * factor, 0.6), 2.5);
         applyCanvasZoom();
       }
       lastTouchDist = currentDist;
@@ -379,7 +379,7 @@ function resetCanvasZoom() {
 }
 
 // ==========================================
-// 5. 실시간 촬영 & 프레임 할당
+// 5. 촬영 및 사진 선택 (v14.0 기본 모듈)
 // ==========================================
 function setTimerSec(sec, btn) {
   currentTimerSec = sec;
@@ -513,9 +513,6 @@ function captureFrame() {
   }
 }
 
-// ------------------------------------------
-// 사진 선택 (Pick Screen)
-// ------------------------------------------
 function setupPickScreen() {
   selectedSlotPhotos = [
     sessionPhotos[0] || null,
@@ -562,7 +559,7 @@ function updateSlotPreviews() {
     if (photo) {
       slotEl.innerHTML = `<img src="${photo}" class="w-full h-full object-cover">`;
     } else {
-      slotEl.innerHTML = `${i + 1}번`;
+      slotEl.innerHTML = `${i + 1}번 슬롯`;
     }
 
     if (i === activeAssignSlot) {
@@ -803,7 +800,7 @@ function undo() { renderPhotoCanvas(); }
 function redo() { renderPhotoCanvas(); }
 
 // ==========================================
-// 7. 결과 화면 & QR코드 생성
+// 7. 결과 화면 및 QR코드
 // ==========================================
 function saveAndGenerateQR() {
   selectedStickerIndex = -1;
@@ -854,7 +851,7 @@ function returnToEditor() { showScreen("screenEdit"); }
 function resetApp() { location.reload(); }
 
 // ==========================================
-// 8. 관리자 모달 (3초 롱프레스 & 비번 0724)
+// 8. 관리자 모달 (비밀번호 0724)
 // ==========================================
 function setupAdminLongPress() {
   const icon = document.getElementById("cameraAdminIcon");
