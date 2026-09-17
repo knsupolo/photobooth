@@ -1,1 +1,91 @@
+/* ==========================================================================
+   인생네컷 Pro Studio - 글로벌 스타일 & 애니메이션 (style.css)
+   ========================================================================== */
 
+/* 1. 웹 폰트 로드 (감성 한글 폰트 6종) */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+/* 2. 기본 레이아웃 & 터치 인터랙션 최적화 */
+* {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #020617; /* Slate-950 다크 테마 */
+  color: #ffffff;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow-x: hidden;
+}
+
+/* 3. 웹캠 좌우 반전 (거울 모드) */
+.mirror {
+  transform: scaleX(-1);
+  -webkit-transform: scaleX(-1);
+}
+
+/* 4. 카메라 셔터 터질 때 전체 화면 화이트 플래시 효과 */
+@keyframes flashAnim {
+  0% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.flash-effect {
+  animation: flashAnim 0.35s ease-out forwards;
+}
+
+/* 5. 스크롤바 숨김 (모바일/태블릿 가로 스크롤 탭 깔끔하게 처리) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 6. 슬라이더 (Range Input) 커스텀 스타일 */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #1e293b;
+  border-radius: 9999px;
+  outline: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f43f5e; /* Rose-500 */
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease-in-out;
+}
+
+input[type=range]::-webkit-slider-thumb:active {
+  transform: scale(1.25);
+}
+
+/* 7. 캔버스 영역 드래그 커서 피드백 */
+canvas.grab-mode {
+  cursor: grab;
+}
+
+canvas.grabbing-mode {
+  cursor: grabbing;
+}
