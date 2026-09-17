@@ -27,12 +27,14 @@ const FILTER_PRESETS = {
   pink:    { bright: 112, contrast: 108, saturate: 120, name: '로맨틱핑크' }
 };
 
-const DEFAULT_NOTICES = [{ id: 'v13_1', date: getFormattedTodayDate(), version: 'v13.1', content: '하단 톱니바퀴 관리자 모드 개편 & 스티커 40종 정비 완료!' }];
+const DEFAULT_NOTICES = [
+  { id: 'v13_1', date: getFormattedTodayDate(), version: 'v13.1', content: '관리자 설정 개편 & 스티커 40종 정비 완료!' }
+];
 
 let appState = {
   isAdmin: false, stream: null, facingMode: 'user', timerSec: 6, currentCount: 6, countdownTimer: null,
   shotImages: [], selectedImages: [], selectedIndices: [null, null, null, null], activeSlotIndex: 0,
-  stickers: [], recentStickers: [], selectedStickerIdx: -1, dragTarget: null, dragStartPos: { x:0, y:0 },
+  stickers: [], recentStickers: [], selectedStickerIdx: -1, dragTarget: null, dragStartPos: { x: 0, y: 0 },
   layout: 'strip', frameStyle: 'simple', frameThickness: 40, frameColor: '#000000',
   activeFilter: 'normal', filters: { bright: 100, contrast: 100, saturate: 100 },
   showDate: true, typography: { fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() },
@@ -41,7 +43,7 @@ let appState = {
 
 let galleryAccumulator = [];
 
-// 1. UI 동적 생성 (감성글자 20종 + 이모티콘 20종)
+// 1. UI 동적 생성 (감성 글자 20종 + 이모티콘 20종)
 function initDynamicUI() {
   const fonts = [
     { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
@@ -56,25 +58,34 @@ function initDynamicUI() {
     { name: 'Black Han Sans', label: '검은고딕', css: 'font-family:"Black Han Sans";' }
   ];
   const fontGrid = document.getElementById('fontGrid');
-  if (fontGrid) fontGrid.innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1 rounded text-[9px] truncate" style="${f.css}">${f.label}</button>`).join('');
+  if (fontGrid) {
+    fontGrid.innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1 rounded text-[9px] truncate" style="${f.css}">${f.label}</button>`).join('');
+  }
 
+  // 이모티콘 20종
   const emojis = ['✌️', '💖', '🎀', '🐱', '🐶', '🐰', '✨', '🎂', '🌸', '🍀', '🥳', '🧸', '🔥', '💯', '🕶️', '🍓', '👑', '🎉', '💌', '🍿'];
   const emojiGrid = document.getElementById('emojiGrid');
-  if (emojiGrid) emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded text-base cursor-pointer active:scale-90 transition"> ${e} </button>`).join('');
+  if (emojiGrid) {
+    emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded text-base cursor-pointer active:scale-90 transition">${e}</button>`).join('');
+  }
 
+  // 감성 글자 20종 (한글/영어 믹스)
   const texts = [
     '추억의 네컷', 'BEST', 'LOVE', 'YOUTH', 'HAPPY', 'VIBE', 'OUR DAY', 'CHILL', 'SMILE', 'FOREVER',
     '인생네컷', '오늘의 우리', '완벽한 하루', '행복만땅', '심쿵주의', '찐친바이브', '영원한 청춘', 'LUCKY DAY', 'MEMORIES', 'SO CUTE'
   ];
   const textStickerGrid = document.getElementById('textStickerGrid');
-  if (textStickerGrid) textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer active:scale-95 transition">${t}</button>`).join('');
+  if (textStickerGrid) {
+    textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer active:scale-95 transition">${t}</button>`).join('');
+  }
 
   const colors = ['#000000','#111827','#FFFFFF','#E2E8F0','#FECDD3','#FFEDD5','#FEF9C3','#D1FAE5','#BAE6FD','#EDE9FE','#881337','#1E1B4B','#064E3B'];
   const frameColorGrid = document.getElementById('frameColorGrid');
   if (frameColorGrid) {
-    frameColorGrid.innerHTML = colors.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') + `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
+    frameColorGrid.innerHTML = colors.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') +
+      `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
   }
-  
+
   renderRecentStickers();
 
   setTimeout(() => {
@@ -109,7 +120,7 @@ function renderRecentStickers() {
   }).join('');
 }
 
-// 2. 관리자 설정 모드 (5회 실패 시 5분 차단)
+// 2. 관리자 설정 모드 (5회 실패 시 5분간 차단)
 function promptAdminMode() {
   const now = Date.now();
   const lockoutUntil = parseInt(localStorage.getItem('chueok_admin_lockout_until') || '0', 10);
@@ -142,20 +153,20 @@ function promptAdminMode() {
 }
 
 // 3. 관리자 대시보드 및 통계
-let hourlyChartInstance = null; 
+let hourlyChartInstance = null;
 let deviceChartInstance = null;
 
 function openAdminDashboard() {
   document.getElementById('adminDashboardModal').classList.remove('hidden');
-  updateAdminDashboardStats(); 
-  renderAdminNoticeManageList(); 
-  renderAdminReviewManageList(); 
+  updateAdminDashboardStats();
+  renderAdminNoticeManageList();
+  renderAdminReviewManageList();
   switchAdminTab('stats');
   if (window.lucide) lucide.createIcons();
 }
 
-function closeAdminDashboard() { 
-  document.getElementById('adminDashboardModal').classList.add('hidden'); 
+function closeAdminDashboard() {
+  document.getElementById('adminDashboardModal').classList.add('hidden');
 }
 
 function switchAdminTab(tabName) {
@@ -178,7 +189,7 @@ function updateAdminDashboardStats() {
   const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
   const todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '0', 10);
   const totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '0', 10);
-  const now = new Date(); 
+  const now = new Date();
   const weekAgo = new Date(); weekAgo.setDate(now.getDate() - 7);
   const monthAgo = new Date(); monthAgo.setDate(now.getDate() - 30);
   let weekVisits = 0, monthVisits = 0;
@@ -284,7 +295,7 @@ function trackVisitorAccess() {
   if (totalEl) totalEl.textContent = totalVisits;
 }
 
-// 6. 별점 및 후기 평점 시스템
+// 6. 별점 UI 시스템
 function updateRatingUI(val) {
   const num = parseFloat(val);
   document.getElementById('ratingValueText').textContent = num.toFixed(1);
@@ -294,7 +305,7 @@ function updateRatingUI(val) {
   document.getElementById('ratingStarDisplay').textContent = stars;
 }
 
-// 7. 최근 14일 공지 관리 (최신 1건 유지)
+// 7. 공지사항 (2주 이내 최신 1개, 내용-날짜 1줄 정렬)
 function getStoredNotices() {
   const stored = localStorage.getItem('vibe_notices');
   let list = [];
@@ -326,13 +337,15 @@ function renderMainNotices() {
     area.classList.add('hidden');
     return;
   }
+
+  // 🌟 내용과 날짜를 깔끔하게 한 줄로 배치
   container.innerHTML = validNotices.map(n => `
-    <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-start space-x-2 text-left">
-      <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 mt-0.5">${n.version || '공지'}</span>
-      <div class="flex-1 min-w-0">
-        <p class="text-[11px] font-bold text-slate-800 leading-snug break-words">${n.content}</p>
-        <span class="text-[9px] text-slate-400">${n.date}</span>
+    <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-left">
+      <div class="flex items-center space-x-2 min-w-0 mr-2">
+        <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0">${n.version || '공지'}</span>
+        <p class="text-[11px] font-bold text-slate-800 truncate">${n.content}</p>
       </div>
+      <span class="text-[10px] text-slate-400 shrink-0">${n.date}</span>
     </div>
   `).join('');
   area.classList.remove('hidden');
@@ -518,7 +531,7 @@ async function deletePost(id) {
     let posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
     posts = posts.filter(p => p.id !== id);
     localStorage.setItem('vibe_posts', JSON.stringify(posts));
-    renderBoard();
+    renderBoard(); 
     renderAdminReviewManageList();
     try { 
       await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v2', { 
@@ -530,7 +543,7 @@ async function deletePost(id) {
   }
 }
 
-// 9. 오디오 및 셔터 사운드
+// 9. 오디오 및 셔터
 let audioCtx = null;
 function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
 function playBeep(freq = 700) { try { initAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1); } catch (e) {} }
@@ -541,11 +554,11 @@ function playRealisticShutter() {
 }
 function setTimerSec(sec, btn) { 
   appState.timerSec = sec; 
-  document.querySelectorAll('.timer-chip').forEach(b => { b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs"; }); 
-  btn.className = "timer-chip bg-theme text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm"; 
+  document.querySelectorAll('.timer-chip').forEach(b => { b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold py-1.5 rounded-xl text-[11px]"; }); 
+  btn.className = "timer-chip bg-theme text-white font-bold py-1.5 rounded-xl text-[11px] shadow-xs"; 
 }
 
-// 10. 카메라 세션 및 연속 촬영
+// 10. 카메라 세션 및 촬영
 async function startPhotoSession() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
     alert("카메라를 실행할 수 없습니다. HTTPS 환경인지 확인해 주세요!"); 
@@ -1042,7 +1055,7 @@ function initCanvasInteractions() {
   window.addEventListener('touchend', handleEnd);
 }
 
-// 15. 메인 캔버스 렌더링
+// 15. 메인 캔버스 렌더링 루프
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return; 
@@ -1229,7 +1242,7 @@ function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
 
 function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
   const size = customSize || appState.typography.fontSize; 
-  const weight = appState.typography.isBold ? '900' : 'bold';
+  const weight = appState.typography.isBold ? 'bold' : 'normal';
   const showDate = appState.showDate;
   const dateSize = Math.max(14, Math.round(size * 0.45));
   const gap = Math.max(12, Math.round(size * 0.3));
@@ -1626,12 +1639,11 @@ function applySnapshot(snap) {
   renderStrip();
 }
 
-// 18. 진입점 초기화
+// 18. 시작 초기화
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
   initDynamicUI();
   initCanvasInteractions();
-  initAdminLongPress();
   loadCloudNotices();
   trackVisitorAccess();
 });
