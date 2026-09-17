@@ -1,52 +1,42 @@
 /* ==========================================================================
-   인생네컷 Pro Studio - 글로벌 스타일 & 애니메이션 (style.css)
+   추억의 네컷 Pro Studio v12.7 - 통합 스타일시트 (style.css)
    ========================================================================== */
 
-/* 1. 웹 폰트 로드 (감성 한글 폰트 6종) */
+/* 1. 감성 웹 폰트 로드 (11종) */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-@import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Jua&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Sunflower:wght@700&display=swap');
 
-/* 2. 기본 레이아웃 & 터치 인터랙션 최적화 */
+/* 2. 전역 스타일 및 터치 제어 */
 * {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  font-family: 'Pretendard', sans-serif;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
 }
 
-html, body {
-  width: 100%;
-  min-height: 100%;
-  margin: 0;
-  padding: 0;
-  background-color: #020617; /* Slate-950 다크 테마 */
-  color: #ffffff;
+body {
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
-  overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
-/* 3. 웹캠 좌우 반전 (거울 모드) */
+/* 3. 웹캠 좌우 반전 */
 .mirror {
   transform: scaleX(-1);
   -webkit-transform: scaleX(-1);
 }
 
-/* 4. 카메라 셔터 터질 때 전체 화면 화이트 플래시 효과 */
+/* 4. 플래시 애니메이션 */
 @keyframes flashAnim {
-  0% {
-    opacity: 0.95;
-  }
-  100% {
-    opacity: 0;
-  }
+  0% { opacity: 0.95; }
+  100% { opacity: 0; }
 }
 
 .flash-effect {
   animation: flashAnim 0.35s ease-out forwards;
 }
 
-/* 5. 스크롤바 숨김 (모바일/태블릿 가로 스크롤 탭 깔끔하게 처리) */
+/* 5. 스크롤바 제어 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -54,38 +44,25 @@ html, body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
-/* 6. 슬라이더 (Range Input) 커스텀 스타일 */
-input[type=range] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: #1e293b;
-  border-radius: 9999px;
-  outline: none;
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
 }
 
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #f43f5e; /* Rose-500 */
-  cursor: pointer;
-  border: 2px solid #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-  transition: transform 0.1s ease-in-out;
+/* 6. 카운트다운 아웃라인 및 테마 색상 변수 */
+.stroke-countdown {
+  color: transparent;
+  -webkit-text-stroke: 5px #ffffff;
+  text-stroke: 5px #ffffff;
 }
 
-input[type=range]::-webkit-slider-thumb:active {
-  transform: scale(1.25);
+:root {
+  --theme-primary: #e11d48;
+  --theme-primary-hover: #be123c;
+  --theme-light: #ffe4e6;
 }
 
-/* 7. 캔버스 영역 드래그 커서 피드백 */
-canvas.grab-mode {
-  cursor: grab;
-}
-
-canvas.grabbing-mode {
-  cursor: grabbing;
-}
+.bg-theme { background-color: var(--theme-primary) !important; }
+.bg-theme:hover { background-color: var(--theme-primary-hover) !important; }
+.text-theme { color: var(--theme-primary) !important; }
+.border-theme { border-color: var(--theme-primary) !important; }
+.bg-theme-light { background-color: var(--theme-light) !important; }
