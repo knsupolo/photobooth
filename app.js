@@ -28,7 +28,7 @@ const FILTER_PRESETS = {
 };
 
 const DEFAULT_NOTICES = [
-  { id: 'v13_1', date: getFormattedTodayDate(), version: 'v13.1', content: '관리자 설정 개편 & 스티커 40종 정비 완료!' }
+  { id: 'v14_0', date: getFormattedTodayDate(), version: 'v14.0', content: '관리자 대시보드 톱니바퀴 분리 & 에디터 줌/스크롤 기능탑재 완료!' }
 ];
 
 let appState = {
@@ -42,8 +42,9 @@ let appState = {
 };
 
 let galleryAccumulator = [];
+let canvasZoom = 1.0;
 
-// 1. UI 동적 생성 (감성 글자 20종 + 이모티콘 20종)
+// 1. UI 동적 생성 (감성 글자 20종 + 이모티콘 정확히 60종)
 function initDynamicUI() {
   const fonts = [
     { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
@@ -62,14 +63,19 @@ function initDynamicUI() {
     fontGrid.innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1 rounded text-[9px] truncate" style="${f.css}">${f.label}</button>`).join('');
   }
 
-  // 이모티콘 20종
-  const emojis = ['✌️', '💖', '🎀', '🐱', '🐶', '🐰', '✨', '🎂', '🌸', '🍀', '🥳', '🧸', '🔥', '💯', '🕶️', '🍓', '👑', '🎉', '💌', '🍿'];
+  // 🌟 이모티콘 정확히 60종 (15개씩 4줄 그리드 구성)
+  const emojis = [
+    '😀','😁','😂','😃','😄','😅','😆','😇','😈','😉','😊','😋','😌','😍','😎',
+    '😏','😐','😑','😒','😓','😔','😕','😖','😗','😘','😙','😚','😛','😜','😝',
+    '😞','😟','😠','😡','😢','😣','😤','😥','😨','😩','😪','😫','😭','😮','휴',
+    '✌️','💖','🎀','🐱','🐶','🐰','✨','🎂','🌸','🍀','🥳','🧸','🔥','💯','🍿'
+  ];
   const emojiGrid = document.getElementById('emojiGrid');
   if (emojiGrid) {
-    emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded text-base cursor-pointer active:scale-90 transition">${e}</button>`).join('');
+    emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded cursor-pointer active:scale-90 transition">${e}</button>`).join('');
   }
 
-  // 감성 글자 20종 (한글/영어 믹스)
+  // 🌟 감성 글자 20종 (한글/영어 믹스)
   const texts = [
     '추억의 네컷', 'BEST', 'LOVE', 'YOUTH', 'HAPPY', 'VIBE', 'OUR DAY', 'CHILL', 'SMILE', 'FOREVER',
     '인생네컷', '오늘의 우리', '완벽한 하루', '행복만땅', '심쿵주의', '찐친바이브', '영원한 청춘', 'LUCKY DAY', 'MEMORIES', 'SO CUTE'
@@ -85,7 +91,7 @@ function initDynamicUI() {
     frameColorGrid.innerHTML = colors.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') +
       `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
   }
-
+  
   renderRecentStickers();
 
   setTimeout(() => {
@@ -120,7 +126,7 @@ function renderRecentStickers() {
   }).join('');
 }
 
-// 2. 관리자 설정 모드 (5회 실패 시 5분간 차단)
+// 2. 관리자 모드 진입 (5회 오류 시 5분 락아웃)
 function promptAdminMode() {
   const now = Date.now();
   const lockoutUntil = parseInt(localStorage.getItem('chueok_admin_lockout_until') || '0', 10);
@@ -295,7 +301,7 @@ function trackVisitorAccess() {
   if (totalEl) totalEl.textContent = totalVisits;
 }
 
-// 6. 별점 UI 시스템
+// 6. 별점 시스템
 function updateRatingUI(val) {
   const num = parseFloat(val);
   document.getElementById('ratingValueText').textContent = num.toFixed(1);
@@ -305,14 +311,14 @@ function updateRatingUI(val) {
   document.getElementById('ratingStarDisplay').textContent = stars;
 }
 
-// 7. 공지사항 (2주 이내 최신 1개, 내용-날짜 1줄 정렬)
+// 7. 공지사항 (한 줄 정렬 & 2주 필터)
 function getStoredNotices() {
   const stored = localStorage.getItem('vibe_notices');
   let list = [];
   if (stored) { try { list = JSON.parse(stored); } catch(e) { list = []; } }
-  list = list.filter(n => !n.version || n.version === 'v13.1');
-  if (!list.some(n => n.version === 'v13.1')) {
-    list.unshift(DEFAULT_NOTICES[0]);
+  list = list.filter(n => !n.version || n.version === 'v14.0');
+  if (!list.some(n => n.version === 'v14.0')) {
+    list.unshift({ id: 'v14_0', date: getFormattedTodayDate(), version: 'v14.0', content: '에디터 줌/스크롤 작업대 & 후기 보안 강화 완료!' });
   }
   localStorage.setItem('vibe_notices', JSON.stringify(list));
   return list;
@@ -323,8 +329,7 @@ function renderMainNotices() {
   const area = document.getElementById('mainNoticeArea');
   if (!container || !area) return;
   const allNotices = getStoredNotices();
-  const twoWeeksAgo = new Date(); 
-  twoWeeksAgo.setDate(new Date().getDate() - 14);
+  const twoWeeksAgo = new Date(); twoWeeksAgo.setDate(new Date().getDate() - 14);
 
   const validNotices = allNotices.filter(n => {
     if (!n.date) return false;
@@ -337,8 +342,6 @@ function renderMainNotices() {
     area.classList.add('hidden');
     return;
   }
-
-  // 🌟 내용과 날짜를 깔끔하게 한 줄로 배치
   container.innerHTML = validNotices.map(n => `
     <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-left">
       <div class="flex items-center space-x-2 min-w-0 mr-2">
@@ -409,13 +412,14 @@ function deleteNotice(id) {
   }
 }
 
-// 8. 후기 & 소리함
+// 8. 후기 & 소리함 (비밀번호 검증 삭제 및 관리자 연람창 패스워드 노출 제거)
 async function fetchCloudBoardPosts() {
   try {
     const res = await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v2');
     if (res.ok) {
       localStorage.setItem('vibe_posts', JSON.stringify(await res.json()));
       renderBoard();
+      renderAdminReviewManageList();
     }
   } catch (e) {}
 }
@@ -451,9 +455,7 @@ function renderBoard() {
       contentHtml = '<p class="text-xs text-slate-400 italic mt-1">🔒 비밀글입니다.</p>';
     } else {
       contentHtml = `<p class="text-xs text-slate-600 mt-1 break-words">${p.content}</p>`;
-      if (p.isPrivate && appState.isAdmin) contentHtml += `<p class="text-[9px] text-rose-500 mt-1">[관리자 열람 - 비번: ${p.pw}]</p>`;
     }
-    let deleteBtn = appState.isAdmin ? `<button onclick="deletePost(${p.id})" class="text-[10px] text-rose-500 underline ml-2">삭제</button>` : '';
     const ratingNum = p.rating || 5.0; 
     let starStr = '';
     for (let i = 0; i < Math.floor(ratingNum); i++) starStr += '⭐';
@@ -466,9 +468,9 @@ function renderBoard() {
             <span class="font-bold text-[11px] text-slate-800">${p.nickname}</span>
             <span class="text-[10px] text-amber-500 font-black">${starStr} ${ratingNum.toFixed(1)}</span>
           </div>
-          <div class="flex items-center">
+          <div class="flex items-center space-x-2">
             <span class="text-[9px] text-slate-400">${p.date}</span>
-            ${deleteBtn}
+            <button onclick="requestDeletePost(${p.id})" class="text-[10px] text-rose-500 underline font-bold">삭제</button>
           </div>
         </div>
         ${contentHtml}
@@ -489,9 +491,30 @@ function renderAdminReviewManageList() {
         <div><span class="text-[10px] text-slate-400">${p.date}</span><button onclick="deletePost(${p.id})" class="text-[10px] text-rose-600 underline font-bold ml-2">삭제</button></div>
       </div>
       <p class="text-[11px] text-slate-600 break-words">${p.content}</p>
-      ${p.isPrivate ? `<span class="text-[9px] text-rose-500 font-bold">[비밀글 - 설정비번: ${p.pw}]</span>` : ''}
+      ${p.isPrivate ? `<span class="text-[9px] text-rose-500 font-bold">[비밀글]</span>` : ''}
     </div>
   `).join('');
+}
+
+// 🌟 작성자 비밀번호 또는 관리자 권한 검증 후 삭제
+function requestDeletePost(id) {
+  const posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
+  const target = posts.find(p => p.id === id);
+  if (!target) return;
+
+  if (appState.isAdmin) {
+    deletePost(id);
+    return;
+  }
+
+  const inputPw = prompt("게시글 삭제를 위해 등록 시 설정한 비밀번호를 입력하세요:");
+  if (inputPw === null) return;
+
+  if (inputPw === target.pw) {
+    deletePost(id);
+  } else {
+    alert("비밀번호가 일치하지 않습니다.");
+  }
 }
 
 async function submitBoardPost() {
@@ -554,8 +577,8 @@ function playRealisticShutter() {
 }
 function setTimerSec(sec, btn) { 
   appState.timerSec = sec; 
-  document.querySelectorAll('.timer-chip').forEach(b => { b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold py-1.5 rounded-xl text-[11px]"; }); 
-  btn.className = "timer-chip bg-theme text-white font-bold py-1.5 rounded-xl text-[11px] shadow-xs"; 
+  document.querySelectorAll('.timer-chip').forEach(b => { b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold py-1.5 rounded-xl text-xs"; }); 
+  btn.className = "timer-chip bg-theme text-white font-bold py-1.5 rounded-xl text-xs shadow-sm"; 
 }
 
 // 10. 카메라 세션 및 촬영
@@ -711,7 +734,7 @@ function stopCameraAndAudio() {
   if (audioCtx && audioCtx.state !== 'closed') { try { audioCtx.suspend(); } catch (e) {} } 
 }
 
-// 11. 사진 4장 선택 화면
+// 11. 사진 선택 화면
 function renderPickScreen() {
   showScreen('screenPick');
   appState.selectedIndices = [null, null, null, null]; 
@@ -794,7 +817,7 @@ function resetEditorToDefault() {
   historyStack = []; redoStack = [];
 }
 
-// 12. 앨범 업로드 및 연속 수집 모달
+// 12. 앨범 업로드 및 연속 수집
 function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
 
 function compressAndLoadImage(file) {
@@ -841,7 +864,23 @@ function updateGalleryCollectModal() {
 
 function cancelGalleryCollect() { galleryAccumulator = []; const m = document.getElementById('galleryCollectModal'); if (m) m.classList.add('hidden'); }
 
-// 13. 에디터 스튜디오 제어
+// 13. 에디터 스튜디오 제어 및 줌/스크롤 기능
+function zoomCanvas(amount) {
+  canvasZoom = Math.max(0.4, Math.min(3.0, canvasZoom + amount));
+  const wrapper = document.getElementById('canvasScaleWrapper');
+  if (wrapper) wrapper.style.transform = `scale(${canvasZoom})`;
+  const label = document.getElementById('canvasZoomLabel');
+  if (label) label.textContent = Math.round(canvasZoom * 100) + '%';
+}
+
+function resetCanvasZoom() {
+  canvasZoom = 1.0;
+  const wrapper = document.getElementById('canvasScaleWrapper');
+  if (wrapper) wrapper.style.transform = 'scale(1)';
+  const label = document.getElementById('canvasZoomLabel');
+  if (label) label.textContent = '100%';
+}
+
 function changeLayout(mode, btn) {
   saveStateForUndo(); appState.layout = mode;
   document.querySelectorAll('.layout-btn').forEach(b => { b.className = "layout-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs"; });
@@ -929,6 +968,16 @@ function toggleFontBold() {
 function onFontColorChange(color) { appState.typography.fontColor = color; renderStrip(); }
 function onFontSizeChange(size) { appState.typography.fontSize = parseInt(size); renderStrip(); }
 function toggleShowDate(checked) { saveStateForUndo(); appState.showDate = checked; renderStrip(); }
+
+// 🌟 텍스트 직접 추가 기능
+function addDirectTextSticker() {
+  const input = document.getElementById('directTextInput');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) { alert("추가할 텍스트를 입력해주세요!"); return; }
+  addTextSticker(val);
+  input.value = '';
+}
 
 function addTextSticker(text) {
   saveStateForUndo(); 
@@ -1055,7 +1104,7 @@ function initCanvasInteractions() {
   window.addEventListener('touchend', handleEnd);
 }
 
-// 15. 메인 캔버스 렌더링 루프
+// 15. 메인 캔버스 렌더링 루프 (2*2 격자 포함 middle 레이아웃 완벽 지원)
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return; 
@@ -1109,12 +1158,28 @@ function renderStrip(isFinalExport = false) {
     const bottomFooterH = isBottom ? 180 : 45; 
     const imgW = (canvas.width - (pad * 2) - gap) / 2; 
     const imgH = (canvas.height - topHeaderH - bottomFooterH - gap) / 2;
-    renderHeaderOrDecor(ctx, 0, 0, canvas.width, canvas.height, customTitle, topHeaderH, isBottom);
-    const coords = [{ x: pad, y: topHeaderH }, { x: pad + imgW + gap, y: topHeaderH }, { x: pad, y: topHeaderH + imgH + gap }, { x: pad + imgW + gap, y: topHeaderH + imgH + gap }];
-    for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], coords[i].x, coords[i].y, imgW, imgH); }
-    if (isBottom) {
-      const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
-      drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle);
+    
+    if (fStyle === 'middle') {
+      // 🌟 2*2 격자에서 추억의 네컷(중간) 지원: 상단 2장, 중간 배너, 하단 2장 구조
+      const bannerH = 140;
+      const actualImgH = (canvas.height - (pad * 2) - bannerH - (gap * 2)) / 2;
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, pad, imgW, actualImgH);
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, pad, imgW, actualImgH);
+      
+      const bannerY = pad + actualImgH + gap;
+      drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle);
+
+      const lowerY = bannerY + bannerH;
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerY, imgW, actualImgH);
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + imgW + gap, lowerY, imgW, actualImgH);
+    } else {
+      renderHeaderOrDecor(ctx, 0, 0, canvas.width, canvas.height, customTitle, topHeaderH, isBottom);
+      const coords = [{ x: pad, y: topHeaderH }, { x: pad + imgW + gap, y: topHeaderH }, { x: pad, y: topHeaderH + imgH + gap }, { x: pad + imgW + gap, y: topHeaderH + imgH + gap }];
+      for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], coords[i].x, coords[i].y, imgW, imgH); }
+      if (isBottom) {
+        const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
+        drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle);
+      }
     }
   } else if (layout === 'twin') {
     const stripW = (canvas.width / 2) - 20; 
@@ -1207,7 +1272,6 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
   }
 }
 
-// 🌟 문구와 날짜가 겹치지 않게 간격을 자동 계산하는 상하 완충 정렬
 function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
   const size = customSize || appState.typography.fontSize; 
   const weight = appState.typography.isBold ? '900' : 'bold';
@@ -1242,7 +1306,7 @@ function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
 
 function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
   const size = customSize || appState.typography.fontSize; 
-  const weight = appState.typography.isBold ? 'bold' : 'normal';
+  const weight = appState.typography.isBold ? '900' : 'bold';
   const showDate = appState.showDate;
   const dateSize = Math.max(14, Math.round(size * 0.45));
   const gap = Math.max(12, Math.round(size * 0.3));
@@ -1347,7 +1411,7 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
   }
 }
 
-// 16. 내보내기 액션 (비디오, PDF, 공유, QR)
+// 비디오 자동 저장
 async function autoSaveVideo() {
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
   if (!hasValidVideo) {
@@ -1474,7 +1538,7 @@ function sharePhotoDirectly() {
     if (!blob) return; 
     const file = new File([blob], `[추억의네컷]_Photo_${Date.now()}.png`, { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) { 
-      try { await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 완성 사진입니다!' }); } catch (err) {} 
+      try { await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 실시간 4컷 비디오입니다!' }); } catch (err) {} 
     } else { 
       const url = URL.createObjectURL(blob); 
       const a = document.createElement('a'); a.href = url; a.download = file.name; 
@@ -1505,7 +1569,7 @@ async function saveAndGenerateQR() {
       const res = await fetch(GAS_API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ base64Data: uploadBase64, layout: appState.layout, frameColor: appState.frameColor }), signal: controller.signal }).then(r => r.json());
       clearTimeout(timeoutId);
       if (res && res.success && res.fileUrl) { 
-        if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`; } 
+        if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성</span>`; } 
         displayResultWithQR(res.fileUrl); 
         return; 
       }
@@ -1516,14 +1580,14 @@ async function saveAndGenerateQR() {
     try {
       const formData = new FormData(); formData.append('file', blob, `Chueok4cut_${Date.now()}.png`);
       const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: formData }).then(r => r.json());
-      if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`; }
+      if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성</span>`; }
       if (uploadRes && uploadRes.status === 'success' && uploadRes.data.url) { 
         displayResultWithQR(uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/')); 
       } else { 
         displayResultWithQR(window.location.href); 
       }
     } catch (err) {
-      if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`; }
+      if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성</span>`; }
       displayResultWithQR(window.location.href);
     }
   }, 'image/png');
@@ -1533,7 +1597,7 @@ function displayResultWithQR(url) {
   const qrBox = document.getElementById('qrcodeArea'); 
   if (!qrBox) return;
   qrBox.innerHTML = ''; 
-  new QRCode(qrBox, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+  new QRCode(qrBox, { text: url, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });
   showScreen('screenResult'); 
   startAutoReset();
 }
@@ -1639,7 +1703,7 @@ function applySnapshot(snap) {
   renderStrip();
 }
 
-// 18. 시작 초기화
+// 18. 진입점 초기화
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
   initDynamicUI();
