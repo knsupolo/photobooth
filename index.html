@@ -3,421 +3,572 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>추억의 네컷 Studio Pro</title>
-  <!-- Tailwind CSS CDN -->
+  <title>추억의 네컷 Studio Pro v14.0</title>
+  
+  <!-- 외부 라이브러리 -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Chart.js (관리자 통계용) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- 스타일시트 연동 -->
+
+  <!-- 전용 스타일시트 -->
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-rose-100 selection:text-rose-700">
-
-  <!-- 플래시 효과 오버레이 -->
-  <div id="flashOverlay" class="fixed inset-0 bg-white z-50 pointer-events-none hidden"></div>
-
-  <!-- 숨겨진 캡처용 캔버스 및 앨범 입력 -->
-  <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
+<body class="bg-white text-slate-900 h-screen w-screen overflow-hidden flex flex-col antialiased">
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
-  <!-- ================= HEADER ================= -->
-  <header class="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-30 shadow-2xs">
-    <div class="max-w-md mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <!-- 관리자 진입용 3초 롱프레스 대상 아이콘 -->
-        <div id="cameraAdminIcon" class="w-9 h-9 bg-rose-500 rounded-xl flex items-center justify-center text-white shadow-sm cursor-pointer active:scale-95 transition">
-          <i data-lucide="camera" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <div class="flex items-center space-x-1.5">
-            <h1 class="font-black text-base tracking-tight text-slate-900">추억의 네컷</h1>
-            <span class="bg-rose-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded shadow-2xs">Pro</span>
+  <!-- ========================================================
+       화면 1: 메인 홈 화면
+  ======================================================== -->
+  <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
+    <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5 justify-between relative">
+      
+      <!-- 상단 헤더 -->
+      <header class="shrink-0 flex items-center justify-between py-2 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-theme flex items-center justify-center shadow-md">
+            <i data-lucide="camera" class="w-4 h-4 text-white"></i>
           </div>
-          <p class="text-[10px] text-slate-400 font-medium">v14.0 Studio Edition</p>
+          <div class="flex items-center space-x-1.5">
+            <span class="text-xl font-black tracking-tight text-slate-900">추억의 네컷</span>
+            <span class="bg-rose-500 text-black text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm">Pro</span>
+            <span class="text-xs text-theme font-extrabold tracking-tighter">v14.0</span>
+          </div>
         </div>
+
+        <!-- 🌟 방문자 카운터 및 우측 톱니바퀴 관리자 버튼 -->
+        <div class="flex items-center space-x-1.5">
+          <div class="flex items-center space-x-1 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-600">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>오늘 <b id="statTodayCount" class="text-theme">0</b></span>
+            <span class="text-slate-300">|</span>
+            <span>누적 <b id="statTotalCount" class="text-slate-800">0</b></span>
+          </div>
+          <button onclick="promptAdminMode()" class="p-1 text-slate-400 hover:text-slate-700 active:scale-90 transition" title="관리자 설정">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- 🌟 공지사항 영역 (제목: 공지사항) -->
+      <div id="mainNoticeArea" class="shrink-0 mt-3 hidden bg-theme-light border border-rose-200 rounded-2xl p-3 shadow-sm">
+        <div class="flex justify-between items-center mb-1.5">
+          <h3 class="text-xs font-black text-theme flex items-center">
+            <i data-lucide="bell" class="w-3.5 h-3.5 mr-1"></i> 공지사항
+          </h3>
+        </div>
+        <div id="noticeListContainer" class="space-y-1"></div>
       </div>
-      <div class="flex items-center space-x-2 text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
-        <span>오늘 <b id="statTodayCount" class="text-rose-600">142</b></span>
-        <span class="text-slate-300">|</span>
-        <span>누적 <b id="statTotalCount" class="text-slate-800">2,130</b></span>
-        <!-- 테두리 없는 깔끔한 톱니바퀴 관리자 버튼 -->
-        <button onclick="openAdminDashboard()" class="text-slate-400 hover:text-slate-700 transition ml-1">
-          <i data-lucide="settings" class="w-4 h-4"></i>
+
+      <!-- 🌟 메인 액션 영역 (촬영버튼 + 세로 정렬 타이머 / 중앙 앨범 버튼) -->
+      <section class="flex-1 flex flex-col justify-center items-center my-auto space-y-3 w-full max-w-sm mx-auto">
+        <!-- 1행: 촬영 시작하기 + 세로 3단 타이머 (4초/6초/8초) -->
+        <div class="grid grid-cols-2 gap-2.5 w-full">
+          <button onclick="startPhotoSession()" class="bg-theme text-white p-3.5 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center active:scale-[0.97] transition h-36">
+            <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center mb-1.5">
+              <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+            </div>
+            <h4 class="font-black text-sm text-white">촬영 시작하기</h4>
+            <p class="text-[10px] text-rose-100 mt-0.5">3:2 규격 크롭</p>
+          </button>
+
+          <!-- 세로 3단 정렬 촬영 간격 박스 -->
+          <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-2xl flex flex-col justify-between items-center text-center h-36">
+            <span class="text-slate-600 font-bold text-[11px] flex items-center space-x-1">
+              <i data-lucide="timer" class="w-3.5 h-3.5 text-theme"></i>
+              <span>촬영 간격</span>
+            </span>
+            <div class="flex flex-col space-y-1 w-full my-auto">
+              <button onclick="setTimerSec(4, this)" class="timer-chip bg-white border border-slate-200 text-slate-700 font-bold py-1 rounded-xl text-xs transition">4초</button>
+              <button onclick="setTimerSec(6, this)" class="timer-chip bg-theme text-white font-bold py-1 rounded-xl text-xs shadow-xs transition">6초</button>
+              <button onclick="setTimerSec(8, this)" class="timer-chip bg-white border border-slate-200 text-slate-700 font-bold py-1 rounded-xl text-xs transition">8초</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2행: 앨범에서 선택 (반 크기 축소 후 중앙 배치) -->
+        <div class="w-full flex justify-center">
+          <button onclick="triggerGalleryUpload()" class="w-1/2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 p-3 rounded-2xl shadow-xs flex flex-col items-center justify-center text-center active:scale-[0.97] transition">
+            <div class="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 mb-1 shadow-2xs">
+              <i data-lucide="image" class="w-4 h-4"></i>
+            </div>
+            <h4 class="font-black text-xs text-slate-900">앨범에서 선택</h4>
+            <p class="text-[9px] text-slate-500 mt-0.5">보관 사진 4장</p>
+          </button>
+        </div>
+      </section>
+
+      <!-- 하단 메뉴 -->
+      <div class="shrink-0 space-y-2 pt-3 border-t border-slate-100">
+        <button onclick="showScreen('screenBoard')" class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-3 rounded-2xl shadow-sm flex items-center justify-between active:scale-[0.98] transition">
+          <div class="flex items-center space-x-3 text-left">
+            <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+              <i data-lucide="message-square" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-xs text-slate-900">후기 & 고객 소리함</h4>
+              <p class="text-[10px] text-slate-500">별점과 사용후기를 남겨주세요!</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </button>
+
+        <footer class="text-center text-[10px] text-slate-400 pb-1">
+          아이폰 · 아이패드 프로 풀스크린 스튜디오
+        </footer>
       </div>
     </div>
-  </header>
-
-  <!-- ================= MAIN CONTAINER ================= -->
-  <main class="max-w-md w-full mx-auto p-4 flex-1 flex flex-col justify-center">
-
-    <!-- 1. 홈 화면 (Home UI) -->
-    <section id="screenHome" class="space-y-5">
-      <!-- 공지사항 배너 -->
-      <div id="mainNoticeArea" class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 shadow-xs space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-black text-amber-800 uppercase tracking-wider flex items-center gap-1">
-            <i data-lucide="bell" class="w-3.5 h-3.5"></i> 공지사항
-          </span>
-          <span class="text-[10px] text-amber-600 font-bold">2026.06.07 (v14.0)</span>
-        </div>
-        <div id="noticeListContainer">
-          <p class="text-xs font-bold text-slate-800">📌 추억의 네컷 Studio Pro v14.0 업데이트 완료! 에디터 줌 기능 및 60종 이모티콘이 추가되었습니다.</p>
-        </div>
-      </div>
-
-      <!-- 메인 액션 카드 (촬영 & 간격 세로 정렬) -->
-      <div class="grid grid-cols-2 gap-3">
-        <!-- 촬영 시작하기 (반 크기) -->
-        <button onclick="startPhotoSession()" class="bg-theme hover:bg-theme-hover text-white p-5 rounded-2xl shadow-lg flex flex-col items-center justify-center space-y-2 active:scale-95 transition text-left group">
-          <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-            <i data-lucide="camera" class="w-6 h-6 text-white"></i>
-          </div>
-          <div class="text-center">
-            <h3 class="font-black text-sm">촬영 시작하기</h3>
-            <p class="text-[10px] text-white/80">실시간 4컷 부스 촬영</p>
-          </div>
-        </button>
-
-        <!-- 촬영 간격 3단 세로 정렬 박스 -->
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-1.5">
-          <span class="text-[11px] font-black text-slate-700 flex items-center gap-1">
-            <i data-lucide="timer" class="w-3.5 h-3.5 text-rose-500"></i> 촬영 간격
-          </span>
-          <div class="flex flex-col space-y-1">
-            <button onclick="setTimerSec(4, this)" class="timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs text-center">4초 간격</button>
-            <button onclick="setTimerSec(6, this)" class="timer-chip bg-theme text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm text-center">6초 간격 (기본)</button>
-            <button onclick="setTimerSec(8, this)" class="timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs text-center">8초 간격</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 앨범에서 선택 버튼 -->
-      <button onclick="triggerGalleryUpload()" class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-4 rounded-2xl shadow-xs flex items-center justify-center space-x-2 active:scale-98 transition">
-        <i data-lucide="image" class="w-5 h-5 text-rose-500"></i>
-        <span class="font-black text-xs">갤러리 앨범에서 4장 선택하여 합성하기</span>
-      </button>
-
-      <!-- 하단 이용 후기 게시판 -->
-      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-3">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-          <div class="flex items-center space-x-1.5">
-            <i data-lucide="message-square-heart" class="w-4 h-4 text-rose-500"></i>
-            <h3 class="font-black text-xs text-slate-800">이용 후기 & 소리함</h3>
-          </div>
-          <div class="flex items-center space-x-1 text-xs font-bold text-amber-500">
-            <span id="ratingStarDisplay">⭐⭐⭐⭐⭐</span>
-            <span id="ratingValueText" class="text-slate-700 font-black">4.9</span>
-          </div>
-        </div>
-
-        <!-- 후기 입력 폼 -->
-        <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-          <div class="flex gap-2">
-            <input type="text" id="boardNickname" placeholder="닉네임" class="w-1/3 bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-bold focus:outline-none focus:border-rose-500">
-            <div class="flex-1 flex items-center space-x-2 bg-white px-3 py-1 rounded-lg border border-slate-200">
-              <span class="text-[10px] font-bold text-slate-500">평점</span>
-              <input type="range" id="boardRatingSlider" min="0.5" max="5" step="0.5" value="5" oninput="updateRatingUI(this.value)" class="w-full accent-rose-500">
-            </div>
-          </div>
-          <textarea id="boardContent" placeholder="즐거운 추억을 남겨주세요! (삭제 시 등록한 비밀번호 필요)" class="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-xs focus:outline-none focus:border-rose-500 resize-none h-14"></textarea>
-          <div class="flex justify-end">
-            <button onclick="submitBoardPost()" class="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black shadow-xs active:scale-95 transition">후기 등록</button>
-          </div>
-        </div>
-
-        <!-- 후기 목록 영역 -->
-        <div id="boardListArea" class="space-y-2 max-h-40 overflow-y-auto no-scrollbar">
-          <!-- 동적 로드 -->
-        </div>
-      </div>
-    </section>
-
-    <!-- 2. 실시간 촬영 뷰파인더 (Live Shoot Screen) -->
-    <section id="screenLiveShoot" class="hidden space-y-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <span id="liveProgressBadge" class="bg-rose-500 text-white text-xs font-black px-2.5 py-1 rounded-lg shadow-sm">1 / 6 컷</span>
-          <span id="poseGuideText" class="text-xs font-bold text-slate-600 bg-white/80 backdrop-blur px-3 py-1 rounded-lg border border-slate-200">포즈 미션 대기중...</span>
-        </div>
-        <div class="flex space-x-1.5">
-          <button onclick="flipCameraFacing()" class="p-2 bg-white rounded-xl border border-slate-200 shadow-xs active:scale-95"><i data-lucide="switch-camera" class="w-4 h-4 text-slate-700"></i></button>
-          <button onclick="cancelSession()" class="p-2 bg-white rounded-xl border border-slate-200 shadow-xs active:scale-95"><i data-lucide="x" class="w-4 h-4 text-rose-600"></i></button>
-        </div>
-      </div>
-
-      <!-- 카메라 뷰파인더 박스 -->
-      <div class="relative w-full aspect-[3/2] bg-black rounded-3xl overflow-hidden shadow-xl border-4 border-white">
-        <video id="liveWebcamVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
-        <!-- 투명 테두리 카운트다운 오버레이 -->
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span id="liveCountdownText" class="stroke-countdown text-8xl font-black">6</span>
-        </div>
-      </div>
-
-      <!-- 하단 촬영 미니 썸네일 & 1초 즉시 촬영 -->
-      <div class="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
-        <div id="liveThumbsContainer" class="flex space-x-1.5 overflow-x-auto no-scrollbar">
-          <div id="liveThumb0" class="w-12 h-8 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400 font-bold">1</div>
-          <div id="liveThumb1" class="w-12 h-8 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400 font-bold">2</div>
-          <div id="liveThumb2" class="w-12 h-8 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400 font-bold">3</div>
-          <div id="liveThumb3" class="w-12 h-8 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400 font-bold">4</div>
-          <div id="liveThumb4" class="w-12 h-8 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400 font-bold">5</div>
-          <div id="liveThumb5" class="w-12 h-8 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400 font-bold">6</div>
-        </div>
-        <button onclick="triggerInstantOneSec()" class="bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 shadow-xs active:scale-95">1초 뒤 촬영</button>
-      </div>
-    </section>
-
-    <!-- 3. 사진 선택 화면 (Pick Screen) -->
-    <section id="screenPick" class="hidden space-y-4">
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-        <div class="flex justify-between items-center">
-          <div>
-            <h2 class="font-black text-sm text-slate-900">베스트 4컷 고르기</h2>
-            <p class="text-[11px] text-slate-400">하단 슬롯을 먼저 누르고 촬영된 사진을 골라주세요.</p>
-          </div>
-          <button onclick="confirmSelectedFour()" class="bg-theme text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm active:scale-95 transition">꾸미기 시작 ➔</button>
-        </div>
-
-        <!-- 4칸 빈 프레임 슬롯 프리뷰 -->
-        <div class="grid grid-cols-4 gap-2 bg-slate-900 p-2.5 rounded-xl">
-          <div id="previewSlot0" onclick="selectSlotForAssignment(0)" class="aspect-[3/2] bg-slate-800 border-2 border-theme rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative shadow-md">1번 슬롯</div>
-          <div id="previewSlot1" onclick="selectSlotForAssignment(1)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">2번 슬롯</div>
-          <div id="previewSlot2" onclick="selectSlotForAssignment(2)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">3번 슬롯</div>
-          <div id="previewSlot3" onclick="selectSlotForAssignment(3)" class="aspect-[3/2] bg-slate-800 border-2 border-transparent rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">4번 슬롯</div>
-        </div>
-      </div>
-
-      <!-- 촬영된 원본 사진 목록 격자 -->
-      <div id="pickGrid" class="grid grid-cols-2 gap-2.5 max-h-[360px] overflow-y-auto no-scrollbar p-1">
-        <!-- 동적 로드 -->
-      </div>
-    </section>
-
-    <!-- 4. 에디터 스튜디오 화면 (Edit Screen) -->
-    <section id="screenEdit" class="hidden flex flex-col h-[88vh]">
-      <!-- 상단 고정 에디터 헤더 바 -->
-      <div class="bg-white px-4 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0 rounded-t-2xl shadow-2xs">
-        <div class="flex items-center space-x-2">
-          <button onclick="undo()" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 text-xs font-bold"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
-          <button onclick="redo()" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 text-xs font-bold"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i></button>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button onclick="showScreen('screenPick')" class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">사진 재선택</button>
-          <button onclick="saveAndGenerateQR()" class="px-4 py-1.5 bg-theme text-white rounded-xl text-xs font-black shadow-sm">완료 및 QR생성</button>
-        </div>
-      </div>
-
-      <!-- 캔버스 작업대 (확대 및 스크롤 영역) -->
-      <div class="flex-1 bg-slate-200 overflow-auto relative p-4 flex items-center justify-center touch-scroll">
-        <canvas id="photoCanvas" class="shadow-2xl rounded-lg bg-white max-w-full"></canvas>
-      </div>
-
-      <!-- 하단 편집 툴바 (스크롤 고정) -->
-      <div class="bg-white border-t border-slate-200 p-3 shrink-0 rounded-b-2xl space-y-3 max-h-[42vh] overflow-y-auto">
-        <!-- 탭 메뉴 (레이아웃 / 프레임 / 필터 / 스티커) -->
-        <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-black">
-          <button onclick="switchEditTab('layout')" id="editTabBtnLayout" class="flex-1 py-1.5 bg-white text-slate-900 rounded-lg shadow-2xs">레이아웃</button>
-          <button onclick="switchEditTab('frame')" id="editTabBtnFrame" class="flex-1 py-1.5 text-slate-500 rounded-lg">프레임</button>
-          <button onclick="switchEditTab('filter')" id="editTabBtnFilter" class="flex-1 py-1.5 text-slate-500 rounded-lg">감성필터</button>
-          <button onclick="switchEditTab('sticker')" id="editTabBtnSticker" class="flex-1 py-1.5 text-slate-500 rounded-lg">스티커</button>
-        </div>
-
-        <!-- 1. 레이아웃 탭 -->
-        <div id="editTabContentLayout" class="space-y-2">
-          <div class="grid grid-cols-3 gap-2">
-            <button onclick="changeLayout('strip', this)" class="layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs shadow-sm">1×4 세로스트립</button>
-            <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 바둑판</button>
-            <button onclick="changeLayout('twin', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">4×6 2줄인쇄</button>
-          </div>
-        </div>
-
-        <!-- 2. 프레임 탭 -->
-        <div id="editTabContentFrame" class="hidden space-y-2">
-          <div class="grid grid-cols-3 gap-2">
-            <button onclick="setFrameStyle('simple', this)" class="style-btn bg-theme text-white font-black py-2 rounded-xl text-xs border border-theme shadow-sm">포토이지 (상단)</button>
-            <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs border border-transparent">추억의네컷 (중간)</button>
-            <button onclick="setFrameStyle('bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs border border-transparent">인생4컷 (하단)</button>
-          </div>
-          <!-- 색상 팔레트 -->
-          <div id="frameColorGrid" class="flex items-center space-x-1.5 overflow-x-auto py-1 no-scrollbar"></div>
-        </div>
-
-        <!-- 3. 필터 탭 -->
-        <div id="editTabContentFilter" class="hidden space-y-2">
-          <div class="grid grid-cols-4 gap-1.5">
-            <button onclick="handleFilterClick('normal', this)" class="filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg text-xs border border-theme">원본</button>
-            <button onclick="handleFilterClick('bright', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">뽀샤시</button>
-            <button onclick="handleFilterClick('radiant', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">화사한</button>
-            <button onclick="handleFilterClick('warm', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">따뜻한</button>
-            <button onclick="handleFilterClick('cool', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">차가운</button>
-            <button onclick="handleFilterClick('mood', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">감성무드</button>
-            <button onclick="handleFilterClick('retro', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">레트로</button>
-            <button onclick="handleFilterClick('mono', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg text-xs">흑백</button>
-          </div>
-          <!-- 미세조정 패널 (토글) -->
-          <div id="filterFineTunePanel" class="hidden bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
-            <div class="flex justify-between text-[11px] font-bold"><span id="filterStateBadge">선택 필터</span><span>미세 조절 슬라이더</span></div>
-            <div class="flex items-center space-x-2 text-xs"><span class="w-10">밝기</span><input type="range" id="sliderBright" min="50" max="150" value="100" oninput="onFineTuneSliderChange()" class="w-full accent-rose-500"></div>
-            <div class="flex items-center space-x-2 text-xs"><span class="w-10">대비</span><input type="range" id="sliderContrast" min="50" max="150" value="100" oninput="onFineTuneSliderChange()" class="w-full accent-rose-500"></div>
-            <div class="flex items-center space-x-2 text-xs"><span class="w-10">채도</span><input type="range" id="sliderSaturate" min="0" max="200" value="100" oninput="onFineTuneSliderChange()" class="w-full accent-rose-500"></div>
-          </div>
-        </div>
-
-        <!-- 4. 스티커 탭 (이모티콘 60개 15열 4줄, 감성 글자 20개, 텍스트 추가) -->
-        <div id="editTabContentSticker" class="hidden space-y-2">
-          <!-- 최근 사용 스티커 바 -->
-          <div class="flex items-center space-x-1 overflow-x-auto py-1 no-scrollbar" id="recentStickersList"></div>
-
-          <!-- 직접 텍스트 추가 입력창 -->
-          <div class="flex space-x-1.5">
-            <input type="text" id="customEmojiInput" placeholder="나만의 문구 또는 이모지 입력" class="flex-1 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold focus:outline-none focus:border-rose-500">
-            <button onclick="addCustomInputSticker()" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-xs">추가</button>
-          </div>
-
-          <!-- 이모티콘 60개 그리드 (15열 4줄) 및 감성 글자 20개 -->
-          <div class="max-h-32 overflow-y-auto space-y-2 no-scrollbar">
-            <div>
-              <p class="text-[10px] font-bold text-slate-400 mb-1">이모티콘 팩 (60종)</p>
-              <div id="emojiGrid" class="grid grid-cols-15 gap-1"></div>
-            </div>
-            <div>
-              <p class="text-[10px] font-bold text-slate-400 mb-1">감성 레터링 (20종)</p>
-              <div id="textStickerGrid" class="flex flex-wrap gap-1"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 선택된 스티커 컨트롤 바 (회전, 크기, 삭제) -->
-        <div id="stickerControlBar" class="hidden bg-rose-50 border border-rose-200 p-2.5 rounded-xl space-y-2">
-          <div class="flex justify-between items-center text-xs font-bold text-rose-900">
-            <span>✨ 선택된 스티커 편집</span>
-            <div class="space-x-1">
-              <button onclick="deleteSelectedSticker()" class="px-2.5 py-0.5 bg-rose-600 text-white rounded-lg text-[10px] font-black">삭제</button>
-              <button onclick="clearAllStickers()" class="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-lg text-[10px]">전체삭제</button>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div class="flex items-center space-x-1.5"><span class="text-[10px]">크기</span><input type="range" id="stickerSizeSlider" min="20" max="200" value="70" oninput="onSelectedStickerResize(this.value)" class="w-full accent-rose-500"></div>
-            <div class="flex items-center space-x-1.5"><span class="text-[10px]">회전</span><input type="range" id="stickerRotateSlider" min="0" max="360" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-full accent-rose-500"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 5. 결과 및 QR코드 화면 (Result Screen) -->
-    <section id="screenResult" class="hidden space-y-4 text-center">
-      <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl space-y-4 max-w-xs mx-auto">
-        <div class="space-y-1">
-          <h2 class="font-black text-lg text-slate-900">추억의 네컷 완성! 🎉</h2>
-          <p class="text-xs text-slate-500">스마트폰으로 QR을 스캔하여 사진을 다운로드하세요.</p>
-        </div>
-
-        <!-- QR코드 영역 (크기 140px 최적화) -->
-        <div class="flex justify-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-          <div id="qrcodeArea" class="flex items-center justify-center"></div>
-        </div>
-
-        <!-- 사진 다운로드 방법 강조 안내 박스 -->
-        <div class="bg-rose-50 border border-rose-200 p-3 rounded-2xl text-rose-900 text-xs font-bold space-y-1 text-left">
-          <p class="font-black text-rose-600">💡 스마트폰 사진 다운로드 안내</p>
-          <p class="text-[11px] leading-relaxed">카메라 앱으로 QR을 비춘 뒤 연결된 페이지에서 이미지를 <b class="text-rose-700">꾸욱 눌러서 [사진에 추가]</b>를 선택해 주세요!</p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="downloadLocalImage()" class="bg-slate-900 text-white py-2.5 rounded-xl text-xs font-black shadow-xs active:scale-95">이미지 저장</button>
-          <button onclick="sharePhotoDirectly()" class="bg-rose-500 text-white py-2.5 rounded-xl text-xs font-black shadow-xs active:scale-95">공유하기</button>
-        </div>
-
-        <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-[11px] text-slate-400 font-bold">
-          <button onclick="returnToEditor()" class="hover:text-slate-700">← 편집으로 돌아가기</button>
-          <span id="resetTimerText" class="text-rose-500 font-black">120초</span>
-          <button onclick="resetApp()" class="hover:text-slate-700">처음으로</button>
-        </div>
-      </div>
-    </section>
-
   </main>
 
-  <!-- ================= FOOTER ================= -->
-  <footer class="text-center py-3 text-[11px] text-slate-400 font-medium">
-    추억의 네컷 Studio Pro © 2026. All Rights Reserved.
-  </footer>
-
-  <!-- ================= MODALS ================= -->
-  <!-- 갤러리 업로드 수집 모달 -->
-  <div id="galleryCollectModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white max-w-xs w-full rounded-3xl p-5 shadow-2xl space-y-4 text-center">
-      <h3 id="collectModalTitle" class="font-black text-sm text-slate-900">사진 수집 중 ( 0 / 4 )</h3>
-      <div id="collectThumbGrid" class="flex justify-center space-x-2 py-2"></div>
-      <p class="text-xs text-slate-500">인생네컷 완성을 위해 총 4장의 사진을 선택해주세요.</p>
-      <div class="grid grid-cols-2 gap-2">
-        <button onclick="triggerGalleryUpload()" class="bg-theme text-white py-2 rounded-xl text-xs font-bold">사진 추가하기</button>
-        <button onclick="cancelGalleryCollect()" class="bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold">취소</button>
+  <!-- ========================================================
+       화면 1-2: 고객 소리함 게시판
+  ======================================================== -->
+  <section id="screenBoard" class="hidden absolute inset-0 z-20 w-full flex flex-col bg-slate-50 overflow-hidden">
+    <header class="flex items-center justify-between px-4 py-4 border-b border-slate-200 bg-white shrink-0">
+      <div class="flex items-center">
+        <button onclick="showScreen('screenHome')" class="mr-3 text-slate-600 hover:text-slate-900"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+        <h2 class="text-base font-black text-slate-900">후기 & 고객 소리함</h2>
       </div>
-    </div>
-  </div>
+      <button onclick="fetchCloudBoardPosts()" class="text-xs text-indigo-600 font-bold flex items-center space-x-1"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>새로고침</span></button>
+    </header>
 
-  <!-- 관리자 대시보드 모달 (비밀번호 0724 / 1234) -->
-  <div id="adminDashboardModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white max-w-md w-full rounded-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+    <div class="flex-1 overflow-y-auto p-4 space-y-4 max-w-md mx-auto w-full touch-scroll">
+      <!-- 별점 집계 카드 -->
+      <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white shadow-md flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold opacity-90">사용자 만족도 평점</span>
+          <div class="flex items-center space-x-2 mt-0.5">
+            <span id="boardAvgScore" class="text-2xl font-black">5.0</span>
+            <span id="boardAvgStars" class="text-sm">⭐⭐⭐⭐⭐</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] font-bold opacity-90">누적 등록 후기</span>
+          <p class="text-lg font-black mt-0.5"><span id="boardTotalCount">0</span>개</p>
+        </div>
+      </div>
+
+      <!-- 후기 작성 -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+        <h3 class="text-xs font-black text-indigo-600 flex items-center"><i data-lucide="edit-3" class="w-3.5 h-3.5 mr-1"></i> 새 후기 작성하기</h3>
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-700">별점 선택:</span>
+          <div class="flex items-center space-x-2">
+            <span id="ratingStarDisplay" class="text-amber-500 font-black text-sm tracking-widest">⭐⭐⭐⭐⭐</span>
+            <span id="ratingValueText" class="text-xs font-black text-slate-800">5.0</span>
+          </div>
+        </div>
+        <input type="range" id="boardRatingSlider" min="0.5" max="5.0" step="0.5" value="5.0" oninput="updateRatingUI(this.value)" class="w-full accent-amber-500 h-1.5 bg-slate-200 rounded">
+
         <div class="flex items-center space-x-2">
-          <i data-lucide="shield-check" class="w-5 h-5 text-rose-500"></i>
-          <h2 class="font-black text-base text-slate-900">관리자 설정 센터</h2>
+          <input type="text" id="boardNickname" placeholder="닉네임" class="w-1/2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none">
+          <input type="password" id="boardPassword" placeholder="비밀번호 (삭제 시 필요)" class="w-1/2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none">
         </div>
-        <button onclick="closeAdminDashboard()" class="p-1.5 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <label class="flex items-center space-x-1.5 text-xs font-bold text-slate-600 cursor-pointer pl-1">
+          <input type="checkbox" id="boardIsPrivate" class="w-4 h-4 accent-indigo-600">
+          <span>비밀글로 작성하기</span>
+        </label>
+        <textarea id="boardContent" rows="3" placeholder="사용후기나 건의사항을 적어주세요!" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none resize-none"></textarea>
+        <button onclick="submitBoardPost()" id="btnSubmitBoard" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition active:scale-95">게시글 등록하기</button>
       </div>
 
-      <!-- 관리자 탭 메뉴 -->
-      <div class="flex border-b border-slate-200 text-xs font-bold">
-        <button onclick="switchAdminTab('stats')" id="tabBtnStats" class="flex-1 py-2.5 border-b-2 border-theme text-theme font-black">누적 현황</button>
-        <button onclick="switchAdminTab('theme')" id="tabBtnTheme" class="flex-1 py-2.5 border-b-2 border-transparent text-slate-400">테마 설정</button>
-        <button onclick="switchAdminTab('notices')" id="tabBtnNotices" class="flex-1 py-2.5 border-b-2 border-transparent text-slate-400">공지 관리</button>
+      <div>
+        <h3 class="text-xs font-bold text-slate-500 mb-2 pl-1">등록된 소리함 목록</h3>
+        <div id="boardListArea" class="space-y-2.5 pb-6"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       화면 1-3: 관리자 설정 대시보드 모달
+  ======================================================== -->
+  <div id="adminDashboardModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+    <div class="bg-white w-full max-w-2xl h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-theme"></span>
+          <h2 class="text-base font-black text-slate-900">관리자 설정 센터</h2>
+        </div>
+        <button onclick="closeAdminDashboard()" class="text-slate-400 hover:text-slate-700 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <!-- 1. 누적 현황 탭 -->
-      <div id="adminTabStats" class="space-y-3 text-xs">
-        <div class="grid grid-cols-4 gap-2 text-center">
-          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400">오늘</p><b id="dashToday" class="text-rose-600 text-sm">0</b></div>
-          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400">이번주</p><b id="dashWeek" class="text-slate-800 text-sm">0</b></div>
-          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400">이번달</p><b id="dashMonth" class="text-slate-800 text-sm">0</b></div>
-          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400">총 누적</p><b id="dashTotal" class="text-slate-800 text-sm">0</b></div>
-        </div>
-        <div class="grid grid-cols-2 gap-3 pt-2">
-          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 h-36"><canvas id="chartHourly"></canvas></div>
-          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 h-36"><canvas id="chartDevice"></canvas></div>
-        </div>
+      <div class="flex border-b border-slate-200 bg-white shrink-0 text-xs font-bold">
+        <button onclick="switchAdminTab('stats')" id="tabBtnStats" class="flex-1 py-3 border-b-2 border-theme text-theme">📊 방문 통계</button>
+        <button onclick="switchAdminTab('theme')" id="tabBtnTheme" class="flex-1 py-3 border-b-2 border-transparent text-slate-400">🎨 UI 테마</button>
+        <button onclick="switchAdminTab('notices')" id="tabBtnNotices" class="flex-1 py-3 border-b-2 border-transparent text-slate-400">📢 공지 관리</button>
+        <button onclick="switchAdminTab('reviews')" id="tabBtnReviews" class="flex-1 py-3 border-b-2 border-transparent text-slate-400">💬 후기 관리</button>
       </div>
 
-      <!-- 2. 테마 설정 탭 -->
-      <div id="adminTabTheme" class="hidden space-y-3 text-xs">
-        <p class="font-bold text-slate-700">웹앱 전체 메인 컬러 테마 선택</p>
-        <div class="grid grid-cols-5 gap-2">
-          <button onclick="applyAppTheme('rose')" class="p-3 bg-rose-500 text-white rounded-xl font-bold shadow-xs">로즈핑크</button>
-          <button onclick="applyAppTheme('black')" class="p-3 bg-slate-900 text-white rounded-xl font-bold shadow-xs">모던블랙</button>
-          <button onclick="applyAppTheme('blue')" class="p-3 bg-sky-500 text-white rounded-xl font-bold shadow-xs">오션블루</button>
-          <button onclick="applyAppTheme('purple')" class="p-3 bg-purple-600 text-white rounded-xl font-bold shadow-xs">라벤더</button>
-          <button onclick="applyAppTheme('green')" class="p-3 bg-emerald-600 text-white rounded-xl font-bold shadow-xs">포레스트</button>
+      <div class="flex-1 overflow-y-auto p-5 space-y-6 touch-scroll bg-slate-50 text-slate-800">
+        <!-- 탭 1: 통계 -->
+        <div id="adminTabStats" class="space-y-5">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs"><span class="text-[10px] font-bold text-slate-400">오늘 방문자</span><p id="dashToday" class="text-xl font-black text-theme mt-1">0</p></div>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs"><span class="text-[10px] font-bold text-slate-400">이번 주 방문자</span><p id="dashWeek" class="text-xl font-black text-slate-800 mt-1">0</p></div>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs"><span class="text-[10px] font-bold text-slate-400">이번 달 방문자</span><p id="dashMonth" class="text-xl font-black text-slate-800 mt-1">0</p></div>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs"><span class="text-[10px] font-bold text-slate-400">총 누적 방문자</span><p id="dashTotal" class="text-xl font-black text-indigo-600 mt-1">0</p></div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs"><h4 class="text-xs font-bold text-slate-700 mb-3"><i data-lucide="clock" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 시간대별 방문 현황</h4><div class="h-44 w-full"><canvas id="chartHourly"></canvas></div></div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs"><h4 class="text-xs font-bold text-slate-700 mb-3"><i data-lucide="smartphone" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 접속 기기 분포</h4><div class="h-44 w-full flex justify-center"><canvas id="chartDevice"></canvas></div></div>
         </div>
-      </div>
 
-      <!-- 3. 공지 관리 탭 -->
-      <div id="adminTabNotices" class="hidden space-y-3 text-xs">
-        <p class="font-bold text-slate-700">홈 화면 상단 공지사항 등록 및 갱신</p>
-        <button onclick="writeAdminNotice()" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-black shadow-xs">새 공지사항 작성하기</button>
+        <!-- 탭 2: 테마 -->
+        <div id="adminTabTheme" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <h4 class="text-xs font-bold text-slate-700">전체 UI 메인 테마 색상 선택</h4>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
+              <button onclick="applyAppTheme('rose')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-rose-50"><span class="w-4 h-4 rounded-full bg-rose-600"></span><span class="text-xs font-bold text-slate-800">로즈 핑크(기본)</span></button>
+              <button onclick="applyAppTheme('black')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-slate-50"><span class="w-4 h-4 rounded-full bg-slate-900"></span><span class="text-xs font-bold text-slate-800">모던 블랙</span></button>
+              <button onclick="applyAppTheme('blue')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-sky-50"><span class="w-4 h-4 rounded-full bg-sky-600"></span><span class="text-xs font-bold text-slate-800">오션 블루</span></button>
+              <button onclick="applyAppTheme('purple')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-violet-50"><span class="w-4 h-4 rounded-full bg-purple-600"></span><span class="text-xs font-bold text-slate-800">라벤더 퍼플</span></button>
+              <button onclick="applyAppTheme('green')" class="p-3 rounded-xl border border-slate-200 flex items-center space-x-2 bg-emerald-50"><span class="w-4 h-4 rounded-full bg-emerald-600"></span><span class="text-xs font-bold text-slate-800">포레스트 그린</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 3: 공지 -->
+        <div id="adminTabNotices" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div class="flex justify-between items-center"><h4 class="text-xs font-bold text-slate-700">공지사항 관리</h4><button onclick="writeAdminNotice()" class="bg-theme text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ 새 공지 등록</button></div>
+            <p class="text-[11px] text-slate-400">※ 14일 이내 공지만 홈에 노출되며, 오래된 공지는 자동 만료됩니다.</p>
+            <div id="adminNoticeManageList" class="space-y-2 pt-2"></div>
+          </div>
+        </div>
+
+        <!-- 탭 4: 후기 관리 -->
+        <div id="adminTabReviews" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div class="flex justify-between items-center"><h4 class="text-xs font-bold text-slate-700">후기 & 비밀글 관리</h4><button onclick="fetchCloudBoardPosts()" class="text-xs text-indigo-600 font-bold">새로고침</button></div>
+            <div id="adminReviewManageList" class="space-y-2 pt-2"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- JavaScript 동작 엔진 연동 -->
+  <!-- ========================================================
+       화면 2: 풀스크린 촬영 화면
+  ======================================================== -->
+  <section id="screenLiveShoot" class="hidden fixed inset-0 bg-black flex flex-col z-50 overflow-hidden">
+    <div id="flashOverlay" class="hidden absolute inset-0 bg-white z-[60] pointer-events-none"></div>
+    <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror"></video>
+    
+    <div class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+      <div class="w-full flex-1 bg-black/60"></div>
+      <div id="viewfinder32Box" class="w-full aspect-[3/2] border border-white/50 relative flex items-center justify-center">
+        <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-theme"></div>
+        <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-theme"></div>
+        <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-theme"></div>
+        <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-theme"></div>
+      </div>
+      <div class="w-full flex-1 bg-black/60"></div>
+    </div>
+
+    <div class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent pb-8">
+      <span id="liveProgressBadge" class="bg-theme text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg">1 / 6 컷</span>
+      <div class="flex items-center space-x-2">
+        <button onclick="flipCameraFacing()" class="bg-black/50 backdrop-blur border border-white/20 text-white px-3 py-1.5 rounded-full text-xs font-bold active:scale-95"><i data-lucide="refresh-cw" class="w-3.5 h-3.5 inline mr-1"></i>전환</button>
+        <button onclick="cancelSession()" class="text-white p-1.5 bg-black/50 backdrop-blur rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+
+    <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
+      <span id="liveCountdownText" class="stroke-countdown text-[150px] font-black scale-100 transition-all">6</span>
+      <div class="mt-4 text-center px-4">
+        <p id="poseGuideText" class="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">어깨동무하고 찰칵! 🫂</p>
+      </div>
+    </div>
+
+    <div class="absolute bottom-6 w-full flex flex-col items-center space-y-3 z-20 px-4">
+      <button onclick="triggerInstantOneSec()" class="text-white text-base font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] active:scale-90 transition py-1 px-3 pointer-events-auto">⚡ 1초 뒤 바로 촬영</button>
+      <div class="w-full max-w-md flex items-center justify-center space-x-2">
+        <div id="liveThumb0" class="w-12 h-8 bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center text-[10px] text-white/50 font-bold">1</div>
+        <div id="liveThumb1" class="w-12 h-8 bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center text-[10px] text-white/50 font-bold">2</div>
+        <div id="liveThumb2" class="w-12 h-8 bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center text-[10px] text-white/50 font-bold">3</div>
+        <div id="liveThumb3" class="w-12 h-8 bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center text-[10px] text-white/50 font-bold">4</div>
+        <div id="liveThumb4" class="w-12 h-8 bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center text-[10px] text-white/50 font-bold">5</div>
+        <div id="liveThumb5" class="w-12 h-8 bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center text-[10px] text-white/50 font-bold">6</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       화면 3: 6장 중 4장 선택 화면
+  ======================================================== -->
+  <section id="screenPick" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row items-center justify-between p-4 gap-4 bg-white text-slate-900 overflow-y-auto touch-scroll">
+    <div class="w-full lg:w-1/2 flex flex-col items-center justify-center">
+      <div class="text-center mb-2"><span class="bg-theme-light text-theme font-black text-xs px-3 py-1 rounded-full border border-rose-200">배치 프리뷰</span></div>
+      <div class="w-48 sm:w-56 bg-black p-2.5 shadow-2xl flex flex-col space-y-2 border border-slate-300">
+        <div class="text-center text-white text-[10px] font-black font-serif py-0.5 border-b border-white/20">추억의 네컷</div>
+        <div onclick="selectSlotForAssignment(0)" id="previewSlot0" class="aspect-[3/2] bg-slate-900 border-2 border-theme flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">1번 슬롯</div>
+        <div onclick="selectSlotForAssignment(1)" id="previewSlot1" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">2번 슬롯</div>
+        <div onclick="selectSlotForAssignment(2)" id="previewSlot2" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">3번 슬롯</div>
+        <div onclick="selectSlotForAssignment(3)" id="previewSlot3" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">4번 슬롯</div>
+      </div>
+    </div>
+    <div class="w-full lg:w-1/2 flex flex-col max-w-md mx-auto space-y-3">
+      <div><h3 class="font-black text-base">사진 목록 (터치하여 슬롯 채우기)</h3></div>
+      <div id="pickGrid" class="grid grid-cols-2 gap-2.5 max-h-80 overflow-y-auto p-2 border border-slate-200 rounded-2xl bg-slate-50 touch-scroll"></div>
+      <div class="space-y-2 pt-2 border-t border-slate-200">
+        <button onclick="confirmSelectedFour()" id="btnConfirmPick" class="w-full bg-theme hover:bg-theme text-white font-extrabold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition">이 4장으로 꾸미기</button>
+        <button onclick="startPhotoSession()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">다시 촬영하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       화면 4: 스튜디오 에디터 (확대/스크롤 작업대 & 고정 헤더)
+  ======================================================== -->
+  <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
+    
+    <!-- 🌟 좌측: 캔버스 작업대 (확대/축소 및 스크롤 뷰포트) -->
+    <div class="w-full h-[45%] lg:h-full lg:w-1/2 flex flex-col bg-[#F6F3EC] border-b lg:border-r border-[#EBE6DC] shadow-inner relative z-10 shrink-0">
+      
+      <!-- 확대/축소 플로팅 컨트롤 바 -->
+      <div class="absolute top-2 left-2 z-20 flex items-center space-x-1 bg-white/90 backdrop-blur-md px-2 py-1 rounded-xl shadow-sm border border-slate-200 text-xs font-bold">
+        <button onclick="zoomCanvas(-0.15)" class="p-1 text-slate-600 hover:text-rose-600 active:scale-90 transition" title="축소"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+        <span id="canvasZoomLabel" class="text-[11px] text-slate-700 w-10 text-center font-black">100%</span>
+        <button onclick="zoomCanvas(0.15)" class="p-1 text-slate-600 hover:text-rose-600 active:scale-90 transition" title="확대"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+        <button onclick="resetCanvasZoom()" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded ml-1 transition">리셋</button>
+      </div>
+
+      <!-- 스크롤 가능한 캔버스 뷰포트 -->
+      <div id="canvasViewport" class="flex-1 w-full h-full overflow-auto flex items-center justify-center p-4 touch-scroll">
+        <div id="canvasScaleWrapper" class="transition-transform duration-150 origin-center flex items-center justify-center">
+          <canvas id="photoCanvas" class="max-h-[38vh] lg:max-h-[75vh] w-auto h-auto object-contain shadow-2xl cursor-pointer bg-white"></canvas>
+        </div>
+      </div>
+
+      <p class="text-[10px] text-slate-500 text-center py-1 shrink-0 bg-[#F6F3EC]">
+        <i data-lucide="hand" class="w-3 h-3 text-theme inline mr-0.5"></i>스티커를 터치해 위치·크기·회전·색상·글꼴을 자유롭게 꾸며보세요
+      </p>
+    </div>
+
+    <!-- 🌟 우측: 완전 분리형 에디터 컨트롤 (상단 바 비침 완벽 해결) -->
+    <div class="flex-1 lg:w-1/2 h-[55%] lg:h-full flex flex-col bg-white overflow-hidden relative z-0">
+      
+      <!-- 상단 불투명 완전 고정 헤더 -->
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 shrink-0 bg-white z-20 shadow-2xs">
+        <h2 class="text-sm font-black text-slate-900 flex items-center">
+          <i data-lucide="sparkles" class="w-4 h-4 text-theme mr-1.5"></i> 에디터 스튜디오
+        </h2>
+        <div class="flex items-center space-x-1.5">
+          <button onclick="undo()" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"><i data-lucide="undo" class="w-4 h-4"></i></button>
+          <button onclick="redo()" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"><i data-lucide="redo" class="w-4 h-4"></i></button>
+          <button onclick="cancelSession()" class="text-[11px] text-slate-500 font-bold ml-2">홈으로</button>
+        </div>
+      </div>
+
+      <!-- 독립 스크롤 옵션 바디 -->
+      <div class="flex-1 overflow-y-auto touch-scroll p-4 sm:p-6 pb-12 space-y-4">
+        
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 레이아웃</label>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button onclick="changeLayout('strip', this)" class="layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs">1×4 스트립</button>
+            <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 격자</button>
+            <button onclick="changeLayout('twin', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2줄 인쇄용</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 테마 (3대 스타일)</label>
+          <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+            <button onclick="setFrameStyle('simple', this)" class="style-btn bg-theme text-white font-black py-2 rounded-xl border border-theme shadow-sm">포토이지 (상단)</button>
+            <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">추억의네컷 (중간)</button>
+            <button onclick="setFrameStyle('bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">인생4컷 (하단)</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1.5"><label class="text-[11px] font-bold text-slate-600">감성 필터 (12종)</label><span id="filterStateBadge" class="text-[10px] text-theme font-bold">원본</span></div>
+          <div class="grid grid-cols-4 gap-1 text-xs">
+            <button onclick="handleFilterClick('normal', this)" class="filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg border border-theme">원본</button>
+            <button onclick="handleFilterClick('bright', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">뽀샤시</button>
+            <button onclick="handleFilterClick('radiant', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">화사한</button>
+            <button onclick="handleFilterClick('warm', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">따뜻한</button>
+            <button onclick="handleFilterClick('cool', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">차가운</button>
+            <button onclick="handleFilterClick('mood', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">감성무드</button>
+            <button onclick="handleFilterClick('retro', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">레트로</button>
+            <button onclick="handleFilterClick('mono', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">흑백</button>
+            <button onclick="handleFilterClick('sunset', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">노을빛</button>
+            <button onclick="handleFilterClick('cyan', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">청량블루</button>
+            <button onclick="handleFilterClick('green', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">빈티지그린</button>
+            <button onclick="handleFilterClick('pink', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent">로맨틱핑크</button>
+          </div>
+          <div id="filterFineTunePanel" class="hidden mt-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+            <input type="range" id="sliderBright" min="70" max="150" value="100" oninput="onFineTuneSliderChange()" class="w-full accent-theme h-1 bg-slate-200 rounded">
+            <input type="range" id="sliderContrast" min="60" max="150" value="100" oninput="onFineTuneSliderChange()" class="w-full accent-theme h-1 bg-slate-200 rounded">
+            <input type="range" id="sliderSaturate" min="0" max="180" value="100" oninput="onFineTuneSliderChange()" class="w-full accent-theme h-1 bg-slate-200 rounded">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between space-x-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+          <span class="text-[11px] font-bold text-slate-600 shrink-0">여백크기</span>
+          <input type="range" id="sliderThickness" min="15" max="70" value="40" oninput="onThicknessChange(this.value)" class="w-full accent-theme h-1.5 bg-slate-200 rounded flex-1 mx-2">
+          <div id="frameColorGrid" class="flex flex-wrap gap-1 items-center justify-end w-44 overflow-x-auto no-scrollbar"></div>
+        </div>
+
+        <!-- 문구 설정 (날짜와 완벽 분리 정렬) -->
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="text-[11px] font-bold text-slate-600" id="labelCustomText">문구 & 날짜 설정</label>
+            <button onclick="toggleFontBold()" id="btnFontBold" class="px-2 py-0.5 rounded text-[10px] font-black border border-theme bg-theme text-white">굵게 B</button>
+          </div>
+          <input type="text" id="frameSignatureInput" value="sangsangPhoto" oninput="renderStrip()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold outline-none focus:border-theme">
+          <div id="fontGrid" class="grid grid-cols-5 gap-1"></div>
+          <div class="flex items-center justify-between pt-1 text-[10px] text-slate-600">
+            <div class="flex items-center space-x-1.5">
+              <input type="color" id="fontColorPicker" value="#FFFFFF" onchange="onFontColorChange(this.value)" class="w-5 h-5 rounded cursor-pointer border border-slate-300">
+              <input type="range" id="fontSizeSlider" min="20" max="90" value="40" oninput="onFontSizeChange(this.value)" class="w-16 accent-theme h-1 bg-slate-200 rounded">
+            </div>
+            <label class="flex items-center space-x-1 cursor-pointer">
+              <input type="checkbox" id="checkShowDate" checked onchange="toggleShowDate(this.checked)" class="w-3.5 h-3.5 rounded accent-theme">
+              <span>날짜 표시</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 🌟 텍스트 추가 & 스티커 팩 (글자 20종 + 이모티콘 60종) -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-[11px] font-bold text-slate-600">스티커 & 텍스트 추가</label>
+            <button onclick="clearAllStickers()" class="text-[10px] text-theme hover:underline">전체 비우기</button>
+          </div>
+
+          <!-- 🌟 직접 텍스트 추가 입력바 -->
+          <div class="flex items-center space-x-1.5 mb-2.5">
+            <input type="text" id="directTextInput" placeholder="추가할 문구를 입력하세요" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-theme">
+            <button onclick="addDirectTextSticker()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs active:scale-95 transition shrink-0">
+              + 텍스트 추가
+            </button>
+          </div>
+
+          <div id="recentStickersBar" class="flex items-center space-x-1.5 mb-2 p-1.5 bg-slate-100 rounded-xl overflow-x-auto no-scrollbar"><span class="text-[10px] text-slate-400 font-bold shrink-0 mr-1">최근:</span><div id="recentStickersList" class="flex items-center space-x-1"></div></div>
+          
+          <!-- 감성 글자 20종 가로 스크롤 -->
+          <div id="textStickerGrid" class="flex items-center space-x-1.5 overflow-x-auto pb-2 no-scrollbar"></div>
+          
+          <!-- 🌟 이모티콘 60종 (15개씩 4줄) 그리드 -->
+          <div id="emojiGrid" class="grid grid-cols-15 gap-1 p-2 bg-slate-50 rounded-2xl border border-slate-200 text-sm overflow-x-auto no-scrollbar text-center"></div>
+
+          <!-- 스티커 조절 바 -->
+          <div id="stickerControlBar" class="hidden mt-2 p-2.5 bg-theme-light rounded-xl border border-rose-200 space-y-2">
+            <div class="flex items-center justify-between text-[10px] text-theme font-bold">
+              <span>크기:</span><input type="range" id="stickerSizeSlider" min="20" max="200" value="65" oninput="onSelectedStickerResize(this.value)" class="w-24 accent-rose-500 h-1 bg-slate-300 rounded">
+              <span class="ml-2">회전:</span><input type="range" id="stickerRotateSlider" min="0" max="360" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-20 accent-rose-500 h-1 bg-slate-300 rounded">
+              <button onclick="deleteSelectedSticker()" class="text-xs text-white font-bold px-2 py-1 rounded bg-theme hover:bg-theme ml-2">삭제</button>
+            </div>
+            <div id="stickerTextCustomRow" class="flex items-center justify-between pt-1 border-t border-rose-200/60 text-[10px] text-slate-700 font-bold">
+              <div class="flex items-center space-x-1.5">
+                <span>글자색:</span>
+                <input type="color" id="stickerColorPicker" value="#FFFFFF" onchange="onSelectedStickerColorChange(this.value)" class="w-5 h-5 rounded cursor-pointer border border-slate-300">
+              </div>
+              <div class="flex items-center space-x-1">
+                <span>글꼴:</span>
+                <select id="stickerFontSelect" onchange="onSelectedStickerFontChange(this.value)" class="bg-white border border-slate-300 text-slate-800 rounded px-1.5 py-0.5 text-[10px] outline-none">
+                  <option value="Pretendard">프리텐다드</option>
+                  <option value="Playfair Display">영문세리프</option>
+                  <option value="Do Hyeon">도현체</option>
+                  <option value="Jua">주아체</option>
+                  <option value="Gowun Batang">고운바탕</option>
+                  <option value="Gaegu">개구쟁이</option>
+                  <option value="Noto Sans KR">본고딕</option>
+                  <option value="Dongle">동글체</option>
+                  <option value="Nanum Pen Script">나눔손글씨</option>
+                  <option value="Black Han Sans">검은고딕</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 다운로드 & 저장 기능 영역 -->
+        <div class="space-y-2 pt-3 border-t border-slate-200">
+          <button onclick="autoSaveVideo()" id="btnAutoVideo" class="w-full bg-theme text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+            <i data-lucide="video" class="w-4 h-4"></i>
+            <span>🎬 4컷 비디오 저장 (자동 다운로드)</span>
+          </button>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="autoSavePDF()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              <span>🖨️ PDF 인쇄저장</span>
+            </button>
+            <button onclick="sharePhotoDirectly()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+              <i data-lucide="share" class="w-4 h-4"></i>
+              <span>공유하기 (이미지)</span>
+            </button>
+          </div>
+          <!-- 🌟 [수정] 괄호 안 구글드라이브 삭제 -->
+          <button onclick="saveAndGenerateQR()" id="btnSaveQR" class="w-full bg-theme text-white font-black py-3.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-lg active:scale-95 transition mt-2">
+            <i data-lucide="qr-code" class="w-4 h-4"></i>
+            <span>📱 QR코드 생성</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       화면 5: 결과 화면 (QR 축소 & 다운로드 방법 대폭 강조)
+  ======================================================== -->
+  <section id="screenResult" class="hidden absolute inset-0 z-50 w-full flex flex-col items-center justify-center px-4 bg-slate-50 text-center overflow-y-auto">
+    <div class="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center my-auto">
+      <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5">
+        <i data-lucide="check" class="w-5 h-5"></i>
+      </div>
+      <h2 class="text-lg font-black text-slate-900 mb-1">QR코드 생성 완료!</h2>
+
+      <!-- 🌟 [수정] 사진 다운로드 방법 안내 박스를 크고 시원하게 강조 -->
+      <div class="bg-rose-50/90 border-2 border-rose-300 rounded-2xl p-4 my-2.5 text-left w-full shadow-sm">
+        <p class="text-xs font-black text-rose-600 mb-2 flex items-center">
+          <i data-lucide="help-circle" class="w-4 h-4 mr-1"></i> 사진 다운로드 방법 (필독!)
+        </p>
+        <ol class="text-xs text-slate-800 space-y-1.5 font-bold pl-4 list-decimal leading-relaxed">
+          <li>스마트폰 기본 카메라로 <b>QR코드 스캔</b></li>
+          <li>열리는 <b>웹페이지 링크</b>로 접속</li>
+          <li>화면의 완성 사진을 <b>꾸욱 길게 누르기</b></li>
+          <li><b>[사진 앱에 저장]</b> 또는 [이미지 저장] 선택</li>
+        </ol>
+      </div>
+
+      <!-- 🌟 [수정] QR코드는 140px로 아담하게 조정 -->
+      <div class="p-2 bg-white border border-slate-200 rounded-2xl mb-3 shadow-xs">
+        <div id="qrcodeArea" class="flex items-center justify-center w-[140px] h-[140px] mx-auto"></div>
+      </div>
+
+      <div class="w-full mb-2">
+        <button onclick="returnToEditor()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          <span>✏️ 다시 편집 화면으로 돌아가기</span>
+        </button>
+      </div>
+
+      <div class="pt-2 border-t border-slate-100 w-full flex items-center justify-between text-[11px] text-slate-400">
+        <span>자동 초기화</span>
+        <span id="resetTimerText" class="font-black text-theme">120초</span>
+      </div>
+      <button onclick="resetApp()" class="mt-2 w-full bg-slate-100 text-slate-600 font-bold py-2 rounded-xl text-xs">처음 화면으로 복귀</button>
+    </div>
+  </section>
+
+  <!-- 앨범 수집 모달 -->
+  <div id="galleryCollectModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center space-y-4">
+      <div class="w-10 h-10 bg-theme-light text-theme rounded-full flex items-center justify-center mx-auto"><i data-lucide="image-plus" class="w-5 h-5"></i></div>
+      <div><h3 class="font-black text-base text-slate-900" id="collectModalTitle">사진 수집 중 ( 0 / 4 )</h3><p class="text-xs text-slate-500 mt-1">4장이 채워지면 바로 배치 화면으로 이동합니다</p></div>
+      <div id="collectThumbGrid" class="flex justify-center space-x-2 py-1"></div>
+      <div class="space-y-2 pt-2">
+        <button onclick="triggerGalleryUpload()" class="w-full bg-theme text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition"><i data-lucide="camera" class="w-4 h-4"></i><span>➕ 다음 사진 촬영 / 선택하기</span></button>
+        <button onclick="cancelGalleryCollect()" class="w-full bg-slate-100 text-slate-600 font-bold py-2 rounded-xl text-xs">취소하고 홈으로</button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
+
+  <!-- 🌟 연결 스크립트 -->
   <script src="app.js"></script>
 </body>
 </html>
