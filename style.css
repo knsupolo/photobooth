@@ -1,32 +1,24 @@
-/* ==========================================================================
-   추억의 네컷 Pro Studio v12.7 - 통합 스타일시트 (style.css)
-   ========================================================================== */
-
-/* 1. 감성 웹 폰트 로드 (11종) */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Jua&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Sunflower:wght@700&display=swap');
 
-/* 2. 전역 스타일 및 터치 제어 */
+/* 1. 기본 폰트 및 모바일 터치 최적화 */
 * {
   font-family: 'Pretendard', sans-serif;
   -webkit-tap-highlight-color: transparent;
-  box-sizing: border-box;
 }
 
 body {
   touch-action: manipulation;
   user-select: none;
-  -webkit-user-select: none;
   overscroll-behavior-y: none;
 }
 
-/* 3. 웹캠 좌우 반전 */
+/* 2. 카메라 좌우 반전(거울 모드) */
 .mirror {
   transform: scaleX(-1);
-  -webkit-transform: scaleX(-1);
 }
 
-/* 4. 플래시 애니메이션 */
+/* 3. 플래시 셔터 애니메이션 */
 @keyframes flashAnim {
   0% { opacity: 0.95; }
   100% { opacity: 0; }
@@ -36,7 +28,7 @@ body {
   animation: flashAnim 0.35s ease-out forwards;
 }
 
-/* 5. 스크롤바 제어 */
+/* 4. 스크롤바 숨김 및 부드러운 터치 스크롤 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -48,21 +40,37 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* 6. 카운트다운 아웃라인 및 테마 색상 변수 */
+/* 5. 화면 전환 시 클릭 간섭 방지 */
+.hidden {
+  display: none !important;
+}
+
+/* 6. 속이 투명하고 흰색 테두리만 있는 카운트다운 텍스트 */
 .stroke-countdown {
   color: transparent;
   -webkit-text-stroke: 5px #ffffff;
   text-stroke: 5px #ffffff;
 }
 
+/* 7. 동적 UI 테마 변수 및 클래스 */
 :root {
   --theme-primary: #e11d48;
   --theme-primary-hover: #be123c;
   --theme-light: #ffe4e6;
 }
 
-.bg-theme { background-color: var(--theme-primary) !important; }
-.bg-theme:hover { background-color: var(--theme-primary-hover) !important; }
-.text-theme { color: var(--theme-primary) !important; }
-.border-theme { border-color: var(--theme-primary) !important; }
-.bg-theme-light { background-color: var(--theme-light) !important; }
+.bg-theme {
+  background-color: var(--theme-primary) !important;
+}
+.bg-theme:hover {
+  background-color: var(--theme-primary-hover) !important;
+}
+.text-theme {
+  color: var(--theme-primary) !important;
+}
+.border-theme {
+  border-color: var(--theme-primary) !important;
+}
+.bg-theme-light {
+  background-color: var(--theme-light) !important;
+}
