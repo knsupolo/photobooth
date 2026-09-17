@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>추억의 네컷 Studio Pro v13.0</title>
+  <title>추억의 네컷 Studio Pro v13.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -32,7 +32,6 @@
 </head>
 <body class="bg-white text-slate-900 h-screen w-screen overflow-hidden flex flex-col antialiased">
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
-  <input type="file" id="customFrameInput" accept="image/png" class="hidden" onchange="handleCustomFrameUpload(event)">
 
   <!-- ========================================================
        1. 메인 홈 화면
@@ -40,20 +39,18 @@
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
     <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5 justify-between relative">
       
-      <!-- 상단 헤더 -->
+      <!-- 상단 헤더 (카메라 아이콘 복원) -->
       <header class="shrink-0 flex items-center justify-between py-2 border-b border-slate-100">
         <div class="flex items-center space-x-2">
-          <!-- 🌟 복원된 왼쪽 카메라 아이콘 -->
           <div class="w-8 h-8 rounded-lg bg-theme flex items-center justify-center shadow-md">
             <i data-lucide="camera" class="w-4 h-4 text-white"></i>
           </div>
           <div class="flex items-center space-x-1.5">
             <span class="text-xl font-black tracking-tight text-slate-900">추억의 네컷</span>
             <span class="bg-rose-500 text-black text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm">Pro</span>
-            <span class="text-xs text-theme font-extrabold tracking-tighter">v13.0</span>
+            <span class="text-xs text-theme font-extrabold tracking-tighter">v13.1</span>
           </div>
         </div>
-        <!-- 방문자 카운터 -->
         <div class="flex items-center space-x-1 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-600">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>오늘 <b id="statTodayCount" class="text-theme">0</b></span>
@@ -62,7 +59,7 @@
         </div>
       </header>
 
-      <!-- 🌟 최근 공지사항 (2주 이내 최신 1개만 깔끔히 노출) -->
+      <!-- 최근 공지사항 (2주 이내 최신 1개) -->
       <div id="mainNoticeArea" class="shrink-0 mt-3 hidden bg-theme-light border border-rose-200 rounded-2xl p-3 shadow-sm">
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-xs font-black text-theme flex items-center">
@@ -72,7 +69,7 @@
         <div id="noticeListContainer" class="space-y-1"></div>
       </div>
 
-      <!-- 🌟 화면 정중앙 액션 버튼 -->
+      <!-- 화면 정중앙 액션 버튼 -->
       <section class="flex-1 flex flex-col justify-center space-y-4 my-auto">
         <button onclick="startPhotoSession()" class="w-full bg-theme text-white py-7 px-5 rounded-3xl shadow-xl flex items-center justify-between active:scale-[0.98] transition">
           <div class="flex items-center space-x-4 text-left">
@@ -101,7 +98,7 @@
         </button>
       </section>
 
-      <!-- 🌟 하단 메뉴 & 우측 하단 관리자 톱니바퀴 -->
+      <!-- 하단 메뉴 -->
       <div class="shrink-0 space-y-2.5 pt-3 border-t border-slate-100">
         <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
           <span class="text-slate-600 font-bold flex items-center space-x-1.5">
@@ -129,9 +126,9 @@
             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
           </button>
 
-          <!-- 🌟 관리자 설정 톱니바퀴 버튼 -->
-          <button onclick="promptAdminMode()" class="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-600 active:scale-95 transition shrink-0" title="관리자 설정">
-            <i data-lucide="settings" class="w-5 h-5"></i>
+          <!-- 🌟 사각형 테두리 제거된 소형 관리자 톱니바퀴 버튼 -->
+          <button onclick="promptAdminMode()" class="p-2 text-slate-400 hover:text-slate-700 active:scale-90 transition shrink-0" title="관리자 설정">
+            <i data-lucide="settings" class="w-4 h-4"></i>
           </button>
         </div>
 
@@ -143,7 +140,7 @@
   </main>
 
   <!-- ========================================================
-       1-2. 고객 소리함 게시판 (별점 누적 통계)
+       1-2. 고객 소리함 게시판
   ======================================================== -->
   <section id="screenBoard" class="hidden absolute inset-0 z-20 w-full flex flex-col bg-slate-50 overflow-hidden">
     <header class="flex items-center justify-between px-4 py-4 border-b border-slate-200 bg-white shrink-0">
@@ -155,7 +152,6 @@
     </header>
 
     <div class="flex-1 overflow-y-auto p-4 space-y-4 max-w-md mx-auto w-full touch-scroll">
-      <!-- 별점 누적 통계 카드 -->
       <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white shadow-md flex items-center justify-between">
         <div>
           <span class="text-[10px] font-bold opacity-90">사용자 만족도 평점</span>
@@ -170,7 +166,6 @@
         </div>
       </div>
 
-      <!-- 후기 작성 -->
       <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
         <h3 class="text-xs font-black text-indigo-600 flex items-center"><i data-lucide="edit-3" class="w-3.5 h-3.5 mr-1"></i> 새 후기 작성하기</h3>
         <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between">
@@ -222,7 +217,6 @@
       </div>
 
       <div class="flex-1 overflow-y-auto p-5 space-y-6 touch-scroll bg-slate-50 text-slate-800">
-        <!-- 탭 1: 통계 -->
         <div id="adminTabStats" class="space-y-5">
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs"><span class="text-[10px] font-bold text-slate-400">오늘 방문자</span><p id="dashToday" class="text-xl font-black text-theme mt-1">0</p></div>
@@ -233,8 +227,7 @@
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs"><h4 class="text-xs font-bold text-slate-700 mb-3"><i data-lucide="clock" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 시간대별 방문 현황</h4><div class="h-44 w-full"><canvas id="chartHourly"></canvas></div></div>
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs"><h4 class="text-xs font-bold text-slate-700 mb-3"><i data-lucide="smartphone" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 접속 기기 분포</h4><div class="h-44 w-full flex justify-center"><canvas id="chartDevice"></canvas></div></div>
         </div>
-
-        <!-- 탭 2: 테마 -->
+        
         <div id="adminTabTheme" class="hidden space-y-4">
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
             <h4 class="text-xs font-bold text-slate-700">전체 UI 메인 테마 색상 선택</h4>
@@ -248,19 +241,23 @@
           </div>
         </div>
 
-        <!-- 탭 3: 공지 -->
         <div id="adminTabNotices" class="hidden space-y-4">
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-            <div class="flex justify-between items-center"><h4 class="text-xs font-bold text-slate-700">공지사항 관리</h4><button onclick="writeAdminNotice()" class="bg-theme text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ 새 공지 등록</button></div>
+            <div class="flex justify-between items-center">
+              <h4 class="text-xs font-bold text-slate-700">공지사항 관리</h4>
+              <button onclick="writeAdminNotice()" class="bg-theme text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ 새 공지 등록</button>
+            </div>
             <p class="text-[11px] text-slate-400">※ 14일 이내 공지만 홈에 노출되며, 오래된 공지는 자동 만료됩니다.</p>
             <div id="adminNoticeManageList" class="space-y-2 pt-2"></div>
           </div>
         </div>
 
-        <!-- 탭 4: 후기 관리 -->
         <div id="adminTabReviews" class="hidden space-y-4">
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-            <div class="flex justify-between items-center"><h4 class="text-xs font-bold text-slate-700">후기 & 비밀글 관리</h4><button onclick="fetchCloudBoardPosts()" class="text-xs text-indigo-600 font-bold">새로고침</button></div>
+            <div class="flex justify-between items-center">
+              <h4 class="text-xs font-bold text-slate-700">후기 & 비밀글 관리</h4>
+              <button onclick="fetchCloudBoardPosts()" class="text-xs text-indigo-600 font-bold">새로고침</button>
+            </div>
             <div id="adminReviewManageList" class="space-y-2 pt-2"></div>
           </div>
         </div>
@@ -339,7 +336,7 @@
   </section>
 
   <!-- ========================================================
-       4. 스튜디오 에디터
+       4. 스튜디오 에디터 (스티커 40종 & 상하 정렬 완벽 보정)
   ======================================================== -->
   <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
     <div class="w-full h-[45%] lg:h-full lg:w-1/2 flex flex-col items-center justify-center bg-[#F6F3EC] border-b lg:border-r border-[#EBE6DC] shadow-inner relative z-10 shrink-0 p-2">
@@ -367,7 +364,7 @@
         </div>
 
         <div>
-          <div class="flex items-center justify-between mb-1.5"><label class="text-[11px] font-bold text-slate-600">프레임 테마</label><button onclick="document.getElementById('customFrameInput').click()" class="text-[10px] text-theme font-bold hover:underline">+ PNG 업로드</button></div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 테마</label>
           <div class="grid grid-cols-3 gap-1.5 text-[11px]">
             <button onclick="setFrameStyle('simple', this)" class="style-btn bg-theme text-white font-black py-2 rounded-xl border border-theme shadow-sm">포토이지 (상단)</button>
             <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">추억의네컷 (중간)</button>
@@ -404,7 +401,7 @@
           <div id="frameColorGrid" class="flex flex-wrap gap-1 items-center justify-end w-44 overflow-x-auto no-scrollbar"></div>
         </div>
 
-        <!-- 프레임 문구 & 폰트 -->
+        <!-- 문구 설정 (날짜와 절대 겹치지 않는 동적 정렬) -->
         <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
           <div class="flex items-center justify-between">
             <label class="text-[11px] font-bold text-slate-600" id="labelCustomText">문구 & 날짜 설정</label>
@@ -424,27 +421,24 @@
           </div>
         </div>
 
-        <!-- 🌟 스티커 팩 (이모티콘 20종 + 글자 31종) -->
+        <!-- 🌟 스티커 팩 (글자 20종 + 이모티콘 20종) -->
         <div>
           <div class="flex justify-between items-center mb-1">
-            <label class="text-[11px] font-bold text-slate-600">이모티콘 & 글자 스티커</label>
+            <label class="text-[11px] font-bold text-slate-600">감성 글자 & 이모티콘 (40종)</label>
             <button onclick="clearAllStickers()" class="text-[10px] text-theme hover:underline">전체 비우기</button>
           </div>
           <div id="recentStickersBar" class="flex items-center space-x-1.5 mb-2 p-1.5 bg-slate-100 rounded-xl overflow-x-auto no-scrollbar"><span class="text-[10px] text-slate-400 font-bold shrink-0 mr-1">최근:</span><div id="recentStickersList" class="flex items-center space-x-1"></div></div>
           
-          <!-- 감성 글자 31종 가로 스크롤 -->
-          <div id="textStickerGrid" class="flex items-center space-x-1.5 overflow-x-auto pb-2 no-scrollbar"></div>
-          
-          <!-- 이모티콘 20종 그리드 -->
-          <div id="emojiGrid" class="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-2xl border border-slate-200 text-lg max-h-28 overflow-y-auto no-scrollbar justify-center"></div>
+          <!-- 글자 20종 -->
+          <div id="textStickerGrid" class="flex items-center space-x-1.5 overflow-x-auto pb-1.5 no-scrollbar"></div>
+          <!-- 이모티콘 20종 -->
+          <div id="emojiGrid" class="flex flex-wrap gap-1 p-2 bg-slate-50 rounded-2xl border border-slate-200 text-base max-h-24 overflow-y-auto no-scrollbar justify-center"></div>
 
           <!-- 스티커 조절 바 -->
           <div id="stickerControlBar" class="hidden mt-2 p-2.5 bg-theme-light rounded-xl border border-rose-200 space-y-2">
             <div class="flex items-center justify-between text-[10px] text-theme font-bold">
-              <span>크기:</span>
-              <input type="range" id="stickerSizeSlider" min="20" max="200" value="65" oninput="onSelectedStickerResize(this.value)" class="w-24 accent-rose-500 h-1 bg-slate-300 rounded">
-              <span class="ml-2">회전:</span>
-              <input type="range" id="stickerRotateSlider" min="0" max="360" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-20 accent-rose-500 h-1 bg-slate-300 rounded">
+              <span>크기:</span><input type="range" id="stickerSizeSlider" min="20" max="200" value="65" oninput="onSelectedStickerResize(this.value)" class="w-24 accent-rose-500 h-1 bg-slate-300 rounded">
+              <span class="ml-2">회전:</span><input type="range" id="stickerRotateSlider" min="0" max="360" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-20 accent-rose-500 h-1 bg-slate-300 rounded">
               <button onclick="deleteSelectedSticker()" class="text-xs text-white font-bold px-2 py-1 rounded bg-theme hover:bg-theme ml-2">삭제</button>
             </div>
             <div id="stickerTextCustomRow" class="flex items-center justify-between pt-1 border-t border-rose-200/60 text-[10px] text-slate-700 font-bold">
@@ -471,7 +465,6 @@
           </div>
         </div>
 
-        <!-- 다운로드 & 저장 기능 -->
         <div class="space-y-2 pt-3 border-t border-slate-200">
           <button onclick="autoSaveVideo()" id="btnAutoVideo" class="w-full bg-theme text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
             <i data-lucide="video" class="w-4 h-4"></i>
@@ -496,33 +489,17 @@
     </div>
   </section>
 
-  <!-- 5. 결과 화면 (QR) -->
+  <!-- ========================================================
+       5. 결과 화면 (QR)
+  ======================================================== -->
   <section id="screenResult" class="hidden absolute inset-0 z-50 w-full flex flex-col items-center justify-center px-4 bg-slate-50 text-center overflow-y-auto">
     <div class="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center my-auto">
       <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2"><i data-lucide="check" class="w-6 h-6"></i></div>
       <h2 class="text-xl font-black text-slate-900">QR코드 생성 완료!</h2>
-      <div class="bg-theme-light border border-rose-200 rounded-xl p-3 my-3 text-left w-full">
-        <p class="text-[11px] font-bold text-theme mb-1">📸 사진 다운로드 방법</p>
-        <ol class="text-[10px] text-slate-700 space-y-1 font-bold pl-3 list-decimal">
-          <li>스마트폰 기본 카메라로 QR 스캔</li>
-          <li>열리는 링크(인터넷) 접속</li>
-          <li>화면의 사진을 <b>꾸욱 길게 누르기</b></li>
-          <li><b>[이미지 저장]</b> 또는 [사진 앱에 저장] 클릭</li>
-        </ol>
-      </div>
-      <div class="p-3 bg-white border border-slate-200 rounded-2xl mb-4 shadow-sm">
-        <div id="qrcodeArea" class="flex items-center justify-center w-[180px] h-[180px] mx-auto"></div>
-      </div>
-      <div class="w-full mb-3">
-        <button onclick="returnToEditor()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
-          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-          <span>✏️ 다시 편집 화면으로 돌아가기</span>
-        </button>
-      </div>
-      <div class="pt-2 border-t border-slate-100 w-full flex items-center justify-between text-[11px] text-slate-400">
-        <span>자동 초기화</span>
-        <span id="resetTimerText" class="font-black text-theme">120초</span>
-      </div>
+      <div class="bg-theme-light border border-rose-200 rounded-xl p-3 my-3 text-left w-full"><p class="text-[11px] font-bold text-theme mb-1">📸 사진 다운로드 방법</p><ol class="text-[10px] text-slate-700 space-y-1 font-bold pl-3 list-decimal"><li>스마트폰 기본 카메라로 QR 스캔</li><li>열리는 링크(인터넷) 접속</li><li>화면의 사진을 <b>꾸욱 길게 누르기</b></li><li><b>[이미지 저장]</b> 또는 [사진 앱에 저장] 클릭</li></ol></div>
+      <div class="p-3 bg-white border border-slate-200 rounded-2xl mb-4 shadow-sm"><div id="qrcodeArea" class="flex items-center justify-center w-[180px] h-[180px] mx-auto"></div></div>
+      <div class="w-full mb-3"><button onclick="returnToEditor()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i><span>✏️ 다시 편집 화면으로 돌아가기</span></button></div>
+      <div class="pt-2 border-t border-slate-100 w-full flex items-center justify-between text-[11px] text-slate-400"><span>자동 초기화</span><span id="resetTimerText" class="font-black text-theme">120초</span></div>
       <button onclick="resetApp()" class="mt-3 w-full bg-slate-100 text-slate-600 font-bold py-2 rounded-xl text-xs">처음 화면으로 복귀</button>
     </div>
   </section>
@@ -543,121 +520,126 @@
   <canvas id="hiddenSnapCanvas" class="hidden"></canvas>
 
   <!-- ========================================================
-       통합 자바스크립트 엔진 (정상 작동 보장 완결본)
+       통합 스크립트 엔진
   ======================================================== -->
   <script>
-    const GAS_API_URL = "여기에_복사한_웹앱URL_붙여넣기";
-    const CLOUD_SYNC_ENDPOINT = "https://kvdb.io/A2V8p7M5rZ9W4kL1xY6q3T/";
+    // 🌟 1. 이모티콘 20종 & 감성 글자 20종 UI 동적 생성
+    function initDynamicUI() {
+      const fonts = [
+        { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
+        { name: 'Pretendard', label: '프리텐다드', css: 'font-family:"Pretendard"; font-weight:700;' },
+        { name: 'Do Hyeon', label: '도현체', css: 'font-family:"Do Hyeon";' },
+        { name: 'Jua', label: '주아체', css: 'font-family:"Jua";' },
+        { name: 'Gowun Batang', label: '고운바탕', css: 'font-family:"Gowun Batang"; font-weight:700;' },
+        { name: 'Gaegu', label: '개구쟁이', css: 'font-family:"Gaegu"; font-weight:700;' },
+        { name: 'Noto Sans KR', label: '본고딕', css: 'font-family:"Noto Sans KR"; font-weight:700;' },
+        { name: 'Dongle', label: '동글체', css: 'font-family:"Dongle"; font-weight:700; font-size: 1.2em;' },
+        { name: 'Nanum Pen Script', label: '나눔손글씨', css: 'font-family:"Nanum Pen Script"; font-size: 1.2em;' },
+        { name: 'Black Han Sans', label: '검은고딕', css: 'font-family:"Black Han Sans";' }
+      ];
+      const fontGrid = document.getElementById('fontGrid');
+      if (fontGrid) fontGrid.innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1 rounded text-[9px] truncate" style="${f.css}">${f.label}</button>`).join('');
 
-    function getFormattedTodayDate() {
-      const d = new Date();
-      return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+      // 🌟 이모티콘 20종
+      const emojis = ['✌️', '💖', '🎀', '🐱', '🐶', '🐰', '✨', '🎂', '🌸', '🍀', '🥳', '🧸', '🔥', '💯', '🕶️', '🍓', '👑', '🎉', '💌', '🍿'];
+      const emojiGrid = document.getElementById('emojiGrid');
+      if (emojiGrid) emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded text-base cursor-pointer active:scale-90 transition"> ${e} </button>`).join('');
+
+      // 🌟 감성 글자 20종 (한글/영어 믹스)
+      const texts = [
+        '추억의 네컷', 'BEST', 'LOVE', 'YOUTH', 'HAPPY', 'VIBE', 'OUR DAY', 'CHILL', 'SMILE', 'FOREVER',
+        '인생네컷', '오늘의 우리', '완벽한 하루', '행복만땅', '심쿵주의', '찐친바이브', '영원한 청춘', 'LUCKY DAY', 'MEMORIES', 'SO CUTE'
+      ];
+      const textStickerGrid = document.getElementById('textStickerGrid');
+      if (textStickerGrid) textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer active:scale-95 transition">${t}</button>`).join('');
+
+      const colors = ['#000000','#111827','#FFFFFF','#E2E8F0','#FECDD3','#FFEDD5','#FEF9C3','#D1FAE5','#BAE6FD','#EDE9FE','#881337','#1E1B4B','#064E3B'];
+      const frameColorGrid = document.getElementById('frameColorGrid');
+      if (frameColorGrid) {
+        frameColorGrid.innerHTML = colors.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') + `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
+      }
+      
+      renderRecentStickers();
+
+      setTimeout(() => {
+        const firstColor = document.querySelector('.color-btn');
+        if (firstColor) changeFrameColor('#000000', firstColor);
+        const firstFont = document.querySelector('.font-btn');
+        if (firstFont) setFontFamily('Playfair Display', firstFont);
+        if (window.lucide) lucide.createIcons();
+      }, 50);
     }
 
-    const POSE_SUGGESTIONS = ["어깨동무하고 찰칵! 🫂", "다같이 브이~ ✌️", "손잡고 빙그르르 💫", "개구쟁이 메롱 😜", "서로 얼굴 맞대고 🥰", "볼 옆에 브이 ✌️", "새침한 시크 표정 😎", "하트 뿅뿅 날리기 🫶", "자유로운 힙합 포즈 🤙", "꽃받침하고 방긋 🌸", "눈 꼭 감고 윙크 😉", "볼 빵빵 귀요미 🐹"];
-    const FILTER_PRESETS = { normal: { bright: 100, contrast: 100, saturate: 100, name: '원본' }, bright: { bright: 115, contrast: 105, saturate: 108, name: '뽀샤시' }, radiant: { bright: 112, contrast: 115, saturate: 125, name: '화사한' }, warm: { bright: 108, contrast: 105, saturate: 120, name: '따뜻한' }, cool: { bright: 106, contrast: 112, saturate: 95, name: '차가운' }, mood: { bright: 105, contrast: 95, saturate: 85, name: '감성무드' }, retro: { bright: 108, contrast: 90, saturate: 80, name: '레트로' }, mono: { bright: 105, contrast: 130, saturate: 0, name: '흑백' }, sunset: { bright: 110, contrast: 110, saturate: 135, name: '노을빛' }, cyan: { bright: 108, contrast: 115, saturate: 110, name: '청량블루' }, green: { bright: 105, contrast: 100, saturate: 90, name: '빈티지그린' }, pink: { bright: 112, contrast: 108, saturate: 120, name: '로맨틱핑크' } };
-    
-    // 🌟 최신 1개 자동 업데이트 공지만 유지
-    const DEFAULT_NOTICES = [{ id: 'v13_0', date: getFormattedTodayDate(), version: 'v13.0', content: '하단 톱니바퀴 관리자 버튼 신설 & 스티커 50여종 복원 완료!' }];
+    function pushRecentSticker(type, text) {
+      appState.recentStickers = appState.recentStickers.filter(item => item.text !== text);
+      appState.recentStickers.unshift({ type, text });
+      if (appState.recentStickers.length > 5) appState.recentStickers.pop();
+      renderRecentStickers();
+    }
 
-    let appState = {
-      isAdmin: false, stream: null, facingMode: 'user', timerSec: 6, currentCount: 6, countdownTimer: null,
-      shotImages: [], selectedImages: [], selectedIndices: [null, null, null, null], activeSlotIndex: 0,
-      stickers: [], recentStickers: [], selectedStickerIdx: -1, dragTarget: null, dragStartPos: { x:0, y:0 },
-      layout: 'strip', frameStyle: 'simple', frameThickness: 40, frameColor: '#000000', customOverlayImage: null,
-      activeFilter: 'normal', filters: { bright: 100, contrast: 100, saturate: 100 },
-      showDate: true, typography: { fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() },
-      shotVideoBlobs: [], currentMediaRecorder: null, currentShotVideoChunks: [], resetInterval: null
-    };
+    function renderRecentStickers() {
+      const listEl = document.getElementById('recentStickersList');
+      if (!listEl) return;
+      if (appState.recentStickers.length === 0) {
+        listEl.innerHTML = `<span class="text-[10px] text-slate-300 italic">없음</span>`;
+        return;
+      }
+      listEl.innerHTML = appState.recentStickers.map(item => {
+        if (item.type === 'emoji') {
+          return `<button onclick="addEmojiSticker('${item.text}')" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs active:scale-90">${item.text}</button>`;
+        } else {
+          return `<button onclick="addTextSticker('${item.text}')" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold truncate max-w-[75px] active:scale-95">${item.text}</button>`;
+        }
+      }).join('');
+    }
 
-    let galleryAccumulator = [];
-
-    // 🌟 우측 하단 톱니바퀴 클릭 시 관리자 모드 즉시 프롬프트
+    // 🌟 2. 관리자 설정 모드 (5회 실패 시 5분 락아웃 & 안내 문구 개선)
     function promptAdminMode() {
-      const pw = prompt("관리자 비밀번호를 입력하세요 (4자리)");
+      const now = Date.now();
+      const lockoutUntil = parseInt(localStorage.getItem('chueok_admin_lockout_until') || '0', 10);
+      
+      if (now < lockoutUntil) {
+        const remainingMinutes = Math.ceil((lockoutUntil - now) / 60000);
+        alert(`비밀번호 연속 5회 오류로 인해 ${remainingMinutes}분 동안 관리자 설정에 접근할 수 없습니다.`);
+        return;
+      }
+
+      const pw = prompt("관리자 비밀번호를 입력하세요");
       if (pw === "0724") {
+        localStorage.removeItem('chueok_admin_fail_count');
+        localStorage.removeItem('chueok_admin_lockout_until');
         appState.isAdmin = true;
         openAdminDashboard();
       } else if (pw !== null) {
-        alert("비밀번호가 올바르지 않습니다.");
+        let failCount = parseInt(localStorage.getItem('chueok_admin_fail_count') || '0', 10) + 1;
+        if (failCount >= 5) {
+          const lockTime = now + (5 * 60 * 1000); // 5분
+          localStorage.setItem('chueok_admin_lockout_until', lockTime.toString());
+          localStorage.removeItem('chueok_admin_fail_count');
+          alert("비밀번호를 5회 잘못 입력하여 5분간 관리자 설정 진입이 차단됩니다.");
+          showScreen('screenHome');
+        } else {
+          localStorage.setItem('chueok_admin_fail_count', failCount.toString());
+          alert(`비밀번호가 올바르지 않습니다. (${failCount}/5회 실패)`);
+        }
       }
-    }
-
-    // 🌟 3초 롱프레스 관리자 제스처 (보조 수단)
-    function initAdminLongPress() {
-      const icon = document.getElementById('cameraAdminIcon');
-      const badge = document.getElementById('adminHoldBadge');
-      if (!icon) return;
-      let holdTimer = null, countTimer = null, remaining = 3;
-
-      function startPress(e) {
-        if (e.cancelable && e.type === 'touchstart') e.preventDefault();
-        cancelPress();
-        remaining = 3;
-        icon.classList.add('admin-holding');
-        if (badge) { badge.textContent = `${remaining}초...`; badge.classList.remove('hidden'); }
-        countTimer = setInterval(() => {
-          remaining--;
-          if (remaining > 0 && badge) badge.textContent = `${remaining}초...`;
-        }, 1000);
-        holdTimer = setTimeout(() => {
-          cancelPress();
-          promptAdminMode();
-        }, 3000);
-      }
-
-      function cancelPress() {
-        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-        if (countTimer) { clearInterval(countTimer); countTimer = null; }
-        icon.classList.remove('admin-holding');
-        if (badge) badge.classList.add('hidden');
-      }
-
-      icon.addEventListener('contextmenu', e => e.preventDefault());
-      icon.addEventListener('mousedown', startPress);
-      icon.addEventListener('touchstart', startPress, { passive: false });
-      icon.addEventListener('mouseup', cancelPress);
-      icon.addEventListener('mouseleave', cancelPress);
-      icon.addEventListener('touchend', cancelPress);
-      icon.addEventListener('touchcancel', cancelPress);
-    }
-
-    // 방문자 추적
-    function trackVisitorAccess() {
-      const todayStr = getFormattedTodayDate();
-      let totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '0', 10);
-      let todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '0', 10);
-      let logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
-      if (!sessionStorage.getItem('chueok_session_logged')) {
-        sessionStorage.setItem('chueok_session_logged', 'true');
-        totalVisits++; todayVisits++;
-        localStorage.setItem('chueok_stat_total', totalVisits);
-        localStorage.setItem('chueok_stat_today_' + todayStr, todayVisits);
-        const ua = navigator.userAgent;
-        let deviceType = "기타 / PC";
-        if (/iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) deviceType = "아이패드";
-        else if (/iPhone/i.test(ua)) deviceType = "아이폰";
-        else if (/Android/i.test(ua)) deviceType = "안드로이드";
-        else if (/Mac/i.test(ua)) deviceType = "맥북";
-        else if (/Win/i.test(ua)) deviceType = "윈도우 PC";
-        logs.unshift({ id: Date.now(), date: todayStr, hour: new Date().getHours(), device: deviceType });
-        if (logs.length > 500) logs.pop();
-        localStorage.setItem('chueok_visitor_logs', JSON.stringify(logs));
-      }
-      const todayEl = document.getElementById('statTodayCount');
-      const totalEl = document.getElementById('statTotalCount');
-      if (todayEl) todayEl.textContent = todayVisits;
-      if (totalEl) totalEl.textContent = totalVisits;
     }
 
     // 관리자 대시보드
-    let hourlyChartInstance = null; let deviceChartInstance = null;
+    let hourlyChartInstance = null; 
+    let deviceChartInstance = null;
+
     function openAdminDashboard() {
       document.getElementById('adminDashboardModal').classList.remove('hidden');
-      updateAdminDashboardStats(); renderAdminNoticeManageList(); renderAdminReviewManageList(); switchAdminTab('stats');
+      updateAdminDashboardStats(); 
+      renderAdminNoticeManageList(); 
+      renderAdminReviewManageList(); 
+      switchAdminTab('stats');
       if (window.lucide) lucide.createIcons();
     }
+
     function closeAdminDashboard() { document.getElementById('adminDashboardModal').classList.add('hidden'); }
+
     function switchAdminTab(tabName) {
       ['stats', 'theme', 'notices', 'reviews'].forEach(t => {
         const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -678,14 +660,17 @@
       const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
       const todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '0', 10);
       const totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '0', 10);
-      const now = new Date(); const weekAgo = new Date(); weekAgo.setDate(now.getDate() - 7);
+      const now = new Date(); 
+      const weekAgo = new Date(); weekAgo.setDate(now.getDate() - 7);
       const monthAgo = new Date(); monthAgo.setDate(now.getDate() - 30);
       let weekVisits = 0, monthVisits = 0;
+
       logs.forEach(l => {
         const logDate = new Date(l.date.replace(/\./g, '-'));
         if (logDate >= weekAgo) weekVisits++;
         if (logDate >= monthAgo) monthVisits++;
       });
+
       document.getElementById('dashToday').textContent = todayVisits;
       document.getElementById('dashWeek').textContent = Math.max(todayVisits, weekVisits);
       document.getElementById('dashMonth').textContent = Math.max(todayVisits, monthVisits);
@@ -697,6 +682,7 @@
       const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
       const hourlyCounts = Array(24).fill(0);
       logs.forEach(l => { if (typeof l.hour === 'number' && l.hour >= 0 && l.hour <= 23) hourlyCounts[l.hour]++; });
+      
       const ctxHourly = document.getElementById('chartHourly');
       if (ctxHourly) {
         if (hourlyChartInstance) hourlyChartInstance.destroy();
@@ -706,6 +692,7 @@
           options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
         });
       }
+
       const deviceMap = {};
       logs.forEach(l => { deviceMap[l.device] = (deviceMap[l.device] || 0) + 1; });
       const ctxDev = document.getElementById('chartDevice');
@@ -753,7 +740,7 @@
       document.getElementById('ratingStarDisplay').textContent = stars;
     }
 
-    // 🌟 14일 이내 공지 & 최신 1개 자동 업데이트 공지만 유지
+    // 🌟 최근 14일 이내 공지 & 최신 1개 자동 업데이트 공지만 유지
     function getStoredNotices() {
       const stored = localStorage.getItem('vibe_notices');
       let list = [];
@@ -778,7 +765,7 @@
         const parts = n.date.split('.');
         const nDate = new Date(parts[0], parseInt(parts[1]) - 1, parts[2]);
         return nDate >= twoWeeksAgo;
-      }).slice(0, 1); // 최신 1개만 깔끔히 노출
+      }).slice(0, 1);
 
       if (validNotices.length === 0) {
         area.classList.add('hidden');
@@ -885,11 +872,26 @@
           if (p.isPrivate && appState.isAdmin) contentHtml += `<p class="text-[9px] text-rose-500 mt-1">[관리자 열람 - 비번: ${p.pw}]</p>`;
         }
         let deleteBtn = appState.isAdmin ? `<button onclick="deletePost(${p.id})" class="text-[10px] text-rose-500 underline ml-2">삭제</button>` : '';
-        const ratingNum = p.rating || 5.0; let starStr = '';
+        const ratingNum = p.rating || 5.0; 
+        let starStr = '';
         for (let i = 0; i < Math.floor(ratingNum); i++) starStr += '⭐';
         if (ratingNum % 1 !== 0) starStr += '½';
 
-        return `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative"><div class="flex justify-between items-center"><div class="flex items-center space-x-1.5"><span class="font-bold text-[11px] text-slate-800">${p.nickname}</span><span class="text-[10px] text-amber-500 font-black">${starStr} ${ratingNum.toFixed(1)}</span></div><div class="flex items-center"><span class="text-[9px] text-slate-400">${p.date}</span>${deleteBtn}</div></div>${contentHtml}</div>`;
+        return `
+          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center space-x-1.5">
+                <span class="font-bold text-[11px] text-slate-800">${p.nickname}</span>
+                <span class="text-[10px] text-amber-500 font-black">${starStr} ${ratingNum.toFixed(1)}</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[9px] text-slate-400">${p.date}</span>
+                ${deleteBtn}
+              </div>
+            </div>
+            ${contentHtml}
+          </div>
+        `;
       }).join('');
     }
 
@@ -935,7 +937,8 @@
         let posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
         posts = posts.filter(p => p.id !== id);
         localStorage.setItem('vibe_posts', JSON.stringify(posts));
-        renderBoard(); renderAdminReviewManageList();
+        renderBoard();
+        renderAdminReviewManageList();
         try { await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(posts) }); } catch (e) {}
       }
     }
@@ -951,7 +954,7 @@
     }
     function setTimerSec(sec, btn) { appState.timerSec = sec; document.querySelectorAll('.timer-chip').forEach(b => { b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs"; }); btn.className = "timer-chip bg-theme text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm"; }
 
-    // 🌟 카메라 세션 및 촬영 (에러 원천 방어 완료)
+    // 카메라 세션 및 촬영
     async function startPhotoSession() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { alert("카메라를 실행할 수 없습니다. HTTPS 환경인지 확인해 주세요!"); return; }
       initAudio(); stopCameraAndAudio();
@@ -1208,17 +1211,6 @@
       renderStrip();
     }
 
-    function handleCustomFrameUpload(e) {
-      const file = e.target.files[0]; if (!file) return;
-      const r = new FileReader();
-      r.onload = ev => {
-        const im = new Image();
-        im.onload = () => { saveStateForUndo(); appState.customOverlayImage = im; renderStrip(); alert("투명 PNG 프레임이 적용되었습니다!"); };
-        im.src = ev.target.result;
-      };
-      r.readAsDataURL(file);
-    }
-
     function handleFilterClick(filterKey, btn) {
       const isAlreadyActive = (appState.activeFilter === filterKey);
       if (!isAlreadyActive) {
@@ -1263,25 +1255,36 @@
     function toggleShowDate(checked) { saveStateForUndo(); appState.showDate = checked; renderStrip(); }
 
     function addTextSticker(text) {
-      saveStateForUndo(); pushRecentSticker('text', text); const canvas = document.getElementById('photoCanvas');
+      saveStateForUndo(); 
+      pushRecentSticker('text', text); 
+      const canvas = document.getElementById('photoCanvas');
       const newSticker = {
         id: Date.now(), type: 'text', text,
-        x: canvas.width / 2 + (Math.random() * 60 - 30), y: canvas.height / 2 + (Math.random() * 60 - 30),
-        size: 55, rotation: 0, color: '#FFFFFF', fontFamily: appState.typography.fontFamily || 'Pretendard'
+        x: canvas.width / 2 + (Math.random() * 60 - 30), 
+        y: canvas.height / 2 + (Math.random() * 60 - 30), 
+        size: 55, rotation: 0, color: '#FFFFFF', 
+        fontFamily: appState.typography.fontFamily || 'Pretendard'
       };
-      appState.stickers.push(newSticker); appState.selectedStickerIdx = appState.stickers.length - 1;
-      showStickerControls(newSticker); renderStrip();
+      appState.stickers.push(newSticker); 
+      appState.selectedStickerIdx = appState.stickers.length - 1;
+      showStickerControls(newSticker); 
+      renderStrip();
     }
 
     function addEmojiSticker(emoji) {
-      saveStateForUndo(); pushRecentSticker('emoji', emoji); const canvas = document.getElementById('photoCanvas');
+      saveStateForUndo(); 
+      pushRecentSticker('emoji', emoji); 
+      const canvas = document.getElementById('photoCanvas');
       const newSticker = {
         id: Date.now(), type: 'emoji', text: emoji,
-        x: canvas.width / 2 + (Math.random() * 60 - 30), y: canvas.height / 2 + (Math.random() * 60 - 30),
+        x: canvas.width / 2 + (Math.random() * 60 - 30), 
+        y: canvas.height / 2 + (Math.random() * 60 - 30), 
         size: 65, rotation: 0
       };
-      appState.stickers.push(newSticker); appState.selectedStickerIdx = appState.stickers.length - 1;
-      showStickerControls(newSticker); renderStrip();
+      appState.stickers.push(newSticker); 
+      appState.selectedStickerIdx = appState.stickers.length - 1;
+      showStickerControls(newSticker); 
+      renderStrip();
     }
 
     function clearAllStickers() {
@@ -1311,7 +1314,6 @@
     function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].fontFamily = fontName; renderStrip(); } }
     function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
 
-    // 🌟 [수정] 스티커 터치 판정 완벽 복원
     function initCanvasInteractions() {
       const canvas = document.getElementById('photoCanvas');
       if (!canvas) return;
@@ -1360,7 +1362,7 @@
       canvas.addEventListener('touchstart', handleStart, { passive: false }); window.addEventListener('touchmove', handleMove, { passive: false }); window.addEventListener('touchend', handleEnd);
     }
 
-    // 메인 렌더링
+    // 🌟 메인 캔버스 렌더링 루프
     function renderStrip(isFinalExport = false) {
       const canvas = document.getElementById('photoCanvas'); if (!canvas) return; const ctx = canvas.getContext('2d');
       if (!appState.selectedImages || appState.selectedImages.length < 4) return;
@@ -1385,24 +1387,41 @@
           drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerStartY, imgW, imgH); 
           drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad, lowerStartY + imgH + gap, imgW, imgH);
         } else {
-          const isBottom = (fStyle === 'bottom'); const topHeaderH = isBottom ? 45 : 120; const bottomFooterH = isBottom ? 220 : 45; const imgW = canvas.width - (pad * 2); const imgH = (canvas.height - topHeaderH - bottomFooterH - (gap * 3)) / 4;
+          const isBottom = (fStyle === 'bottom'); 
+          const topHeaderH = isBottom ? 45 : 120; 
+          const bottomFooterH = isBottom ? 220 : 45; 
+          const imgW = canvas.width - (pad * 2); 
+          const imgH = (canvas.height - topHeaderH - bottomFooterH - (gap * 3)) / 4;
           renderHeaderOrDecor(ctx, 0, 0, canvas.width, canvas.height, customTitle, topHeaderH, isBottom);
           for (let i = 0; i < 4; i++) { 
             const y = topHeaderH + (i * (imgH + gap)); 
             drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, y, imgW, imgH); 
           }
-          if (isBottom) drawBottomStyleFooter(ctx, canvas.width / 2, canvas.height - 100, customTitle);
+          if (isBottom) {
+            const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
+            drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle);
+          }
         }
       } else if (layout === 'grid') {
-        const isBottom = (fStyle === 'bottom'); const topHeaderH = isBottom ? 45 : 110; const bottomFooterH = isBottom ? 180 : 45; const imgW = (canvas.width - (pad * 2) - gap) / 2; const imgH = (canvas.height - topHeaderH - bottomFooterH - gap) / 2;
+        const isBottom = (fStyle === 'bottom'); 
+        const topHeaderH = isBottom ? 45 : 110; 
+        const bottomFooterH = isBottom ? 180 : 45; 
+        const imgW = (canvas.width - (pad * 2) - gap) / 2; 
+        const imgH = (canvas.height - topHeaderH - bottomFooterH - gap) / 2;
         renderHeaderOrDecor(ctx, 0, 0, canvas.width, canvas.height, customTitle, topHeaderH, isBottom);
         const coords = [{ x: pad, y: topHeaderH }, { x: pad + imgW + gap, y: topHeaderH }, { x: pad, y: topHeaderH + imgH + gap }, { x: pad + imgW + gap, y: topHeaderH + imgH + gap }];
         for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], coords[i].x, coords[i].y, imgW, imgH); }
-        if (isBottom) drawBottomStyleFooter(ctx, canvas.width / 2, canvas.height - 80, customTitle);
+        if (isBottom) {
+          const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
+          drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle);
+        }
       } else if (layout === 'twin') {
-        const stripW = (canvas.width / 2) - 20; const padX = pad * 0.65; const imgW = stripW - (padX * 2);
+        const stripW = (canvas.width / 2) - 20; 
+        const padX = pad * 0.65; 
+        const imgW = stripW - (padX * 2);
         if (fStyle === 'middle') {
-          const bannerH = 120; const imgH = (canvas.height - (pad * 2) - bannerH - (gap * 3)) / 4;
+          const bannerH = 120; 
+          const imgH = (canvas.height - (pad * 2) - bannerH - (gap * 3)) / 4;
           drawFilteredSlotPhoto(ctx, appState.selectedImages[0], 10 + padX, pad, imgW, imgH); 
           drawFilteredSlotPhoto(ctx, appState.selectedImages[1], 10 + padX, pad + imgH + gap, imgW, imgH); 
           drawMiddleBanner(ctx, stripW / 2, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 26);
@@ -1416,19 +1435,26 @@
           drawFilteredSlotPhoto(ctx, appState.selectedImages[2], rx + padX, lowerY, imgW, imgH); 
           drawFilteredSlotPhoto(ctx, appState.selectedImages[3], rx + padX, lowerY + imgH + gap, imgW, imgH);
         } else {
-          const isBottom = (fStyle === 'bottom'); const topHeaderH = isBottom ? 35 : 95; const bottomFooterH = isBottom ? 160 : 35; const imgH = (canvas.height - topHeaderH - bottomFooterH - 20 - (gap * 3)) / 4;
+          const isBottom = (fStyle === 'bottom'); 
+          const topHeaderH = isBottom ? 35 : 95; 
+          const bottomFooterH = isBottom ? 160 : 35; 
+          const imgH = (canvas.height - topHeaderH - bottomFooterH - 20 - (gap * 3)) / 4;
           renderHeaderOrDecor(ctx, 10, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottom, true);
           for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], 10 + padX, 10 + topHeaderH + (i * (imgH + gap)), imgW, imgH); }
-          if (isBottom) drawBottomStyleFooter(ctx, stripW / 2, canvas.height - 70, customTitle, 26);
+          if (isBottom) {
+            const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
+            drawBottomStyleFooter(ctx, stripW / 2, footerCenterY, customTitle, 26);
+          }
           const rx = canvas.width / 2 + 10; 
           renderHeaderOrDecor(ctx, rx, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottom, true);
           for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], rx + padX, 10 + topHeaderH + (i * (imgH + gap)), imgW, imgH); }
-          if (isBottom) drawBottomStyleFooter(ctx, rx + (stripW / 2) - 10, canvas.height - 70, customTitle, 26);
+          if (isBottom) {
+            const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
+            drawBottomStyleFooter(ctx, rx + (stripW / 2) - 10, footerCenterY, customTitle, 26);
+          }
         }
         ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(canvas.width / 2, 20); ctx.lineTo(canvas.width / 2, canvas.height - 20); ctx.stroke(); ctx.font = '22px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('✂️', canvas.width / 2, 60); ctx.fillText('✂️', canvas.width / 2, canvas.height / 2); ctx.fillText('✂️', canvas.width / 2, canvas.height - 60); ctx.restore();
       }
-
-      if (appState.customOverlayImage) { ctx.drawImage(appState.customOverlayImage, 0, 0, canvas.width, canvas.height); }
 
       appState.stickers.forEach((st, idx) => {
         ctx.save();
@@ -1480,58 +1506,117 @@
       }
     }
 
-    function drawMiddleBanner(ctx, x, y, title, customSize = null) {
+    // 🌟 [수정] 문구와 날짜가 절대 겹치지 않도록 동적 간격(Gap) 자동 분할 정렬
+    function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
       const size = customSize || appState.typography.fontSize; 
       const weight = appState.typography.isBold ? '900' : 'bold';
-      ctx.save(); 
-      ctx.textAlign = 'center'; 
-      ctx.textBaseline = 'middle'; 
-      ctx.fillStyle = appState.typography.fontColor; 
-      ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`; 
-      ctx.fillText(title, x, y - 10);
-      if (appState.showDate) { 
-        ctx.font = `normal ${Math.round(size * 0.5)}px '${appState.typography.fontFamily}', sans-serif`; 
-        ctx.globalAlpha = 0.75; 
-        ctx.fillText(appState.typography.date, x, y + 25); 
+      const showDate = appState.showDate;
+      const dateSize = Math.max(13, Math.round(size * 0.45));
+      const gap = Math.max(10, Math.round(size * 0.25));
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = appState.typography.fontColor;
+
+      if (showDate) {
+        const totalHeight = size + gap + dateSize;
+        const titleY = centerY - (totalHeight / 2) + (size / 2);
+        const dateY = centerY + (totalHeight / 2) - (dateSize / 2);
+
+        ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title, x, titleY);
+
+        ctx.font = `normal ${dateSize}px '${appState.typography.fontFamily}', sans-serif`;
+        ctx.globalAlpha = 0.75;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(appState.typography.date, x, dateY);
+      } else {
+        ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title, x, centerY);
       }
       ctx.restore();
     }
 
-    function drawBottomStyleFooter(ctx, x, y, title, customSize = null) {
+    function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
       const size = customSize || appState.typography.fontSize; 
       const weight = appState.typography.isBold ? 'bold' : 'normal';
-      ctx.textAlign = 'center'; 
-      ctx.fillStyle = appState.typography.fontColor; 
-      ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`; 
-      ctx.fillText(title, x, y);
-      if (appState.showDate) { 
-        ctx.font = `normal ${Math.round(size * 0.5)}px '${appState.typography.fontFamily}', sans-serif`; 
-        ctx.globalAlpha = 0.7; 
-        ctx.fillText(appState.typography.date, x, y + Math.round(size * 0.9)); 
-        ctx.globalAlpha = 1.0; 
+      const showDate = appState.showDate;
+      const dateSize = Math.max(14, Math.round(size * 0.45));
+      const gap = Math.max(12, Math.round(size * 0.3));
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = appState.typography.fontColor;
+
+      if (showDate) {
+        const totalHeight = size + gap + dateSize;
+        const titleY = centerY - (totalHeight / 2) + (size / 2);
+        const dateY = centerY + (totalHeight / 2) - (dateSize / 2);
+
+        ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title, x, titleY);
+
+        ctx.font = `normal ${dateSize}px '${appState.typography.fontFamily}', sans-serif`;
+        ctx.globalAlpha = 0.75;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(appState.typography.date, x, dateY);
+      } else {
+        ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title, x, centerY);
       }
+      ctx.restore();
     }
 
     function drawFilteredSlotPhoto(ctx, img, targetX, targetY, targetW, targetH) {
       if (!img) return;
-      ctx.save(); ctx.beginPath(); ctx.rect(targetX, targetY, targetW, targetH); ctx.clip();
-      const srcRatio = (img.width || 720) / (img.height || 480); const targetRatio = targetW / targetH; let renderW, renderH;
-      if (srcRatio > targetRatio) { renderH = targetH; renderW = targetH * srcRatio; } else { renderW = targetW; renderH = targetW / srcRatio; }
-      const drawX = targetX + (targetW - renderW) / 2; const drawY = targetY + (targetH - renderH) / 2;
+      ctx.save(); 
+      ctx.beginPath(); 
+      ctx.rect(targetX, targetY, targetW, targetH); 
+      ctx.clip();
+
+      const srcRatio = (img.width || 720) / (img.height || 480); 
+      const targetRatio = targetW / targetH; 
+      let renderW, renderH;
+
+      if (srcRatio > targetRatio) { renderH = targetH; renderW = targetH * srcRatio; } 
+      else { renderW = targetW; renderH = targetW / srcRatio; }
+
+      const drawX = targetX + (targetW - renderW) / 2; 
+      const drawY = targetY + (targetH - renderH) / 2;
       const isNormal = appState.activeFilter === 'normal' && appState.filters.bright === 100 && appState.filters.contrast === 100 && appState.filters.saturate === 100;
-      if (isNormal) { ctx.drawImage(img, drawX, drawY, renderW, renderH); } else {
+      
+      if (isNormal) { 
+        ctx.drawImage(img, drawX, drawY, renderW, renderH); 
+      } else {
         try {
-          const off = document.createElement('canvas'); const cw = Math.max(1, Math.round(renderW)); const ch = Math.max(1, Math.round(renderH)); off.width = cw; off.height = ch;
-          const offCtx = off.getContext('2d'); offCtx.drawImage(img, 0, 0, cw, ch);
-          const imgData = offCtx.getImageData(0, 0, cw, ch); applyPixelFilterMath(imgData, appState.activeFilter, appState.filters); offCtx.putImageData(imgData, 0, 0);
+          const off = document.createElement('canvas'); 
+          const cw = Math.max(1, Math.round(renderW)); 
+          const ch = Math.max(1, Math.round(renderH)); 
+          off.width = cw; off.height = ch;
+          const offCtx = off.getContext('2d'); 
+          offCtx.drawImage(img, 0, 0, cw, ch);
+          const imgData = offCtx.getImageData(0, 0, cw, ch); 
+          applyPixelFilterMath(imgData, appState.activeFilter, appState.filters); 
+          offCtx.putImageData(imgData, 0, 0);
           ctx.drawImage(off, drawX, drawY, renderW, renderH);
-        } catch (err) { ctx.drawImage(img, drawX, drawY, renderW, renderH); }
+        } catch (err) { 
+          ctx.drawImage(img, drawX, drawY, renderW, renderH); 
+        }
       }
       ctx.restore();
     }
 
     function applyPixelFilterMath(imageData, filterKey, customAdjust) {
-      const d = imageData.data; const len = d.length; const bMul = customAdjust.bright / 100; const cFactor = ((customAdjust.contrast - 100) * 2.55) / 255 + 1; const sMul = customAdjust.saturate / 100;
+      const d = imageData.data; 
+      const len = d.length; 
+      const bMul = customAdjust.bright / 100; 
+      const cFactor = ((customAdjust.contrast - 100) * 2.55) / 255 + 1; 
+      const sMul = customAdjust.saturate / 100;
+
       for (let i = 0; i < len; i += 4) {
         let r = d[i], g = d[i+1], b = d[i+2];
         if (filterKey === 'bright') { r = r*1.1+10; g = g*1.08+8; b = b*1.05+6; }
@@ -1545,89 +1630,197 @@
         else if (filterKey === 'cyan') { r = r*0.88; g = g*1.08+8; b = b*1.2+15; }
         else if (filterKey === 'green') { r = r*0.95; g = g*1.12+10; b = b*0.95; }
         else if (filterKey === 'pink') { r = r*1.15+12; g = g*0.95; b = b*1.1+10; }
-        r *= bMul; g *= bMul; b *= bMul; r = ((r / 255 - 0.5) * cFactor + 0.5) * 255; g = ((g / 255 - 0.5) * cFactor + 0.5) * 255; b = ((b / 255 - 0.5) * cFactor + 0.5) * 255;
-        if (sMul !== 1 && filterKey !== 'mono') { const lum = 0.299*r + 0.587*g + 0.114*b; r = lum + (r - lum)*sMul; g = lum + (g - lum)*sMul; b = lum + (b - lum)*sMul; }
-        d[i] = Math.min(255, Math.max(0, r)); d[i+1] = Math.min(255, Math.max(0, g)); d[i+2] = Math.min(255, Math.max(0, b));
+
+        r *= bMul; g *= bMul; b *= bMul; 
+        r = ((r / 255 - 0.5) * cFactor + 0.5) * 255; 
+        g = ((g / 255 - 0.5) * cFactor + 0.5) * 255; 
+        b = ((b / 255 - 0.5) * cFactor + 0.5) * 255;
+
+        if (sMul !== 1 && filterKey !== 'mono') { 
+          const lum = 0.299*r + 0.587*g + 0.114*b; 
+          r = lum + (r - lum)*sMul; g = lum + (g - lum)*sMul; b = lum + (b - lum)*sMul; 
+        }
+        d[i] = Math.min(255, Math.max(0, r)); 
+        d[i+1] = Math.min(255, Math.max(0, g)); 
+        d[i+2] = Math.min(255, Math.max(0, b));
       }
     }
 
-    // 다운로드 & 저장
+    // 비디오 자동 저장
     async function autoSaveVideo() {
       const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
       if (!hasValidVideo) {
-        alert("앨범에서 불러온 사진이거나 촬영 영상 데이터가 부족합니다.\n동영상 클립 합성은 직접 4컷을 카메라로 촬영했을 때 저장 가능합니다.");
+        alert("앨범에서 불러온 사진이거나 촬영 영상 데이터가 부족합니다.\n동영상 합성은 직접 4컷을 카메라로 촬영했을 때 저장 가능합니다.");
         return;
       }
-      const btn = document.getElementById('btnAutoVideo'); if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>비디오 합성 렌더링 중...</span>`;
+
+      const btn = document.getElementById('btnAutoVideo'); 
+      if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>비디오 합성 렌더링 중...</span>`;
       if (window.lucide) lucide.createIcons();
+
       try {
         const videoElements = await Promise.all(appState.selectedIndices.map(shotIdx => {
           return new Promise((resolve) => {
-            const blob = appState.shotVideoBlobs[shotIdx]; const v = document.createElement('video'); v.src = URL.createObjectURL(blob); v.muted = true; v.loop = true; v.setAttribute('playsinline', ''); v.onloadedmetadata = () => { v.play().then(() => resolve(v)).catch(() => resolve(v)); };
+            const blob = appState.shotVideoBlobs[shotIdx]; 
+            const v = document.createElement('video'); 
+            v.src = URL.createObjectURL(blob); 
+            v.muted = true; v.loop = true; v.setAttribute('playsinline', ''); 
+            v.onloadedmetadata = () => { v.play().then(() => resolve(v)).catch(() => resolve(v)); };
           });
         }));
-        const vCanvas = document.createElement('canvas'); vCanvas.width = 600; vCanvas.height = 1800; const vCtx = vCanvas.getContext('2d');
-        let mimeType = 'video/mp4'; if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported('video/mp4')) { mimeType = (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) ? 'video/webm;codecs=vp8' : 'video/webm'; }
-        const stream = vCanvas.captureStream(30); const recorder = new MediaRecorder(stream, { mimeType }); const chunks = []; recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+        const vCanvas = document.createElement('canvas'); 
+        vCanvas.width = 600; vCanvas.height = 1800; 
+        const vCtx = vCanvas.getContext('2d');
+
+        let mimeType = 'video/mp4'; 
+        if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported('video/mp4')) { 
+          mimeType = (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) ? 'video/webm;codecs=vp8' : 'video/webm'; 
+        }
+
+        const stream = vCanvas.captureStream(30); 
+        const recorder = new MediaRecorder(stream, { mimeType }); 
+        const chunks = []; 
+        recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
         
         recorder.onstop = async () => {
-          const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'; const blob = new Blob(chunks, { type: mimeType }); const file = new File([blob], `[추억의네컷]_Video_${Date.now()}.${ext}`, { type: mimeType });
+          const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'; 
+          const blob = new Blob(chunks, { type: mimeType }); 
+          const file = new File([blob], `[추억의네컷]_Video_${Date.now()}.${ext}`, { type: mimeType });
           if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 저장 (자동 다운로드)</span>`;
           if (window.lucide) lucide.createIcons();
-          if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: '추억의 네컷 비디오', text: '추억의 네컷 실시간 4컷 비디오입니다!' }); return; } catch (err) { if (err.name === 'AbortError') return; } }
-          const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) { 
+            try { 
+              await navigator.share({ files: [file], title: '추억의 네컷 비디오', text: '추억의 네컷 실시간 4컷 비디오입니다!' }); 
+              return; 
+            } catch (err) { if (err.name === 'AbortError') return; } 
+          }
+          const url = URL.createObjectURL(blob); 
+          const a = document.createElement('a'); a.href = url; a.download = file.name; 
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
         };
         recorder.start();
-        const isBottomStyle = (appState.frameStyle === 'bottom'); const topH = isBottomStyle ? 35 : 90; const bottomH = isBottomStyle ? 160 : 35; const pad = 28; const gap = 14; const slotW = vCanvas.width - (pad * 2); const slotH = (vCanvas.height - topH - bottomH - (gap * 3)) / 4; const customTitle = (document.getElementById('frameSignatureInput') && document.getElementById('frameSignatureInput').value) || 'sangsangPhoto';
-        const startTime = performance.now(); const totalDuration = 6000;
+
+        const isBottom = (appState.frameStyle === 'bottom'); 
+        const topH = isBottom ? 35 : 90; 
+        const bottomH = isBottom ? 160 : 35; 
+        const pad = 28; const gap = 14; 
+        const slotW = vCanvas.width - (pad * 2); 
+        const slotH = (vCanvas.height - topH - bottomH - (gap * 3)) / 4; 
+        const customTitle = (document.getElementById('frameSignatureInput') && document.getElementById('frameSignatureInput').value) || 'sangsangPhoto';
+        const startTime = performance.now(); 
+        const totalDuration = 6000;
+
         function renderVideoLoop(time) {
-          const elapsed = time - startTime; vCtx.fillStyle = appState.frameColor; vCtx.fillRect(0, 0, vCanvas.width, vCanvas.height); renderHeaderOrDecor(vCtx, 0, 0, vCanvas.width, vCanvas.height, customTitle, topH, isBottomStyle);
+          const elapsed = time - startTime; 
+          vCtx.fillStyle = appState.frameColor; 
+          vCtx.fillRect(0, 0, vCanvas.width, vCanvas.height); 
+          renderHeaderOrDecor(vCtx, 0, 0, vCanvas.width, vCanvas.height, customTitle, topH, isBottom);
+
           for (let i = 0; i < 4; i++) {
-            const vy = topH + (i * (slotH + gap)); vCtx.save(); vCtx.beginPath(); vCtx.rect(pad, vy, slotW, slotH); vCtx.clip(); const v = videoElements[i]; const vW = v.videoWidth || 1280; const vH = v.videoHeight || 720; const vRatio = vW / vH; const targetRatio = slotW / slotH; let rw, rh;
-            if (vRatio > targetRatio) { rh = slotH; rw = slotH * vRatio; } else { rw = slotW; rh = slotW / vRatio; }
-            vCtx.drawImage(v, pad + (slotW - rw) / 2, vy + (slotH - rh) / 2, rw, rh); vCtx.restore();
+            const vy = topH + (i * (slotH + gap)); 
+            vCtx.save(); vCtx.beginPath(); vCtx.rect(pad, vy, slotW, slotH); vCtx.clip(); 
+            const v = videoElements[i]; 
+            const vW = v.videoWidth || 1280; const vH = v.videoHeight || 720; 
+            const vRatio = vW / vH; const targetRatio = slotW / slotH; 
+            let rw, rh;
+            if (vRatio > targetRatio) { rh = slotH; rw = slotH * vRatio; } 
+            else { rw = slotW; rh = slotW / vRatio; }
+            vCtx.drawImage(v, pad + (slotW - rw) / 2, vy + (slotH - rh) / 2, rw, rh); 
+            vCtx.restore();
           }
-          if (isBottomStyle) drawBottomStyleFooter(vCtx, vCanvas.width / 2, vCanvas.height - 70, customTitle, 26);
-          if (elapsed < totalDuration) requestAnimationFrame(renderVideoLoop); else recorder.stop();
+
+          if (isBottom) {
+            const fCenterY = (vCanvas.height - bottomH) + (bottomH / 2);
+            drawBottomStyleFooter(vCtx, vCanvas.width / 2, fCenterY, customTitle, 26);
+          }
+          if (elapsed < totalDuration) requestAnimationFrame(renderVideoLoop); 
+          else recorder.stop();
         }
         requestAnimationFrame(renderVideoLoop);
-      } catch (err) { alert("비디오 생성 실패: " + err.message); if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 저장 (자동 다운로드)</span>`; if (window.lucide) lucide.createIcons(); }
+      } catch (err) { 
+        alert("비디오 생성 실패: " + err.message); 
+        if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 저장 (자동 다운로드)</span>`; 
+        if (window.lucide) lucide.createIcons(); 
+      }
     }
 
-    function autoSavePDF() {
-      renderStrip(true); const canvas = document.getElementById('photoCanvas'); if (!canvas) return; const imgData = canvas.toDataURL('image/jpeg', 0.95); const { jsPDF } = window.jspdf; const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait'; const pdf = new jsPDF({ orientation, unit: 'mm', format: [102, 152] }); const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight(); const margin = 2; const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2); const imgRatio = canvas.width / canvas.height; let printW = maxW, printH = printW / imgRatio; if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
-      pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH); pdf.save(`[추억의네컷]_Print_${Date.now()}.pdf`);
+    function autoSavePDF() { exportCenteredPDF(); }
+    function exportCenteredPDF() {
+      renderStrip(true); 
+      const canvas = document.getElementById('photoCanvas'); 
+      if (!canvas) return; 
+      const imgData = canvas.toDataURL('image/jpeg', 0.95); 
+      const { jsPDF } = window.jspdf; 
+      const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait'; 
+      const pdf = new jsPDF({ orientation, unit: 'mm', format: [102, 152] }); 
+      const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight(); 
+      const margin = 2; 
+      const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2); 
+      const imgRatio = canvas.width / canvas.height; 
+      let printW = maxW, printH = printW / imgRatio; 
+      if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
+      pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH); 
+      pdf.save(`[추억의네컷]_Print_${Date.now()}.pdf`);
     }
 
     function sharePhotoDirectly() {
-      renderStrip(true); const canvas = document.getElementById('photoCanvas'); if (!canvas) return;
+      renderStrip(true); 
+      const canvas = document.getElementById('photoCanvas'); 
+      if (!canvas) return;
       canvas.toBlob(async (blob) => {
-        if (!blob) return; const file = new File([blob], `[추억의네컷]_Photo_${Date.now()}.png`, { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 완성 사진입니다!' }); } catch (err) {} }
-        else { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+        if (!blob) return; 
+        const file = new File([blob], `[추억의네컷]_Photo_${Date.now()}.png`, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) { 
+          try { await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 완성 사진입니다!' }); } catch (err) {} 
+        } else { 
+          const url = URL.createObjectURL(blob); 
+          const a = document.createElement('a'); a.href = url; a.download = file.name; 
+          document.body.appendChild(a); a.click(); document.body.removeChild(a); 
+        }
       }, 'image/png');
     }
 
     async function saveAndGenerateQR() {
-      const btn = document.getElementById('btnSaveQR'); if (btn) { btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>서버 업로드 중...</span>`; }
+      const btn = document.getElementById('btnSaveQR'); 
+      if (btn) { btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>서버 업로드 중...</span>`; }
       if (window.lucide) lucide.createIcons();
-      renderStrip(true); const canvas = document.getElementById('photoCanvas'); if (!canvas) return;
+      renderStrip(true); 
+      const canvas = document.getElementById('photoCanvas'); 
+      if (!canvas) return;
 
       if (GAS_API_URL && !GAS_API_URL.includes("여기에_")) {
-        const scale = Math.min(1, 1000 / canvas.width); const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvas.width * scale; tempCanvas.height = canvas.height * scale; tempCanvas.getContext('2d').drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height); const uploadBase64 = tempCanvas.toDataURL('image/jpeg', 0.88);
-        const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 7000);
+        const scale = Math.min(1, 1000 / canvas.width); 
+        const tempCanvas = document.createElement('canvas'); 
+        tempCanvas.width = canvas.width * scale; 
+        tempCanvas.height = canvas.height * scale; 
+        tempCanvas.getContext('2d').drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height); 
+        const uploadBase64 = tempCanvas.toDataURL('image/jpeg', 0.88);
+
+        const controller = new AbortController(); 
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
         try {
           const res = await fetch(GAS_API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ base64Data: uploadBase64, layout: appState.layout, frameColor: appState.frameColor }), signal: controller.signal }).then(r => r.json());
           clearTimeout(timeoutId);
-          if (res && res.success && res.fileUrl) { if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`; } displayResultWithQR(res.fileUrl); return; }
+          if (res && res.success && res.fileUrl) { 
+            if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`; } 
+            displayResultWithQR(res.fileUrl); 
+            return; 
+          }
         } catch (e) { clearTimeout(timeoutId); }
       }
+
       canvas.toBlob(async (blob) => {
         try {
           const formData = new FormData(); formData.append('file', blob, `Chueok4cut_${Date.now()}.png`);
           const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: formData }).then(r => r.json());
           if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`; }
-          if (uploadRes && uploadRes.status === 'success' && uploadRes.data.url) { displayResultWithQR(uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/')); } else { displayResultWithQR(window.location.href); }
+          if (uploadRes && uploadRes.status === 'success' && uploadRes.data.url) { 
+            displayResultWithQR(uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/')); 
+          } else { 
+            displayResultWithQR(window.location.href); 
+          }
         } catch (err) {
           if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성 (구글 드라이브)</span>`; }
           displayResultWithQR(window.location.href);
@@ -1636,17 +1829,27 @@
     }
 
     function displayResultWithQR(url) {
-      const qrBox = document.getElementById('qrcodeArea'); if (!qrBox) return;
-      qrBox.innerHTML = ''; new QRCode(qrBox, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-      showScreen('screenResult'); startAutoReset();
+      const qrBox = document.getElementById('qrcodeArea'); 
+      if (!qrBox) return;
+      qrBox.innerHTML = ''; 
+      new QRCode(qrBox, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+      showScreen('screenResult'); 
+      startAutoReset();
     }
 
-    function returnToEditor() { if (appState.resetInterval) { clearInterval(appState.resetInterval); appState.resetInterval = null; } showScreen('screenEdit'); renderStrip(); }
+    function returnToEditor() { 
+      if (appState.resetInterval) { clearInterval(appState.resetInterval); appState.resetInterval = null; } 
+      showScreen('screenEdit'); 
+      renderStrip(); 
+    }
 
     function showScreen(id) {
       ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'].forEach(s => {
         const el = document.getElementById(s);
-        if (el) { if (s === id) { el.classList.remove('hidden'); el.style.display = ''; } else { el.classList.add('hidden'); el.style.display = 'none'; } }
+        if (el) { 
+          if (s === id) { el.classList.remove('hidden'); el.style.display = ''; } 
+          else { el.classList.add('hidden'); el.style.display = 'none'; } 
+        }
       });
       if (window.lucide) lucide.createIcons();
       if (id === 'screenBoard') { renderBoard(); fetchCloudBoardPosts(); }
@@ -1655,13 +1858,26 @@
 
     function cancelSession() { stopCameraAndAudio(); resetApp(); }
     function resetApp() {
-      if (appState.resetInterval) clearInterval(appState.resetInterval); stopCameraAndAudio();
-      appState.shotImages = []; appState.selectedImages = []; appState.selectedIndices = [null, null, null, null]; appState.stickers = []; appState.selectedStickerIdx = -1; galleryAccumulator = []; showScreen('screenHome');
+      if (appState.resetInterval) clearInterval(appState.resetInterval); 
+      stopCameraAndAudio();
+      appState.shotImages = []; 
+      appState.selectedImages = []; 
+      appState.selectedIndices = [null, null, null, null]; 
+      appState.stickers = []; 
+      appState.selectedStickerIdx = -1; 
+      galleryAccumulator = []; 
+      showScreen('screenHome');
     }
     function startAutoReset() {
       if (appState.resetInterval) clearInterval(appState.resetInterval);
-      let sec = 120; const rText = document.getElementById('resetTimerText'); if (rText) rText.textContent = `${sec}초`;
-      appState.resetInterval = setInterval(() => { sec--; if (rText) rText.textContent = `${sec}초`; if (sec <= 0) { clearInterval(appState.resetInterval); resetApp(); } }, 1000);
+      let sec = 120; 
+      const rText = document.getElementById('resetTimerText'); 
+      if (rText) rText.textContent = `${sec}초`;
+      appState.resetInterval = setInterval(() => { 
+        sec--; 
+        if (rText) rText.textContent = `${sec}초`; 
+        if (sec <= 0) { clearInterval(appState.resetInterval); resetApp(); } 
+      }, 1000);
     }
 
     // 실행취소 / 다시실행
@@ -1701,10 +1917,18 @@
     }
 
     function applySnapshot(snap) {
-      appState.stickers = snap.stickers || []; appState.layout = snap.layout; appState.frameStyle = snap.frameStyle;
-      appState.frameThickness = snap.frameThickness; appState.frameColor = snap.frameColor; appState.activeFilter = snap.activeFilter;
-      appState.filters = snap.filters; appState.showDate = snap.showDate; appState.typography = snap.typography;
-      if (document.getElementById('frameSignatureInput')) { document.getElementById('frameSignatureInput').value = snap.customTitle || ''; }
+      appState.stickers = snap.stickers || []; 
+      appState.layout = snap.layout; 
+      appState.frameStyle = snap.frameStyle;
+      appState.frameThickness = snap.frameThickness; 
+      appState.frameColor = snap.frameColor; 
+      appState.activeFilter = snap.activeFilter;
+      appState.filters = snap.filters; 
+      appState.showDate = snap.showDate; 
+      appState.typography = snap.typography;
+      if (document.getElementById('frameSignatureInput')) { 
+        document.getElementById('frameSignatureInput').value = snap.customTitle || ''; 
+      }
       renderStrip();
     }
 
