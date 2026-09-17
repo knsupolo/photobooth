@@ -20,9 +20,9 @@ body {
 
 /* 카운트다운 투명 폰트 스트로크 */
 .stroke-countdown {
-  color: rgba(255, 255, 255, 0.95);
-  -webkit-text-stroke: 4px rgba(0, 0, 0, 0.85);
-  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  color: transparent;
+  -webkit-text-stroke: 4px rgba(255, 255, 255, 0.95);
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 /* 스크롤바 숨김 */
@@ -34,11 +34,6 @@ body {
   scrollbar-width: none;
 }
 
-/* 터치 부드러운 스크롤 */
-.touch-scroll {
-  -webkit-overflow-scrolling: touch;
-}
-
 /* 테마 동적 바인딩 */
 .bg-theme { background-color: var(--theme-color) !important; }
 .bg-theme-hover:hover { background-color: var(--theme-color-hover) !important; }
@@ -46,11 +41,11 @@ body {
 .text-theme { color: var(--theme-color) !important; }
 .border-theme { border-color: var(--theme-color) !important; }
 
-/* 🌟 이모티콘 가로 15열 그리드 전용 클래스 (줄바꿈 방지) */
+/* 🌟 이모티콘 가로 15열 그리드 (줄바꿈 없이 15개씩 4줄 배열) */
 .emoji-grid-15 {
   display: grid !important;
   grid-template-columns: repeat(15, minmax(0, 1fr)) !important;
-  gap: 3px !important;
+  gap: 2px !important;
 }
 
 .emoji-grid-15 button {
@@ -64,52 +59,13 @@ body {
 }
 
 .emoji-grid-15 button:active {
-  transform: scale(1.25);
+  transform: scale(1.2);
   background-color: #e2e8f0;
 }
 
-/* 🌟 에디터 7:3 세로모드 비율 & 핀치 줌 작업대 */
-@media (max-width: 768px) and (orientation: portrait), (max-width: 640px) {
-  .editor-container-portrait {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 65px);
-    overflow: hidden;
-  }
-  .editor-canvas-box {
-    height: 68vh !important;
-    max-height: 68vh !important;
-    flex-shrink: 0;
-  }
-  .editor-tools-box {
-    height: 32vh !important;
-    flex-shrink: 0;
-    overflow-y: auto !important;
-  }
-}
-
-/* 데스크탑 및 가로모드 */
-@media (min-width: 769px), (orientation: landscape) and (min-height: 500px) {
-  .editor-container-portrait {
-    display: flex;
-    flex-direction: row;
-    height: calc(100vh - 80px);
-    gap: 16px;
-  }
-  .editor-canvas-box {
-    flex: 6;
-    height: 100% !important;
-  }
-  .editor-tools-box {
-    flex: 4;
-    height: 100% !important;
-    overflow-y: auto !important;
-  }
-}
-
-/* 캔버스 줌 트랜스폼 컨테이너 */
+/* 🌟 캔버스 핀치 줌 래퍼 (터치 제스처 확대/축소 제어) */
 #canvasZoomWrapper {
   transform-origin: center center;
-  transition: transform 0.08s ease-out;
-  touch-action: none; /* 제스처 직접 제어 */
+  transition: transform 0.05s ease-out;
+  touch-action: none;
 }
