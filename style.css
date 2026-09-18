@@ -64,7 +64,7 @@ body {
 }
 
 /* 🌟 캔버스 핀치 줌 래퍼 (터치 제스처 확대/축소 제어) */
-#canvasZoomWrapper {
+#canvasScaleWrapper {
   transform-origin: center center;
   transition: transform 0.05s ease-out;
   touch-action: none;
