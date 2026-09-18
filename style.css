@@ -20,7 +20,7 @@ body {
   color: #1e293b;
 }
 
-/* 🌟 카메라 뷰파인더 좌우 반전 (거울 모드) */
+/* 카메라 뷰파인더 좌우 반전 (거울 모드) */
 .mirror {
   transform: scaleX(-1) !important;
 }
