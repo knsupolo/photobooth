@@ -1,13 +1,16 @@
 /**
- * 추억의 네컷 Studio Pro v14.3
- * [v14.3 주요 개선 사항]
- * 1. 고객소리함: 문의 접수 시 이메일 수집 및 즉시 접수 확인 피드백 코멘트 제공
- * 2. 접속 기기(아이폰, 안드로이드, 아이패드, 맥북, 윈도우 PC) 및 접속 지역 통합 DB 누적 관리
- * 3. 2×2 격자 가로폭 1100px 슬림화 및 상하 여백 최적화
- * 4. 2×2 격자 '추억의 네컷(중간)' 중간 배너 및 하단 2장 렌더링 버그 완벽 수정
- * 5. 카메라 뷰파인더 거울 모드(좌우 반전) 및 촬영 이미지 미러 매칭
- * 6. 구글 스프레드시트 실시간 동기화 및 후기 낙관적 UI 적용
- * 7. UI 테마 10종 지원
+ * 추억의 네컷 Studio Pro v14.4
+ * [v14.4 핵심 엔진 업데이트]
+ * 1. 홈 화면 3분할 정렬 (좌: 앨범선택 / 중: 촬영시작 / 우: 촬영간격)
+ * 2. 업로드 기반 3대 스페셜 프레임 테마 신규 탑재
+ *    - photoism (포토이즘 블랙 필름 & 넘버링 마크)
+ *    - baseball (플레이 야구 ⚾ 캘리그라피 & 야구 스티치 감성)
+ *    - birthday (해피 버스데이 🎂 촛불 케이크 & 레드 리본 레터링)
+ * 3. 2×2 격자 슬림화(1100px) & '추억의 네컷(중간)' 배너 및 하단 2장 출력 버그 해결
+ * 4. 카메라 뷰파인더 및 캡처 사진 100% 거울 모드(좌우 반전) 일치
+ * 5. 고객소리함 이메일 수집 및 즉시 접수 확인 피드백
+ * 6. 접속 기기 & 접속 지역 통합 DB 실시간 누적 집계
+ * 7. 구글 스프레드시트 중앙 DB 양방향 실시간 동기화
  */
 
 // 🌟 구글 스프레드시트 중앙 DB 웹 앱 URL
@@ -242,7 +245,6 @@ function renderCharts() {
   if (typeof Chart === 'undefined') return;
   const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
   
-  // 시간대별 차트
   const hourlyCounts = Array(24).fill(0);
   logs.forEach(l => { if (typeof l.hour === 'number' && l.hour >= 0 && l.hour <= 23) hourlyCounts[l.hour]++; });
   
@@ -256,7 +258,6 @@ function renderCharts() {
     });
   }
 
-  // 🌟 통합 DB 기반 접속 기기별 상세 누적 분포
   const deviceCounts = JSON.parse(localStorage.getItem('chueok_device_stats') || '{}');
   const deviceLabels = ["아이폰", "안드로이드", "아이패드", "맥북", "윈도우 PC", "기타"];
   const deviceData = deviceLabels.map(k => deviceCounts[k] || 0);
@@ -368,7 +369,6 @@ async function trackVisitorAccess() {
   let totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '2180', 10);
   const currentDevice = detectCurrentDevice();
 
-  // 1) 구글 시트 및 클라우드에서 전체 통계 취득
   try {
     const res = await fetch(GOOGLE_DB_URL);
     if (res.ok) {
@@ -382,11 +382,9 @@ async function trackVisitorAccess() {
     }
   } catch (e) {}
 
-  // 2) 신규 세션 방문 시 기기/지역 데이터 중앙 DB 전송
   if (!sessionStorage.getItem('chueok_session_logged')) {
     sessionStorage.setItem('chueok_session_logged', 'true');
 
-    // 기기별 통합 누적 로컬 반영
     const devStats = JSON.parse(localStorage.getItem('chueok_device_stats') || '{}');
     devStats[currentDevice] = (devStats[currentDevice] || 0) + 1;
     localStorage.setItem('chueok_device_stats', JSON.stringify(devStats));
@@ -405,9 +403,8 @@ async function trackVisitorAccess() {
       todayVisits++;
     }
 
-    // 클라우드 백업 동기화 (기기 통계 전역 공유)
     try {
-      await fetch(CLOUD_SYNC_ENDPOINT + 'device_stats_v14_3', {
+      await fetch(CLOUD_SYNC_ENDPOINT + 'device_stats_v14_4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(devStats)
@@ -455,9 +452,8 @@ function acceptGeoConsent() {
       locMap[region] = (locMap[region] || 0) + 1;
       localStorage.setItem('chueok_location_stats', JSON.stringify(locMap));
 
-      // 중앙 클라우드 DB에 지역 통계 전송
       try {
-        await fetch(CLOUD_SYNC_ENDPOINT + 'location_stats_v14_3', {
+        await fetch(CLOUD_SYNC_ENDPOINT + 'location_stats_v14_4', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(locMap)
@@ -654,7 +650,7 @@ async function deleteReviewPost(id) {
   renderAdminReviewManageList();
 
   try {
-    await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v14_1', {
+    await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v14_4', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(posts)
@@ -668,7 +664,7 @@ function escapeHtml(str) {
 }
 
 // ========================================================
-// 6. 🌟 고객소리함 (이메일 수집 및 즉시 접수 안내 피드백)
+// 6. 고객소리함 (이메일 수집 & 접수 확인 피드백)
 // ========================================================
 function openCustomerBotModal() {
   document.getElementById('customerBotModal').classList.remove('hidden');
@@ -689,7 +685,6 @@ async function sendCustomerBotMessage() {
 
   const chatArea = document.getElementById('chatMessagesArea');
 
-  // 사용자 메시지 표시
   const userDiv = document.createElement('div');
   userDiv.className = "flex items-start justify-end space-x-2";
   userDiv.innerHTML = `
@@ -705,11 +700,10 @@ async function sendCustomerBotMessage() {
   const btn = document.getElementById('btnSendBot');
   btn.disabled = true;
 
-  // 🌟 요구사항 반영 즉시 접수 확인 코멘트 생성
   setTimeout(async () => {
     let replyComment = "";
     if (email) {
-      replyComment = `소중한 의견이 정상적으로 접수되었습니다. 남겨주신 내용과 피드백을 바탕으로 시스템을 개선하며, 기재해주신 이메일(<b>${escapeHtml(email)}</b>)로 검토 후 상세히 답변드리도록 하겠습니다. 감사합니다! 💖`;
+      replyComment = `소중한 의견이 정상적으로 접수되었습니다. 남겨주신 피드백을 바탕으로 시스템을 개선하며, 기재해주신 이메일(<b>${escapeHtml(email)}</b>)로 검토 후 상세히 답변드리도록 하겠습니다. 감사합니다! 💖`;
     } else {
       replyComment = `남겨주신 소중한 의견이 정상 접수되었습니다! 보내주신 내용을 토대로 서비스 개선에 적극 반영하겠습니다. (※ 개별 답변이 필요하신 경우 이메일 주소를 함께 남겨주시면 감사하겠습니다.) 😊`;
     }
@@ -726,7 +720,6 @@ async function sendCustomerBotMessage() {
     chatArea.scrollTop = chatArea.scrollHeight;
     btn.disabled = false;
 
-    // 중앙 DB에 고객소리함 문의 기록
     try {
       await fetch(GOOGLE_DB_URL, {
         method: 'POST',
@@ -749,9 +742,9 @@ function getStoredNotices() {
   const stored = localStorage.getItem('vibe_notices');
   let list = [];
   if (stored) { try { list = JSON.parse(stored); } catch(e) { list = []; } }
-  list = list.filter(n => !n.version || n.version === 'v14.3');
-  if (!list.some(n => n.version === 'v14.3')) {
-    list.unshift({ id: 'v14_3', date: getFormattedTodayDate(), version: 'v14.3', content: '2x2 격자 배너 복구, 가로폭 슬림화 및 카메라 거울모드 적용 완료!' });
+  list = list.filter(n => !n.version || n.version === 'v14.4');
+  if (!list.some(n => n.version === 'v14.4')) {
+    list.unshift({ id: 'v14_4', date: getFormattedTodayDate(), version: 'v14.4', content: '홈 대칭 3분할 배치, 포토이즘/야구/생일 스페셜 테마 및 2x2 슬림화 업데이트 완료!' });
   }
   localStorage.setItem('vibe_notices', JSON.stringify(list));
   return list;
@@ -805,7 +798,7 @@ function renderAdminNoticeManageList() {
 function writeAdminNotice() {
   const content = prompt("새 공지사항 내용을 입력하세요:\n(작성일 기준 14일 동안 홈 화면에 노출됩니다)");
   if (!content || !content.trim()) return;
-  const newNotice = { id: Date.now().toString(), date: getFormattedTodayDate(), version: 'v14.3', content: content.trim() };
+  const newNotice = { id: Date.now().toString(), date: getFormattedTodayDate(), version: 'v14.4', content: content.trim() };
   const list = getStoredNotices();
   list.unshift(newNotice);
   localStorage.setItem('vibe_notices', JSON.stringify(list));
@@ -843,7 +836,7 @@ function setTimerSec(sec, btn) {
 }
 
 // ========================================================
-// 9. 🌟 카메라 촬영 세션 (거울 모드 캡처 완벽 연동)
+// 9. 카메라 촬영 세션 (거울 모드 캡처 완벽 연동)
 // ========================================================
 async function startPhotoSession() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
@@ -871,7 +864,7 @@ async function startPhotoSession() {
     const video = document.getElementById('liveWebcamVideo'); 
     if (video) { 
       video.srcObject = stream; 
-      video.classList.add('mirror'); // 뷰파인더 좌우 반전 거울모드 보장
+      video.classList.add('mirror');
       await video.play(); 
     }
     runContinuousLiveShoot(0);
@@ -951,7 +944,6 @@ function triggerInstantOneSec() {
   }, 1000);
 }
 
-// 🌟 거울 모드 사진 캡처: 보이는 뷰파인더 그대로 좌우 반전 저장
 function captureWebcamFrame(shotIndex, onDone) {
   playRealisticShutter(); 
   flashScreen();
@@ -966,7 +958,6 @@ function captureWebcamFrame(shotIndex, onDone) {
   const gRect = guide.getBoundingClientRect();
 
   ctx.save();
-  // 🌟 거울 모드 반영 (전면 카메라일 때 캔버스 좌우 반전)
   if (appState.facingMode === 'user') {
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
@@ -1015,7 +1006,7 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 10. 사진 선택 화면 & 테마 사전 선택
+// 10. 사진 선택 화면 & 스페셜 6종 테마 프리뷰
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
@@ -1048,28 +1039,48 @@ function renderPickScreen() {
 function setPickPreviewTheme(themeKey, btn) {
   appState.frameStyle = themeKey;
   document.querySelectorAll('.pick-theme-btn').forEach(b => {
-    b.className = "pick-theme-btn flex-1 py-1.5 text-slate-500 rounded-lg font-bold";
+    b.className = "pick-theme-btn py-1.5 text-slate-500 rounded-lg font-bold text-center";
   });
   if (btn) {
-    btn.className = "pick-theme-btn flex-1 py-1.5 bg-white text-theme rounded-lg shadow-2xs font-black";
+    btn.className = "pick-theme-btn py-1.5 bg-white text-theme rounded-lg shadow-2xs font-black text-center";
   }
 
+  const miniFrame = document.getElementById('pickMiniFramePreview');
   const headerEl = document.getElementById('pickPreviewHeader');
   const midEl = document.getElementById('pickPreviewMiddleBanner');
   const footerEl = document.getElementById('pickPreviewFooter');
 
+  if (miniFrame) {
+    if (themeKey === 'photoism') miniFrame.style.backgroundColor = '#0A0A0A';
+    else if (themeKey === 'baseball') miniFrame.style.backgroundColor = '#FAF7EE';
+    else if (themeKey === 'birthday') miniFrame.style.backgroundColor = '#FDFBF7';
+    else miniFrame.style.backgroundColor = '#000000';
+  }
+
   if (themeKey === 'simple') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "sangsangPhoto"; }
+    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "sangsangPhoto"; headerEl.style.color = "#FFFFFF"; }
     if (midEl) midEl.classList.add('hidden');
     if (footerEl) footerEl.classList.add('hidden');
   } else if (themeKey === 'middle') {
     if (headerEl) headerEl.classList.add('hidden');
-    if (midEl) { midEl.classList.remove('hidden'); midEl.textContent = "추억의 네컷"; }
+    if (midEl) { midEl.classList.remove('hidden'); midEl.textContent = "추억의 네컷"; midEl.style.color = "#FFFFFF"; }
     if (footerEl) footerEl.classList.add('hidden');
   } else if (themeKey === 'bottom') {
     if (headerEl) headerEl.classList.add('hidden');
     if (midEl) midEl.classList.add('hidden');
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "인생4컷"; }
+    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "인생4컷"; footerEl.style.color = "#FFFFFF"; }
+  } else if (themeKey === 'photoism') {
+    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "photoism"; headerEl.style.color = "#FFFFFF"; }
+    if (midEl) midEl.classList.add('hidden');
+    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "KEEP YOURSELF ALIVE"; footerEl.style.color = "#888888"; }
+  } else if (themeKey === 'baseball') {
+    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "⚾ Play Baseball"; headerEl.style.color = "#1D4ED8"; }
+    if (midEl) midEl.classList.add('hidden');
+    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "Baseball makes life better :)"; footerEl.style.color = "#DC2626"; }
+  } else if (themeKey === 'birthday') {
+    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "🎂 Happy Birthday"; headerEl.style.color = "#E11D48"; }
+    if (midEl) midEl.classList.add('hidden');
+    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "More Happy, More Love ♥"; footerEl.style.color = "#E11D48"; }
   }
 }
 
@@ -1143,14 +1154,21 @@ function resetEditorToDefault() {
   appState.selectedStickerIdx = -1; 
   appState.layout = 'strip'; 
   appState.frameThickness = 40; 
-  appState.frameColor = '#000000'; 
+  appState.frameColor = (appState.frameStyle === 'photoism') ? '#0A0A0A' : ((appState.frameStyle === 'baseball') ? '#FAF7EE' : ((appState.frameStyle === 'birthday') ? '#FDFBF7' : '#000000'));
   appState.activeFilter = 'normal'; 
   appState.filters = { bright: 100, contrast: 100, saturate: 100 }; 
   appState.showDate = true; 
   appState.typography = { fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() };
   
   const sigInput = document.getElementById('frameSignatureInput'); 
-  if (sigInput) sigInput.value = (appState.frameStyle === 'middle' ? "추억의 네컷" : (appState.frameStyle === 'bottom' ? "인생4컷" : "sangsangPhoto"));
+  if (sigInput) {
+    if (appState.frameStyle === 'middle') sigInput.value = "추억의 네컷";
+    else if (appState.frameStyle === 'bottom') sigInput.value = "인생4컷";
+    else if (appState.frameStyle === 'photoism') sigInput.value = "photoism";
+    else if (appState.frameStyle === 'baseball') sigInput.value = "Play Baseball";
+    else if (appState.frameStyle === 'birthday') sigInput.value = "Happy Birthday";
+    else sigInput.value = "sangsangPhoto";
+  }
   
   const slThick = document.getElementById('sliderThickness'); if (slThick) slThick.value = 40;
   const fineTune = document.getElementById('filterFineTunePanel'); if (fineTune) fineTune.classList.add('hidden');
@@ -1295,14 +1313,19 @@ function setFrameStyle(styleKey, btn) {
   saveStateForUndo(); 
   appState.frameStyle = styleKey;
   document.querySelectorAll('.style-btn').forEach(b => { 
-    b.className = "style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent"; 
+    b.className = "style-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-transparent"; 
   });
-  btn.className = "style-btn bg-theme text-white font-black py-2 rounded-xl border border-theme shadow-sm";
+  btn.className = "style-btn bg-theme text-white font-black py-1.5 rounded-xl border border-theme shadow-sm";
   const label = document.getElementById('labelCustomText'); 
   const sigInput = document.getElementById('frameSignatureInput');
+  
   if (styleKey === 'simple') { if (label) label.textContent = "상단 문구 설정"; if (sigInput) sigInput.value = "sangsangPhoto"; }
   else if (styleKey === 'middle') { if (label) label.textContent = "중간 문구 설정"; if (sigInput) sigInput.value = "추억의 네컷"; }
   else if (styleKey === 'bottom') { if (label) label.textContent = "하단 각인 문구 설정"; if (sigInput) sigInput.value = "인생4컷"; }
+  else if (styleKey === 'photoism') { if (label) label.textContent = "포토이즘 로고 문구"; if (sigInput) sigInput.value = "photoism"; }
+  else if (styleKey === 'baseball') { if (label) label.textContent = "야구 타이틀 문구"; if (sigInput) sigInput.value = "Play Baseball"; }
+  else if (styleKey === 'birthday') { if (label) label.textContent = "생일 축하 문구"; if (sigInput) sigInput.value = "Happy Birthday"; }
+  
   renderStrip();
 }
 
@@ -1312,11 +1335,15 @@ function onThicknessChange(val) {
 }
 
 function changeFrameColor(color, btn) {
-  saveStateForUndo(); appState.frameColor = color;
+  saveStateForUndo(); 
+  appState.frameColor = color;
   document.querySelectorAll('.color-btn').forEach(b => b.classList.replace('border-theme', 'border-transparent'));
   if (btn) btn.classList.replace('border-transparent', 'border-theme');
-  if (['#FFFFFF','#E2E8F0','#FECDD3','#BAE6FD'].includes(color)) appState.typography.fontColor = '#1E293B'; 
-  else appState.typography.fontColor = '#FFFFFF';
+  if (['#FFFFFF','#E2E8F0','#FECDD3','#BAE6FD','#FAF7EE','#FDFBF7'].includes(color.toUpperCase())) {
+    appState.typography.fontColor = '#1E293B'; 
+  } else {
+    appState.typography.fontColor = '#FFFFFF';
+  }
   const picker = document.getElementById('fontColorPicker'); 
   if (picker) picker.value = appState.typography.fontColor;
   renderStrip();
@@ -1449,7 +1476,7 @@ function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx
 function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
 
 // ========================================================
-// 13. 캔버스 터치 조작 & 한 손가락 패닝(Pan)
+// 13. 캔버스 인터랙션 & 패닝(Pan)
 // ========================================================
 function initCanvasInteractions() {
   const canvas = document.getElementById('photoCanvas');
@@ -1531,7 +1558,7 @@ function initCanvasInteractions() {
 }
 
 // ========================================================
-// 14. 🌟 메인 캔버스 렌더링 (2×2 격자 슬림화 & 중간문구 버그 수정)
+// 14. 🌟 메인 캔버스 렌더링 (2×2 격자 슬림화 및 6종 테마 그래픽 구현)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
@@ -1545,20 +1572,19 @@ function renderStrip(isFinalExport = false) {
   const gap = Math.round(pad * 0.5);
   const fStyle = appState.frameStyle;
 
+  // 1. 레이아웃 규격 설정 (2x2 격자: 1100px 슬림화 적용)
   if (layout === 'strip') {
     canvas.width = 800; canvas.height = 2400;
   } else if (layout === 'grid') {
-    // 🌟 2x2 격자 모드: 가로폭 1100px 슬림화 및 상하 여백 넉넉히 확보
     canvas.width = 1100;
     const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = Math.round(imgW * (2 / 3)); // 3:2 규격 매칭
+    const imgH = Math.round(imgW * (2 / 3)); // 3:2 비율 무손실 매칭
     const bannerH = (fStyle === 'middle') ? 150 : 0;
-    const topH = (fStyle === 'simple') ? 110 : (fStyle === 'bottom' ? 45 : pad + 20);
-    const bottomH = (fStyle === 'bottom') ? 180 : (fStyle === 'simple' ? 50 : pad + 20);
+    const topH = (fStyle === 'simple' || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 120 : (fStyle === 'bottom' ? 45 : pad + 20);
+    const bottomH = (fStyle === 'bottom' || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 180 : (fStyle === 'simple' ? 50 : pad + 20);
 
     if (fStyle === 'middle') {
-      // 🌟 상하 여백과 중간 배너 공간이 완벽히 포함된 캔버스 높이 산출
-      canvas.height = pad + imgH + gap + bannerH + gap + imgH + pad + 20;
+      canvas.height = pad + 10 + imgH + gap + bannerH + gap + imgH + pad + 20;
     } else {
       canvas.height = topH + (imgH * 2) + gap + bottomH;
     }
@@ -1566,9 +1592,14 @@ function renderStrip(isFinalExport = false) {
     canvas.width = 1200; canvas.height = 1800;
   }
   
-  ctx.fillStyle = appState.frameColor; 
+  // 테마별 배경색상 결정
+  if (fStyle === 'photoism') ctx.fillStyle = '#0A0A0A';
+  else if (fStyle === 'baseball') ctx.fillStyle = '#FAF7EE';
+  else if (fStyle === 'birthday') ctx.fillStyle = '#FDFBF7';
+  else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // 2. 1×4 스트립 렌더링
   if (layout === 'strip') {
     if (fStyle === 'middle') {
       const bannerH = 160; 
@@ -1587,36 +1618,35 @@ function renderStrip(isFinalExport = false) {
       const bottomFooterH = isBottom ? 220 : 45; 
       const imgW = canvas.width - (pad * 2); 
       const imgH = (canvas.height - topHeaderH - bottomFooterH - (gap * 3)) / 4;
+      
       renderHeaderOrDecor(ctx, 0, 0, canvas.width, canvas.height, customTitle, topHeaderH, isBottom); 
       for (let i = 0; i < 4; i++) { 
         const y = topHeaderH + (i * (imgH + gap)); 
         drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, y, imgW, imgH); 
       }
-      if (isBottom) {
+      if (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') {
         const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
         drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle);
       }
     }
-  } else if (layout === 'grid') {
+  } 
+  // 3. 2×2 격자 렌더링 (추억의 네컷 중간 배너 & 하단 사진 완벽 복구)
+  else if (layout === 'grid') {
     const isBottom = (fStyle === 'bottom'); 
     const bannerH = (fStyle === 'middle') ? 150 : 0;
-    const topHeaderH = (fStyle === 'simple') ? 110 : (isBottom ? 45 : pad + 20);
-    const bottomFooterH = isBottom ? 180 : (fStyle === 'simple' ? 50 : pad + 20);
+    const topHeaderH = (fStyle === 'simple' || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 120 : (isBottom ? 45 : pad + 20);
+    const bottomFooterH = (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 180 : (fStyle === 'simple' ? 50 : pad + 20);
     const imgW = (canvas.width - (pad * 2) - gap) / 2; 
     const imgH = Math.round(imgW * (2 / 3));
     
-    // 🌟 2x2 격자 '추억의 네컷(중간)' 완벽 출력 처리
     if (fStyle === 'middle') {
       const topY = pad + 10;
-      // 1. 상단 사진 2장 출력
       drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, topY, imgW, imgH); 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, topY, imgW, imgH); 
       
-      // 2. 중간 문구 배너 출력
       const bannerY = topY + imgH + gap; 
       drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle, 32); 
 
-      // 3. 하단 사진 2장 출력 (위치 정확히 매핑)
       const lowerY = bannerY + bannerH + gap; 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerY, imgW, imgH); 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + imgW + gap, lowerY, imgW, imgH); 
@@ -1631,12 +1661,14 @@ function renderStrip(isFinalExport = false) {
       for (let i = 0; i < 4; i++) { 
         drawFilteredSlotPhoto(ctx, appState.selectedImages[i], coords[i].x, coords[i].y, imgW, imgH); 
       }
-      if (isBottom) {
+      if (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') {
         const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
         drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle, 30);
       }
     }
-  } else if (layout === 'twin') {
+  } 
+  // 4. 4×6 2줄 인쇄용 렌더링
+  else if (layout === 'twin') {
     const stripW = (canvas.width / 2) - 20; 
     const padX = pad * 0.65; 
     const imgW = stripW - (padX * 2);
@@ -1662,14 +1694,14 @@ function renderStrip(isFinalExport = false) {
       const imgH = (canvas.height - topHeaderH - bottomFooterH - 20 - (gap * 3)) / 4;
       renderHeaderOrDecor(ctx, 10, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottom, true); 
       for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], 10 + padX, 10 + topHeaderH + (i * (imgH + gap)), imgW, imgH); }
-      if (isBottom) {
+      if (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') {
         const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
         drawBottomStyleFooter(ctx, stripW / 2, footerCenterY, customTitle, 26);
       }
       const rx = canvas.width / 2 + 10; 
       renderHeaderOrDecor(ctx, rx, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottom, true); 
       for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], rx + padX, 10 + topHeaderH + (i * (imgH + gap)), imgW, imgH); }
-      if (isBottom) {
+      if (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') {
         const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
         drawBottomStyleFooter(ctx, rx + (stripW / 2) - 10, footerCenterY, customTitle, 26);
       }
@@ -1704,12 +1736,55 @@ function renderStrip(isFinalExport = false) {
   });
 }
 
+// 🌟 스페셜 6종 테마별 상단 헤더 & 브랜딩 그래픽
 function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin = false) {
-  const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827'); 
-  const textColor = isDark ? '#FFFFFF' : '#1E293B'; 
-  const weight = appState.typography.isBold ? '900' : 'bold';
-  if (!isBottom && appState.frameStyle === 'simple') {
-    ctx.save(); 
+  const fStyle = appState.frameStyle;
+  ctx.save();
+
+  // 1. 포토이즘 (photoism) 필름 스타일
+  if (fStyle === 'photoism') {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 ${isTwin ? 24 : 36}px 'Playfair Display', serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("photoism", bx + bw - (isTwin ? 20 : 35), by + (topH / 2) + 5);
+
+    ctx.font = `bold ${isTwin ? 11 : 14}px monospace`;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'left';
+    ctx.fillText('▶ 5', bx + (isTwin ? 15 : 25), by + (topH / 2) + 5);
+  }
+  // 2. 플레이 야구 (baseball) 스타일[cite: 3]
+  else if (fStyle === 'baseball') {
+    // 파란색 야구 캘리그라피 메인 로고
+    ctx.fillStyle = '#1E3A8A';
+    ctx.font = `900 ${isTwin ? 22 : 36}px 'Black Han Sans', sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("⚾ Play Baseball", bx + (isTwin ? 15 : 25), by + (topH / 2) - 6);
+
+    ctx.fillStyle = '#DC2626';
+    ctx.font = `bold ${isTwin ? 10 : 13}px 'Pretendard', sans-serif`;
+    ctx.fillText("오늘도, 우리는 야구를 한다!", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
+  }
+  // 3. 해피 버스데이 (birthday) 스타일[cite: 4]
+  else if (fStyle === 'birthday') {
+    ctx.fillStyle = '#E11D48';
+    ctx.font = `900 ${isTwin ? 22 : 36}px 'Playfair Display', serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("🎂 Happy Birthday", bx + (isTwin ? 15 : 25), by + (topH / 2) - 6);
+
+    ctx.fillStyle = '#9F1239';
+    ctx.font = `bold ${isTwin ? 10 : 13}px 'Pretendard', sans-serif`;
+    ctx.fillText("오늘은 너라는 기적이 태어난 날! ♡", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
+  }
+  // 4. 포토이지 기본 스타일
+  else if (!isBottom && fStyle === 'simple') {
+    const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827'); 
+    const textColor = isDark ? '#FFFFFF' : '#1E293B'; 
+    const weight = appState.typography.isBold ? '900' : 'bold';
+
     ctx.fillStyle = textColor; 
     ctx.font = `${weight} ${isTwin ? 26 : 38}px '${appState.typography.fontFamily}', serif`; 
     ctx.textAlign = 'right'; 
@@ -1724,8 +1799,8 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
     ctx.fillText('▶ 5', bx + 14, by + (bh * 0.72));
     ctx.save(); ctx.translate(bx + bw - 14, by + (bh * 0.35)); ctx.rotate(Math.PI / 2); ctx.font = `900 ${isTwin ? 9 : 12}px monospace`; ctx.letterSpacing = "2px"; ctx.fillText("KEEP YOUR MEMORY", 0, 0); ctx.restore();
     ctx.save(); ctx.translate(bx + bw - 14, by + (bh * 0.78)); ctx.rotate(Math.PI / 2); ctx.font = `900 ${isTwin ? 9 : 12}px monospace`; ctx.fillText("PHOTO.IS", 0, 0); ctx.restore();
-    ctx.restore();
   }
+  ctx.restore();
 }
 
 function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
@@ -1762,36 +1837,76 @@ function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
   ctx.restore();
 }
 
+// 🌟 스페셜 6종 테마별 하단 푸터 그래픽
 function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
+  const fStyle = appState.frameStyle;
   const size = customSize || appState.typography.fontSize; 
-  const weight = appState.typography.isBold ? '900' : 'bold';
   const showDate = appState.showDate;
-  const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
-  const textColor = appState.typography.fontColor || (isDark ? '#FFFFFF' : '#1E293B');
-  const dateSize = Math.max(14, Math.round(size * 0.45));
-  const gap = Math.max(12, Math.round(size * 0.3));
-
   ctx.save();
-  ctx.textAlign = 'center';
-  ctx.fillStyle = textColor;
 
-  if (showDate) {
-    const totalHeight = size + gap + dateSize;
-    const titleY = centerY - (totalHeight / 2) + (size / 2);
-    const dateY = centerY + (totalHeight / 2) - (dateSize / 2);
+  // 1. 포토이즘 하단 필름 마킹[cite: 2]
+  if (fStyle === 'photoism') {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = `700 ${Math.max(13, Math.round(size * 0.5))}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("52    PHOTOISM    KEEP YOURSELF ALIVE", x, centerY);
+  }
+  // 2. 플레이 야구 하단 레터링[cite: 3]
+  else if (fStyle === 'baseball') {
+    ctx.fillStyle = '#1E3A8A';
+    ctx.font = `900 ${Math.max(14, Math.round(size * 0.6))}px 'Pretendard', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("Baseball makes life better :)", x, centerY - (showDate ? 10 : 0));
+    if (showDate) {
+      ctx.fillStyle = '#DC2626';
+      ctx.font = `bold 13px monospace`;
+      ctx.fillText(appState.typography.date, x, centerY + 16);
+    }
+  }
+  // 3. 해피 버스데이 하단 리본 레터링[cite: 4]
+  else if (fStyle === 'birthday') {
+    ctx.fillStyle = '#E11D48';
+    ctx.font = `900 ${Math.max(14, Math.round(size * 0.6))}px 'Playfair Display', serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("More Happy, More Love ♥", x, centerY - (showDate ? 10 : 0));
+    if (showDate) {
+      ctx.fillStyle = '#9F1239';
+      ctx.font = `bold 13px monospace`;
+      ctx.fillText(appState.typography.date, x, centerY + 16);
+    }
+  }
+  // 4. 일반 인생네컷 하단
+  else {
+    const weight = appState.typography.isBold ? '900' : 'bold';
+    const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
+    const textColor = appState.typography.fontColor || (isDark ? '#FFFFFF' : '#1E293B');
+    const dateSize = Math.max(14, Math.round(size * 0.45));
+    const gap = Math.max(12, Math.round(size * 0.3));
 
-    ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(title, x, titleY);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = textColor;
 
-    ctx.font = `normal ${dateSize}px '${appState.typography.fontFamily}', sans-serif`;
-    ctx.globalAlpha = 0.75;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(appState.typography.date, x, dateY);
-  } else {
-    ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(title, x, centerY);
+    if (showDate) {
+      const totalHeight = size + gap + dateSize;
+      const titleY = centerY - (totalHeight / 2) + (size / 2);
+      const dateY = centerY + (totalHeight / 2) - (dateSize / 2);
+
+      ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, x, titleY);
+
+      ctx.font = `normal ${dateSize}px '${appState.typography.fontFamily}', sans-serif`;
+      ctx.globalAlpha = 0.75;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(appState.typography.date, x, dateY);
+    } else {
+      ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, x, centerY);
+    }
   }
   ctx.restore();
 }
@@ -1958,7 +2073,7 @@ async function autoSaveVideo() {
         vCtx.restore();
       }
 
-      if (isBottom) {
+      if (isBottom || appState.frameStyle === 'photoism' || appState.frameStyle === 'baseball' || appState.frameStyle === 'birthday') {
         const fCenterY = (vCanvas.height - bottomH) + (bottomH / 2);
         drawBottomStyleFooter(vCtx, vCanvas.width / 2, fCenterY, customTitle, 26);
       }
@@ -2147,7 +2262,7 @@ function applySnapshot(snap) {
 }
 
 // ========================================================
-// 17. 초기 엔트리포인트
+// 17. 엔트리포인트
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
