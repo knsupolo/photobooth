@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>추억의 네컷 Studio Pro v14.2</title>
+  <title>추억의 네컷 Studio Pro v14.3</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -14,9 +14,7 @@
 <body class="bg-white text-slate-900 h-screen w-screen overflow-hidden flex flex-col antialiased">
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
-  <!-- ========================================================
-        화면 1: 메인 홈 화면
-  ======================================================== -->
+  <!-- 메인 홈 화면 -->
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
     <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5 justify-between relative">
       
@@ -29,11 +27,10 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-xl font-black tracking-tight text-slate-900">추억의 네컷</span>
             <span class="bg-rose-500 text-black text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm">Pro</span>
-            <span class="text-xs text-theme font-extrabold tracking-tighter">v14.2</span>
+            <span class="text-xs text-theme font-extrabold tracking-tighter">v14.3</span>
           </div>
         </div>
 
-        <!-- 방문자 카운터 & 관리자 설정 버튼 -->
         <div class="flex items-center space-x-1.5">
           <div class="flex items-center space-x-1 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-600">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -47,18 +44,18 @@
         </div>
       </header>
 
-      <!-- 공지사항 영역 (v14.2 업데이트 공지) -->
+      <!-- 공지사항 -->
       <div id="mainNoticeArea" class="shrink-0 mt-3 hidden bg-theme-light border border-rose-200 rounded-2xl p-3 shadow-sm">
         <div class="flex justify-between items-center mb-1.5">
           <h3 class="text-xs font-black text-theme flex items-center">
             <i data-lucide="bell" class="w-3.5 h-3.5 mr-1"></i> 공지사항
           </h3>
-          <span class="text-[10px] text-slate-400 font-bold">v14.2 LIVE</span>
+          <span class="text-[10px] text-slate-400 font-bold">v14.3 LIVE</span>
         </div>
         <div id="noticeListContainer" class="space-y-1"></div>
       </div>
 
-      <!-- 메인 액션 영역 -->
+      <!-- 메인 액션 버튼 -->
       <section class="flex-1 flex flex-col justify-center items-center my-auto space-y-3 w-full max-w-sm mx-auto">
         <div class="flex items-center justify-between gap-2.5 w-full">
           <button onclick="startPhotoSession()" class="flex-1 bg-theme text-white p-3.5 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center active:scale-[0.97] transition h-36">
@@ -66,7 +63,7 @@
               <i data-lucide="camera" class="w-6 h-6 text-white"></i>
             </div>
             <h4 class="font-black text-sm text-white">촬영 시작하기</h4>
-            <p class="text-[10px] text-rose-100 mt-0.5">3:2 규격 크롭</p>
+            <p class="text-[10px] text-rose-100 mt-0.5">3:2 규격 거울모드</p>
           </button>
 
           <div class="w-28 bg-slate-50 border border-slate-200 p-2 rounded-2xl flex flex-col justify-between items-center text-center h-36 shrink-0">
@@ -93,10 +90,9 @@
         </div>
       </section>
 
-      <!-- 하단 메뉴: 이용 후기 & 고객소리함(AI 챗봇) 분리 -->
+      <!-- 하단 메뉴 -->
       <div class="shrink-0 space-y-2 pt-2 border-t border-slate-100">
         <div class="grid grid-cols-2 gap-2">
-          <!-- 1. 이용 후기 게시판 -->
           <button onclick="showScreen('screenBoard')" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-2.5 rounded-2xl shadow-xs flex items-center space-x-2 active:scale-[0.98] transition">
             <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
               <i data-lucide="star" class="w-4 h-4"></i>
@@ -107,28 +103,25 @@
             </div>
           </button>
 
-          <!-- 2. 고객소리함 (AI 챗봇 상담) -->
           <button onclick="openCustomerBotModal()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-2.5 rounded-2xl shadow-xs flex items-center space-x-2 active:scale-[0.98] transition">
             <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
               <i data-lucide="bot" class="w-4 h-4"></i>
             </div>
             <div class="text-left overflow-hidden">
-              <h4 class="font-bold text-xs text-slate-900 truncate">고객소리함 (AI상담)</h4>
-              <p class="text-[9px] text-slate-400 truncate">문의 & 1:1 실시간 봇</p>
+              <h4 class="font-bold text-xs text-slate-900 truncate">고객소리함 (문의)</h4>
+              <p class="text-[9px] text-slate-400 truncate">접수 & 답변 안내</p>
             </div>
           </button>
         </div>
 
         <footer class="text-center text-[10px] text-slate-400 pb-1">
-          추억의 네컷 Studio Pro v14.2
+          추억의 네컷 Studio Pro v14.3
         </footer>
       </div>
     </div>
   </main>
 
-  <!-- ========================================================
-        화면 1-2: 이용 후기 게시판
-  ======================================================== -->
+  <!-- 이용 후기 게시판 -->
   <section id="screenBoard" class="hidden absolute inset-0 z-20 w-full flex flex-col bg-slate-50 overflow-hidden">
     <header class="flex items-center justify-between px-4 py-4 border-b border-slate-200 bg-white shrink-0">
       <div class="flex items-center">
@@ -172,7 +165,6 @@
 
         <input type="text" id="boardNickname" placeholder="닉네임 (미입력시 익명)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none">
         <textarea id="boardContent" rows="3" placeholder="소중한 사용 소감을 적어주세요! (등록 시 즉시 목록에 표시됩니다)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none resize-none"></textarea>
-        <!-- 버튼 클릭 시 '업로드 중...'으로 전환되고 완료 alert 없음 -->
         <button onclick="submitBoardPost()" id="btnSubmitBoard" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition active:scale-95">후기 등록</button>
       </div>
 
@@ -183,52 +175,50 @@
     </div>
   </section>
 
-  <!-- ========================================================
-        모달: AI 고객소리함 챗봇 상담소
-  ======================================================== -->
+  <!-- 고객소리함 모달 (이메일 입력 및 안내 개편) -->
   <div id="customerBotModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
     <div class="bg-white w-full max-w-md h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
-      <!-- 헤더 -->
       <div class="px-4 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
         <div class="flex items-center space-x-2">
           <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-            <i data-lucide="bot" class="w-4 h-4"></i>
+            <i data-lucide="message-square-plus" class="w-4 h-4"></i>
           </div>
           <div>
-            <h3 class="text-xs font-black text-slate-900">추억의 네컷 AI 고객센터</h3>
-            <p class="text-[9px] text-slate-400">무엇이든 물어보세요! 실시간 답변을 드립니다.</p>
+            <h3 class="text-xs font-black text-slate-900">고객소리함 & 문의 접수</h3>
+            <p class="text-[9px] text-slate-400">의견을 남겨주시면 지속적으로 개선해 드립니다.</p>
           </div>
         </div>
         <button onclick="closeCustomerBotModal()" class="text-slate-400 hover:text-slate-700 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <!-- 이메일 문의 상단 안내 배너 -->
       <div class="bg-indigo-50 border-b border-indigo-100 px-3.5 py-2 text-[10px] text-indigo-800 flex items-center justify-between shrink-0">
-        <span class="flex items-center font-bold"><i data-lucide="mail" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>상세 답변 및 개별 문의:</span>
+        <span class="flex items-center font-bold"><i data-lucide="mail" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>직접 이메일 문의:</span>
         <a href="mailto:knsupolo@gmail.com" class="font-black text-indigo-700 underline">knsupolo@gmail.com</a>
       </div>
 
-      <!-- 채팅 대화 영역 -->
       <div id="chatMessagesArea" class="flex-1 overflow-y-auto p-4 space-y-3 touch-scroll text-xs">
         <div class="flex items-start space-x-2">
-          <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 text-[10px] font-black">AI</div>
-          <div class="chat-bubble-ai p-3 max-w-[80%] leading-relaxed">
-            안녕하세요! '추억의 네컷' 고객센터 AI 어시스턴트입니다. 😊<br>부스 이용 방법, 사진 저장 오류, 기능 건의 등 궁금한 점을 자유롭게 남겨주세요!
+          <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 text-[10px] font-black">안내</div>
+          <div class="chat-bubble-ai p-3 max-w-[85%] leading-relaxed">
+            안녕하세요! '추억의 네컷' 고객센터입니다. 😊<br><br>
+            현재 메시지에서 추가로 남겨주신 내용을 토대로 시스템을 개선하거나 답변을 드리도록 하겠습니다.<br><br>
+            <b>💡 개별 답변이 필요하신 경우 아래 입력창에 이메일 주소를 함께 남겨주세요!</b>
           </div>
         </div>
       </div>
 
-      <!-- 입력창 -->
-      <div class="p-3 border-t border-slate-200 bg-white flex items-center space-x-2 shrink-0">
-        <input type="text" id="botChatInput" onkeyup="if(event.key==='Enter') sendCustomerBotMessage()" placeholder="문의사항이나 건의할 내용을 적어주세요..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-indigo-500">
-        <button onclick="sendCustomerBotMessage()" id="btnSendBot" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs active:scale-95 transition shrink-0">전송</button>
+      <!-- 이메일 및 문의내용 입력창 -->
+      <div class="p-3 border-t border-slate-200 bg-white flex flex-col space-y-2 shrink-0">
+        <input type="email" id="botContactEmail" placeholder="답변받으실 이메일 주소 (선택 입력)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-indigo-500">
+        <div class="flex items-center space-x-2">
+          <input type="text" id="botChatInput" onkeyup="if(event.key==='Enter') sendCustomerBotMessage()" placeholder="문의 및 건의 내용을 입력해주세요..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-indigo-500">
+          <button onclick="sendCustomerBotMessage()" id="btnSendBot" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs active:scale-95 transition shrink-0">접수</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ========================================================
-        모달: 접속 위치 권한 확인 팝업 (최초 1회만)
-  ======================================================== -->
+  <!-- 위치 동의 모달 -->
   <div id="geoConsentModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center space-y-3">
       <div class="w-10 h-10 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto">
@@ -237,10 +227,10 @@
       <div>
         <h3 class="font-black text-sm text-slate-900">지역 방문 통계 수집 안내</h3>
         <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-          더 쾌적한 부스 서비스 제공을 위해 대략적인 <b>접속 지역(시/도) 통계</b>를 수집하고자 합니다.<br>위치 접근을 허용하시겠습니까?
+          더 나은 서비스 제공을 위해 대략적인 <b>접속 지역(시/도) 통계</b>를 수집하고자 합니다.<br>위치 접근을 허용하시겠습니까?
         </p>
       </div>
-      <p class="text-[10px] text-slate-400">※ 정밀한 개인 주소는 저장되지 않으며 통계용으로만 쓰입니다.</p>
+      <p class="text-[10px] text-slate-400">※ 정밀한 개인 주소는 저장되지 않으며 전체 누적 통계로만 사용됩니다.</p>
       <div class="grid grid-cols-2 gap-2 pt-2">
         <button onclick="acceptGeoConsent()" class="bg-theme text-white font-bold py-2 rounded-xl text-xs shadow active:scale-95 transition">허용함</button>
         <button onclick="declineGeoConsent()" class="bg-slate-100 text-slate-600 font-bold py-2 rounded-xl text-xs">다음에</button>
@@ -248,9 +238,7 @@
     </div>
   </div>
 
-  <!-- ========================================================
-        화면 1-3: 관리자 대시보드 (기기별 통계 + 지역 + 후기삭제 + 10색 테마)
-  ======================================================== -->
+  <!-- 관리자 대시보드 -->
   <div id="adminDashboardModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
     <div class="bg-white w-full max-w-2xl h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
@@ -262,14 +250,14 @@
       </div>
 
       <div class="flex border-b border-slate-200 bg-white shrink-0 text-xs font-bold">
-        <button onclick="switchAdminTab('stats')" id="tabBtnStats" class="flex-1 py-3 border-b-2 border-theme text-theme">📊 방문 통계</button>
+        <button onclick="switchAdminTab('stats')" id="tabBtnStats" class="flex-1 py-3 border-b-2 border-theme text-theme">📊 통합 방문 통계</button>
         <button onclick="switchAdminTab('theme')" id="tabBtnTheme" class="flex-1 py-3 border-b-2 border-transparent text-slate-400">🎨 UI 테마 (10종)</button>
         <button onclick="switchAdminTab('notices')" id="tabBtnNotices" class="flex-1 py-3 border-b-2 border-transparent text-slate-400">📢 공지 관리</button>
         <button onclick="switchAdminTab('reviews')" id="tabBtnReviews" class="flex-1 py-3 border-b-2 border-transparent text-slate-400">💬 후기 삭제/관리</button>
       </div>
 
       <div class="flex-1 overflow-y-auto p-5 space-y-5 touch-scroll bg-slate-50 text-slate-800">
-        <!-- 탭 1: 통계 (접속 기기별 분포 + 접속 지역 통계) -->
+        <!-- 통계 탭 -->
         <div id="adminTabStats" class="space-y-4">
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs"><span class="text-[10px] font-bold text-slate-400">오늘 방문</span><p id="dashToday" class="text-xl font-black text-theme mt-1">--</p></div>
@@ -280,11 +268,11 @@
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <h4 class="text-xs font-bold text-slate-700 mb-2"><i data-lucide="smartphone" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 접속 기기별 상세 분포</h4>
+              <h4 class="text-xs font-bold text-slate-700 mb-2"><i data-lucide="smartphone" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 접속 기기별 통합 누적 분포</h4>
               <div class="h-44 w-full flex justify-center"><canvas id="chartDevice"></canvas></div>
             </div>
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <h4 class="text-xs font-bold text-slate-700 mb-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 접속 지역별 분포</h4>
+              <h4 class="text-xs font-bold text-slate-700 mb-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 접속 지역별 통합 누적 분포</h4>
               <div id="adminLocationStatsList" class="space-y-1.5 max-h-44 overflow-y-auto text-xs pt-1 no-scrollbar"></div>
             </div>
           </div>
@@ -295,7 +283,7 @@
           </div>
         </div>
 
-        <!-- 탭 2: 10종 색상 테마 -->
+        <!-- 10종 테마 탭 -->
         <div id="adminTabTheme" class="hidden space-y-4">
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
@@ -303,13 +291,11 @@
               <span id="currentThemeLabel" class="text-[11px] font-bold text-theme">현재 테마</span>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1" id="adminThemeListGrid">
-              <!-- 기본 5종 -->
               <button onclick="applyAppTheme('rose')" class="theme-choice-btn p-2.5 rounded-xl border border-slate-200 flex items-center space-x-2 bg-rose-50"><span class="w-4 h-4 rounded-full bg-rose-600 shrink-0"></span><span class="text-xs font-bold text-slate-800">로즈 핑크</span></button>
               <button onclick="applyAppTheme('black')" class="theme-choice-btn p-2.5 rounded-xl border border-slate-200 flex items-center space-x-2 bg-slate-50"><span class="w-4 h-4 rounded-full bg-slate-900 shrink-0"></span><span class="text-xs font-bold text-slate-800">모던 블랙</span></button>
               <button onclick="applyAppTheme('blue')" class="theme-choice-btn p-2.5 rounded-xl border border-slate-200 flex items-center space-x-2 bg-sky-50"><span class="w-4 h-4 rounded-full bg-sky-600 shrink-0"></span><span class="text-xs font-bold text-slate-800">오션 블루</span></button>
               <button onclick="applyAppTheme('purple')" class="theme-choice-btn p-2.5 rounded-xl border border-slate-200 flex items-center space-x-2 bg-violet-50"><span class="w-4 h-4 rounded-full bg-purple-600 shrink-0"></span><span class="text-xs font-bold text-slate-800">라벤더 퍼플</span></button>
               <button onclick="applyAppTheme('green')" class="theme-choice-btn p-2.5 rounded-xl border border-slate-200 flex items-center space-x-2 bg-emerald-50"><span class="w-4 h-4 rounded-full bg-emerald-600 shrink-0"></span><span class="text-xs font-bold text-slate-800">포레스트 그린</span></button>
-              <!-- 신규 추가 5종 -->
               <button onclick="applyAppTheme('orange')" class="theme-choice-btn p-2.5 rounded-xl border border-slate-200 flex items-center space-x-2 bg-orange-50"><span class="w-4 h-4 rounded-full bg-orange-500 shrink-0"></span><span class="text-xs font-bold text-slate-800">선셋 오렌지</span></button>
               <button onclick="applyAppTheme('yellow')" class="theme-choice-btn p-2.5 rounded-xl border border-slate-200 flex items-center space-x-2 bg-amber-50"><span class="w-4 h-4 rounded-full bg-amber-500 shrink-0"></span><span class="text-xs font-bold text-slate-800">선샤인 옐로우</span></button>
               <button onclick="applyAppTheme('navy')" class="theme-choice-btn p-2.5 rounded-xl border border-slate-200 flex items-center space-x-2 bg-indigo-50"><span class="w-4 h-4 rounded-full bg-indigo-900 shrink-0"></span><span class="text-xs font-bold text-slate-800">미드나잇 네이비</span></button>
@@ -319,7 +305,7 @@
           </div>
         </div>
 
-        <!-- 탭 3: 공지 관리 -->
+        <!-- 공지 관리 탭 -->
         <div id="adminTabNotices" class="hidden space-y-4">
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
             <div class="flex justify-between items-center"><h4 class="text-xs font-bold text-slate-700">공지사항 관리</h4><button onclick="writeAdminNotice()" class="bg-theme text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ 새 공지 등록</button></div>
@@ -327,7 +313,7 @@
           </div>
         </div>
 
-        <!-- 탭 4: 후기 관리 (삭제 기능 완비) -->
+        <!-- 후기 관리 탭 -->
         <div id="adminTabReviews" class="hidden space-y-4">
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
             <div class="flex justify-between items-center"><h4 class="text-xs font-bold text-slate-700">후기 관리 (개별 삭제 가능)</h4><button onclick="fetchCloudBoardPosts()" class="text-xs text-indigo-600 font-bold">새로고침</button></div>
@@ -338,9 +324,7 @@
     </div>
   </div>
 
-  <!-- ========================================================
-        화면 2: 촬영 화면
-  ======================================================== -->
+  <!-- 촬영 화면 (거울모드 .mirror 적용) -->
   <section id="screenLiveShoot" class="hidden fixed inset-0 bg-black flex flex-col z-50 overflow-hidden">
     <div id="flashOverlay" class="hidden absolute inset-0 bg-white z-[60] pointer-events-none"></div>
     <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror"></video>
@@ -384,9 +368,7 @@
     </div>
   </section>
 
-  <!-- ========================================================
-        화면 3: 6장 중 4장 선택 화면
-  ======================================================== -->
+  <!-- 사진 선택 화면 -->
   <section id="screenPick" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row items-center justify-between p-3 sm:p-5 gap-3 bg-white text-slate-900 overflow-y-auto touch-scroll">
     <div class="w-full lg:w-1/2 flex flex-col items-center justify-center shrink-0">
       <div class="w-full max-w-xs mb-2">
@@ -431,11 +413,8 @@
     </div>
   </section>
 
-  <!-- ========================================================
-        화면 4: 스튜디오 에디터
-  ======================================================== -->
+  <!-- 에디터 스튜디오 화면 -->
   <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
-    
     <div class="w-full h-[46%] lg:h-full lg:w-1/2 flex flex-col bg-[#F6F3EC] border-b lg:border-r border-[#EBE6DC] shadow-inner relative z-10 shrink-0">
       <div class="absolute top-2 left-2 z-20 flex items-center space-x-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl shadow-sm border border-slate-200 text-xs font-bold">
         <button onclick="zoomCanvas(-0.15)" class="p-1 text-slate-600 hover:text-rose-600 active:scale-90"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
@@ -475,7 +454,7 @@
           <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 레이아웃</label>
           <div class="grid grid-cols-3 gap-1.5">
             <button onclick="changeLayout('strip', this)" class="layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs">1×4 스트립</button>
-            <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 격자</button>
+            <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 격자 (비율개선)</button>
             <button onclick="changeLayout('twin', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2줄 인쇄용</button>
           </div>
         </div>
@@ -608,9 +587,7 @@
     </div>
   </section>
 
-  <!-- ========================================================
-        화면 5: 결과 화면
-  ======================================================== -->
+  <!-- 결과 화면 -->
   <section id="screenResult" class="hidden absolute inset-0 z-50 w-full flex flex-col items-center justify-center px-4 bg-slate-50 text-center overflow-y-auto">
     <div class="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center my-auto">
       <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5">
