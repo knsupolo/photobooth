@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>추억의 네컷 Studio Pro v14.3</title>
+  <title>추억의 네컷 Studio Pro v14.4</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -14,7 +14,9 @@
 <body class="bg-white text-slate-900 h-screen w-screen overflow-hidden flex flex-col antialiased">
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
-  <!-- 메인 홈 화면 -->
+  <!-- ========================================================
+        화면 1: 메인 홈 화면 (좌/우/중앙 3분할 정렬)
+  ======================================================== -->
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
     <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5 justify-between relative">
       
@@ -27,7 +29,7 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-xl font-black tracking-tight text-slate-900">추억의 네컷</span>
             <span class="bg-rose-500 text-black text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm">Pro</span>
-            <span class="text-xs text-theme font-extrabold tracking-tighter">v14.3</span>
+            <span class="text-xs text-theme font-extrabold tracking-tighter">v14.4</span>
           </div>
         </div>
 
@@ -50,23 +52,38 @@
           <h3 class="text-xs font-black text-theme flex items-center">
             <i data-lucide="bell" class="w-3.5 h-3.5 mr-1"></i> 공지사항
           </h3>
-          <span class="text-[10px] text-slate-400 font-bold">v14.3 LIVE</span>
+          <span class="text-[10px] text-slate-400 font-bold">v14.4 LIVE</span>
         </div>
         <div id="noticeListContainer" class="space-y-1"></div>
       </div>
 
-      <!-- 메인 액션 버튼 -->
+      <!-- 🌟 메인 액션 영역 (좌: 앨범선택 / 중: 촬영시작 / 우: 촬영간격) -->
       <section class="flex-1 flex flex-col justify-center items-center my-auto space-y-3 w-full max-w-sm mx-auto">
-        <div class="flex items-center justify-between gap-2.5 w-full">
-          <button onclick="startPhotoSession()" class="flex-1 bg-theme text-white p-3.5 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center active:scale-[0.97] transition h-36">
-            <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center mb-1.5">
-              <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+        <div class="flex items-center justify-between gap-2 w-full">
+          
+          <!-- 1. 앨범에서 선택 (좌측 슬림 배치) -->
+          <button onclick="triggerGalleryUpload()" class="w-24 sm:w-28 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 p-2 rounded-2xl flex flex-col justify-between items-center text-center h-36 shrink-0 active:scale-95 transition shadow-xs">
+            <span class="text-slate-600 font-bold text-[10px] flex items-center space-x-1">
+              <i data-lucide="image" class="w-3 h-3 text-theme"></i>
+              <span>앨범 선택</span>
+            </span>
+            <div class="w-7 h-7 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs my-auto">
+              <i data-lucide="folder-open" class="w-3.5 h-3.5 text-theme"></i>
             </div>
-            <h4 class="font-black text-sm text-white">촬영 시작하기</h4>
-            <p class="text-[10px] text-rose-100 mt-0.5">3:2 규격 거울모드</p>
+            <span class="text-[9px] text-slate-400 font-medium">사진 4장</span>
           </button>
 
-          <div class="w-28 bg-slate-50 border border-slate-200 p-2 rounded-2xl flex flex-col justify-between items-center text-center h-36 shrink-0">
+          <!-- 2. 촬영 시작하기 (가운데, 축소된 카메라 아이콘) -->
+          <button onclick="startPhotoSession()" class="flex-1 bg-theme text-white p-3 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center active:scale-[0.97] transition h-36">
+            <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center mb-1">
+              <i data-lucide="camera" class="w-5 h-5 text-white"></i>
+            </div>
+            <h4 class="font-black text-sm text-white">촬영 시작</h4>
+            <p class="text-[10px] text-rose-100 mt-0.5">3:2 거울모드</p>
+          </button>
+
+          <!-- 3. 촬영 간격 (우측 배치) -->
+          <div class="w-24 sm:w-28 bg-slate-50 border border-slate-200 p-2 rounded-2xl flex flex-col justify-between items-center text-center h-36 shrink-0">
             <span class="text-slate-600 font-bold text-[10px] flex items-center space-x-1">
               <i data-lucide="timer" class="w-3 h-3 text-theme"></i>
               <span>촬영 간격</span>
@@ -77,16 +94,7 @@
               <button onclick="setTimerSec(8, this)" class="timer-chip bg-white border border-slate-200 text-slate-700 font-bold py-1 rounded-lg text-[11px] transition">8초</button>
             </div>
           </div>
-        </div>
 
-        <div class="w-full flex justify-center">
-          <button onclick="triggerGalleryUpload()" class="w-1/2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 p-3 rounded-2xl shadow-xs flex flex-col items-center justify-center text-center active:scale-[0.97] transition">
-            <div class="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 mb-1 shadow-2xs">
-              <i data-lucide="image" class="w-4 h-4"></i>
-            </div>
-            <h4 class="font-black text-xs text-slate-900">앨범에서 선택</h4>
-            <p class="text-[9px] text-slate-500 mt-0.5">보관 사진 4장</p>
-          </button>
         </div>
       </section>
 
@@ -115,7 +123,7 @@
         </div>
 
         <footer class="text-center text-[10px] text-slate-400 pb-1">
-          추억의 네컷 Studio Pro v14.3
+          추억의 네컷 Studio Pro v14.4
         </footer>
       </div>
     </div>
@@ -175,7 +183,7 @@
     </div>
   </section>
 
-  <!-- 고객소리함 모달 (이메일 입력 및 안내 개편) -->
+  <!-- 고객소리함 모달 -->
   <div id="customerBotModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
     <div class="bg-white w-full max-w-md h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
       <div class="px-4 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
@@ -207,7 +215,6 @@
         </div>
       </div>
 
-      <!-- 이메일 및 문의내용 입력창 -->
       <div class="p-3 border-t border-slate-200 bg-white flex flex-col space-y-2 shrink-0">
         <input type="email" id="botContactEmail" placeholder="답변받으실 이메일 주소 (선택 입력)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-indigo-500">
         <div class="flex items-center space-x-2">
@@ -368,15 +375,18 @@
     </div>
   </section>
 
-  <!-- 사진 선택 화면 -->
+  <!-- 사진 선택 화면 (6종 프레임 테마 선택 버튼 그리드) -->
   <section id="screenPick" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row items-center justify-between p-3 sm:p-5 gap-3 bg-white text-slate-900 overflow-y-auto touch-scroll">
     <div class="w-full lg:w-1/2 flex flex-col items-center justify-center shrink-0">
       <div class="w-full max-w-xs mb-2">
-        <p class="text-[10px] font-bold text-slate-500 mb-1 text-center">원하는 프레임 테마를 미리 골라보세요</p>
-        <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-bold">
-          <button onclick="setPickPreviewTheme('simple', this)" class="pick-theme-btn flex-1 py-1.5 bg-white text-theme rounded-lg shadow-2xs font-black">포토이지 (상단)</button>
-          <button onclick="setPickPreviewTheme('middle', this)" class="pick-theme-btn flex-1 py-1.5 text-slate-500 rounded-lg">추억의네컷 (중간)</button>
-          <button onclick="setPickPreviewTheme('bottom', this)" class="pick-theme-btn flex-1 py-1.5 text-slate-500 rounded-lg">인생4컷 (하단)</button>
+        <p class="text-[10px] font-bold text-slate-500 mb-1 text-center">프레임 테마 선택 (스페셜 6종)</p>
+        <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold">
+          <button onclick="setPickPreviewTheme('simple', this)" class="pick-theme-btn py-1.5 bg-white text-theme rounded-lg shadow-2xs font-black">포토이지 (상단)</button>
+          <button onclick="setPickPreviewTheme('middle', this)" class="pick-theme-btn py-1.5 text-slate-500 rounded-lg">추억의네컷 (중간)</button>
+          <button onclick="setPickPreviewTheme('bottom', this)" class="pick-theme-btn py-1.5 text-slate-500 rounded-lg">인생4컷 (하단)</button>
+          <button onclick="setPickPreviewTheme('photoism', this)" class="pick-theme-btn py-1.5 text-slate-500 rounded-lg">포토이즘 (필름)</button>
+          <button onclick="setPickPreviewTheme('baseball', this)" class="pick-theme-btn py-1.5 text-slate-500 rounded-lg">플레이야구 ⚾</button>
+          <button onclick="setPickPreviewTheme('birthday', this)" class="pick-theme-btn py-1.5 text-slate-500 rounded-lg">해피버스데이 🎂</button>
         </div>
       </div>
 
@@ -413,7 +423,7 @@
     </div>
   </section>
 
-  <!-- 에디터 스튜디오 화면 -->
+  <!-- 에디터 스튜디오 화면 (6종 프레임 테마 선택 지원) -->
   <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
     <div class="w-full h-[46%] lg:h-full lg:w-1/2 flex flex-col bg-[#F6F3EC] border-b lg:border-r border-[#EBE6DC] shadow-inner relative z-10 shrink-0">
       <div class="absolute top-2 left-2 z-20 flex items-center space-x-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl shadow-sm border border-slate-200 text-xs font-bold">
@@ -454,17 +464,20 @@
           <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 레이아웃</label>
           <div class="grid grid-cols-3 gap-1.5">
             <button onclick="changeLayout('strip', this)" class="layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs">1×4 스트립</button>
-            <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 격자 (비율개선)</button>
+            <button onclick="changeLayout('grid', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2×2 격자 (슬림)</button>
             <button onclick="changeLayout('twin', this)" class="layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs">2줄 인쇄용</button>
           </div>
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 테마 (3대 스타일)</label>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1.5">프레임 테마 (스페셜 6종)</label>
           <div class="grid grid-cols-3 gap-1.5 text-[11px]">
-            <button onclick="setFrameStyle('simple', this)" class="style-btn bg-theme text-white font-black py-2 rounded-xl border border-theme shadow-sm">포토이지 (상단)</button>
-            <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">추억의네컷 (중간)</button>
-            <button onclick="setFrameStyle('bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-transparent">인생4컷 (하단)</button>
+            <button onclick="setFrameStyle('simple', this)" class="style-btn bg-theme text-white font-black py-1.5 rounded-xl border border-theme shadow-sm">포토이지 (상단)</button>
+            <button onclick="setFrameStyle('middle', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-transparent">추억의네컷 (중간)</button>
+            <button onclick="setFrameStyle('bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-transparent">인생4컷 (하단)</button>
+            <button onclick="setFrameStyle('photoism', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-transparent">포토이즘 (필름)</button>
+            <button onclick="setFrameStyle('baseball', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-transparent">플레이야구 ⚾</button>
+            <button onclick="setFrameStyle('birthday', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-transparent">해피버스데이 🎂</button>
           </div>
         </div>
 
