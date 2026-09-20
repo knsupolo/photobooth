@@ -17,7 +17,7 @@
 const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
 
 // 🔑 Gemini API Key (Base64)
-const GEMINI_API_KEY = atob("QVEuQWI4Uk42SlIwajlTc3JGdk1KTzZtc0tyM050MW0zZHRqMmlvUUxnSlJ1NjBlVGZsVkE=");
+const GEMINI_API_KEY = atob("");
 
 const CLOUD_SYNC_ENDPOINT = "https://kvdb.io/A2V8p7M5rZ9W4kL1xY6q3T/";
 
