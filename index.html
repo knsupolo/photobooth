@@ -14,9 +14,7 @@
 <body class="bg-white text-slate-900 h-screen w-screen overflow-hidden flex flex-col antialiased">
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
-  <!-- ========================================================
-        화면 1: 메인 홈 화면 (좌/우/중앙 3분할 정렬)
-  ======================================================== -->
+  <!-- 화면 1: 메인 홈 화면 -->
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
     <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-5 justify-between relative">
       
@@ -57,11 +55,10 @@
         <div id="noticeListContainer" class="space-y-1"></div>
       </div>
 
-      <!-- 🌟 메인 액션 영역 (좌: 앨범선택 / 중: 촬영시작 / 우: 촬영간격) -->
+      <!-- 메인 액션 영역 (3분할 정렬) -->
       <section class="flex-1 flex flex-col justify-center items-center my-auto space-y-3 w-full max-w-sm mx-auto">
         <div class="flex items-center justify-between gap-2 w-full">
           
-          <!-- 1. 앨범에서 선택 (좌측 슬림 배치) -->
           <button onclick="triggerGalleryUpload()" class="w-24 sm:w-28 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 p-2 rounded-2xl flex flex-col justify-between items-center text-center h-36 shrink-0 active:scale-95 transition shadow-xs">
             <span class="text-slate-600 font-bold text-[10px] flex items-center space-x-1">
               <i data-lucide="image" class="w-3 h-3 text-theme"></i>
@@ -73,7 +70,6 @@
             <span class="text-[9px] text-slate-400 font-medium">사진 4장</span>
           </button>
 
-          <!-- 2. 촬영 시작하기 (가운데, 축소된 카메라 아이콘) -->
           <button onclick="startPhotoSession()" class="flex-1 bg-theme text-white p-3 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center active:scale-[0.97] transition h-36">
             <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center mb-1">
               <i data-lucide="camera" class="w-5 h-5 text-white"></i>
@@ -82,7 +78,6 @@
             <p class="text-[10px] text-rose-100 mt-0.5">3:2 거울모드</p>
           </button>
 
-          <!-- 3. 촬영 간격 (우측 배치) -->
           <div class="w-24 sm:w-28 bg-slate-50 border border-slate-200 p-2 rounded-2xl flex flex-col justify-between items-center text-center h-36 shrink-0">
             <span class="text-slate-600 font-bold text-[10px] flex items-center space-x-1">
               <i data-lucide="timer" class="w-3 h-3 text-theme"></i>
@@ -98,27 +93,35 @@
         </div>
       </section>
 
-      <!-- 하단 메뉴 -->
+      <!-- 🌟 하단 메뉴: 후기평점 + 고객소리함 + 우측 조그만 공유버튼 -->
       <div class="shrink-0 space-y-2 pt-2 border-t border-slate-100">
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="showScreen('screenBoard')" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-2.5 rounded-2xl shadow-xs flex items-center space-x-2 active:scale-[0.98] transition">
+        <div class="flex items-center gap-1.5">
+          <!-- 1. 이용 후기 평점 -->
+          <button onclick="showScreen('screenBoard')" class="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-2 rounded-2xl shadow-xs flex items-center space-x-2 active:scale-[0.98] transition">
             <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-              <i data-lucide="star" class="w-4 h-4"></i>
+              <i data-lucide="star" class="w-3.5 h-3.5"></i>
             </div>
             <div class="text-left overflow-hidden">
-              <h4 class="font-bold text-xs text-slate-900 truncate">이용 후기 평점</h4>
-              <p class="text-[9px] text-slate-400 truncate">별점 & 후기 남기기</p>
+              <h4 class="font-bold text-xs text-slate-900 truncate">이용 후기</h4>
+              <p class="text-[9px] text-slate-400 truncate">별점 & 후기</p>
             </div>
           </button>
 
-          <button onclick="openCustomerBotModal()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-2.5 rounded-2xl shadow-xs flex items-center space-x-2 active:scale-[0.98] transition">
+          <!-- 2. 고객소리함 (문의) -->
+          <button onclick="openCustomerBotModal()" class="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-2 rounded-2xl shadow-xs flex items-center space-x-2 active:scale-[0.98] transition">
             <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-              <i data-lucide="bot" class="w-4 h-4"></i>
+              <i data-lucide="bot" class="w-3.5 h-3.5"></i>
             </div>
             <div class="text-left overflow-hidden">
-              <h4 class="font-bold text-xs text-slate-900 truncate">고객소리함 (문의)</h4>
-              <p class="text-[9px] text-slate-400 truncate">접수 & 답변 안내</p>
+              <h4 class="font-bold text-xs text-slate-900 truncate">고객소리함</h4>
+              <p class="text-[9px] text-slate-400 truncate">문의 & 접수</p>
             </div>
+          </button>
+
+          <!-- 3. 🌟 고객소리함 우측 조그만 웹앱 공유 버튼 -->
+          <button onclick="shareWebAppUrl()" class="w-12 h-[46px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-xs active:scale-95 transition" title="웹앱 공유하기">
+            <i data-lucide="share-2" class="w-4 h-4 text-theme mb-0.5"></i>
+            <span class="text-[8px] font-black text-slate-600">공유</span>
           </button>
         </div>
 
@@ -225,26 +228,6 @@
     </div>
   </div>
 
-  <!-- 위치 동의 모달 -->
-  <div id="geoConsentModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center space-y-3">
-      <div class="w-10 h-10 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto">
-        <i data-lucide="map-pin" class="w-5 h-5"></i>
-      </div>
-      <div>
-        <h3 class="font-black text-sm text-slate-900">지역 방문 통계 수집 안내</h3>
-        <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-          더 나은 서비스 제공을 위해 대략적인 <b>접속 지역(시/도) 통계</b>를 수집하고자 합니다.<br>위치 접근을 허용하시겠습니까?
-        </p>
-      </div>
-      <p class="text-[10px] text-slate-400">※ 정밀한 개인 주소는 저장되지 않으며 전체 누적 통계로만 사용됩니다.</p>
-      <div class="grid grid-cols-2 gap-2 pt-2">
-        <button onclick="acceptGeoConsent()" class="bg-theme text-white font-bold py-2 rounded-xl text-xs shadow active:scale-95 transition">허용함</button>
-        <button onclick="declineGeoConsent()" class="bg-slate-100 text-slate-600 font-bold py-2 rounded-xl text-xs">다음에</button>
-      </div>
-    </div>
-  </div>
-
   <!-- 관리자 대시보드 -->
   <div id="adminDashboardModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
     <div class="bg-white w-full max-w-2xl h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
@@ -275,7 +258,7 @@
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <h4 class="text-xs font-bold text-slate-700 mb-2"><i data-lucide="smartphone" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 접속 기기별 통합 누적 분포</h4>
+              <h4 class="text-xs font-bold text-slate-700 mb-2"><i data-lucide="smartphone" class="w-3.5 h-3.5 mr-1 text-theme inline"></i> 접속 기기별 통합 누적 분포 (5종)</h4>
               <div class="h-44 w-full flex justify-center"><canvas id="chartDevice"></canvas></div>
             </div>
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
@@ -331,7 +314,7 @@
     </div>
   </div>
 
-  <!-- 촬영 화면 (거울모드 .mirror 적용) -->
+  <!-- 촬영 화면 -->
   <section id="screenLiveShoot" class="hidden fixed inset-0 bg-black flex flex-col z-50 overflow-hidden">
     <div id="flashOverlay" class="hidden absolute inset-0 bg-white z-[60] pointer-events-none"></div>
     <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror"></video>
@@ -375,7 +358,7 @@
     </div>
   </section>
 
-  <!-- 사진 선택 화면 (6종 프레임 테마 선택 버튼 그리드) -->
+  <!-- 사진 선택 화면 -->
   <section id="screenPick" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row items-center justify-between p-3 sm:p-5 gap-3 bg-white text-slate-900 overflow-y-auto touch-scroll">
     <div class="w-full lg:w-1/2 flex flex-col items-center justify-center shrink-0">
       <div class="w-full max-w-xs mb-2">
@@ -423,7 +406,7 @@
     </div>
   </section>
 
-  <!-- 에디터 스튜디오 화면 (6종 프레임 테마 선택 지원) -->
+  <!-- 에디터 스튜디오 화면 -->
   <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
     <div class="w-full h-[46%] lg:h-full lg:w-1/2 flex flex-col bg-[#F6F3EC] border-b lg:border-r border-[#EBE6DC] shadow-inner relative z-10 shrink-0">
       <div class="absolute top-2 left-2 z-20 flex items-center space-x-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl shadow-sm border border-slate-200 text-xs font-bold">
