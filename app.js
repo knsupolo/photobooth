@@ -11,7 +11,7 @@
  */
 
 // 🌟 구글 스프레드시트 중앙 DB 단일 엔드포인트 URL
-const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbwIOdw5KdNq2dr7yboDCVfKCG7RLrri4PlYIY4IC5xOJOQbuxxQgwYByPej77QwaLYr/exec";
+const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
 const CLOUD_SYNC_ENDPOINT = "https://kvdb.io/A2V8p7M5rZ9W4kL1xY6q3T/";
 
 function getFormattedTodayDate() {
