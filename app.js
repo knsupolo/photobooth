@@ -2274,3 +2274,72 @@ window.addEventListener('DOMContentLoaded', () => {
   fetchCloudBoardPosts();
   checkGeoConsent();
 });
+// ==========================================
+// 📊 [추가] 구글 시트 방문자 통계 & 접속 로그 연동
+// ==========================================
+const STATS_API_URL = "https://script.google.com/macros/s/AKfycbx0SeMxzjyt4ogx7wSAlhKK8XHzFweHrugBzHGYbr5n7Kc9JR-XU5MMHhI8mzu_D6id3Q/exec";
+
+async function recordVisitStats() {
+  try {
+    // 1. 접속 기기 및 브라우저 판별
+    const ua = navigator.userAgent;
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(ua);
+    const device = isMobile ? (navigator.maxTouchPoints > 1 ? "태블릿" : "스마트폰") : "PC 데스크톱";
+    
+    let os = "기타 OS";
+    if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS";
+    else if (/Android/i.test(ua)) os = "Android";
+    else if (/Windows/i.test(ua)) os = "Windows";
+    else if (/Mac/i.test(ua)) os = "macOS";
+
+    let browser = "기타 브라우저";
+    if (/Whale/i.test(ua)) browser = "네이버 웨일";
+    else if (/KAKAOTALK/i.test(ua)) browser = "카카오톡 인앱";
+    else if (/Chrome/i.test(ua)) browser = "Chrome";
+    else if (/Safari/i.test(ua)) browser = "Safari";
+
+    const screenRes = `${window.screen.width} x ${window.screen.height}`;
+
+    // 2. 대략적인 접속 위치 (무료 IP 조회 - 위치 권한 팝업 없이 국가/도시 자동 파악)
+    let locationText = "대한민국";
+    try {
+      const locRes = await fetch("https://ipapi.co/json/");
+      if (locRes.ok) {
+        const locData = await locRes.json();
+        locationText = `${locData.country_name || ""} ${locData.city || ""}`.trim();
+      }
+    } catch (e) {
+      locationText = "위치 확인 제한";
+    }
+
+    // 3. 구글 스프레드시트(Apps Script)로 전송
+    const payload = {
+      device: device,
+      os: os,
+      browser: browser,
+      screen: screenRes,
+      location: locationText,
+      referrer: document.referrer || "직접 접속"
+    };
+
+    const response = await fetch(STATS_API_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    
+    // (선택) 웹 화면에 오늘/누적 방문자 수를 보여주고 싶을 때
+    if (result.success) {
+      const counterEl = document.getElementById("visitCounter");
+      if (counterEl) {
+        counterEl.innerText = `오늘 ${result.today} | 누적 ${result.total}`;
+      }
+    }
+  } catch (err) {
+    console.error("통계 기록 오류:", err);
+  }
+}
+
+// 웹앱 접속 시 자동으로 1회 실행
+window.addEventListener("DOMContentLoaded", recordVisitStats);
