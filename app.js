@@ -1,24 +1,17 @@
 /**
- * 추억의 네컷 Studio Pro v14.4
- * [v14.4 핵심 엔진 업데이트]
- * 1. 홈 화면 3분할 정렬 (좌: 앨범선택 / 중: 촬영시작 / 우: 촬영간격)
- * 2. 업로드 기반 3대 스페셜 프레임 테마 신규 탑재
- *    - photoism (포토이즘 블랙 필름 & 넘버링 마크)
- *    - baseball (플레이 야구 ⚾ 캘리그라피 & 야구 스티치 감성)
- *    - birthday (해피 버스데이 🎂 촛불 케이크 & 레드 리본 레터링)
- * 3. 2×2 격자 슬림화(1100px) & '추억의 네컷(중간)' 배너 및 하단 2장 출력 버그 해결
- * 4. 카메라 뷰파인더 및 캡처 사진 100% 거울 모드(좌우 반전) 일치
- * 5. 고객소리함 이메일 수집 및 즉시 접수 확인 피드백
- * 6. 접속 기기 & 접속 지역 통합 DB 실시간 누적 집계
- * 7. 구글 스프레드시트 중앙 DB 양방향 실시간 동기화
+ * 추억의 네컷 Studio Pro v14.4 - 중앙 DB 통합 연동 버전
+ * 
+ * [주요 연동 기능]
+ * 1. 단일 GOOGLE_DB_URL을 통한 4대 탭(방문자/기기로그/후기/고객소리함) 완전 동기화
+ * 2. 정밀 기기 텔레메트리 (물리 해상도, 브라우저 뷰포트, 인앱 브라우저 판별, 자동 IP 지역)
+ * 3. 고객소리함 접수 시 사용자의 기기/OS/해상도 스펙 자동 첨부 (오류 추적 최적화)
+ * 4. API Key 프론트엔드 완전 제거 (보안 경고 차단)
+ * 5. 6종 스페셜 테마(포토이지, 추억의네컷, 인생4컷, 포토이즘, 야구, 생일) 그래픽 지원
+ * 6. 2×2 격자 슬림화(1100px) 및 카메라 거울 모드 동기화
  */
 
-// 🌟 구글 스프레드시트 중앙 DB 웹 앱 URL
-const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
-
-// 🔑 Gemini API Key (Base64)
-const GEMINI_API_KEY = atob("");
-
+// 🌟 구글 스프레드시트 중앙 DB 단일 엔드포인트 URL
+const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbwIOdw5KdNq2dr7yboDCVfKCG7RLrri4PlYIY4IC5xOJOQbuxxQgwYByPej77QwaLYr/exec";
 const CLOUD_SYNC_ENDPOINT = "https://kvdb.io/A2V8p7M5rZ9W4kL1xY6q3T/";
 
 function getFormattedTodayDate() {
@@ -68,7 +61,7 @@ let panStartY = 0;
 let currentRatingValue = 5.0;
 
 // ========================================================
-// 1. UI 및 프리셋 초기화
+// 1. UI 동적 바인딩 & 프리셋 초기화
 // ========================================================
 function initDynamicUI() {
   const fonts = [
@@ -114,7 +107,7 @@ function initDynamicUI() {
     frameColorGrid.innerHTML = colors.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') +
       `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
   }
-  
+
   renderRecentStickers();
 
   setTimeout(() => {
@@ -155,7 +148,7 @@ function renderRecentStickers() {
 function promptAdminMode() {
   const now = Date.now();
   const lockoutUntil = parseInt(localStorage.getItem('chueok_admin_lockout_until') || '0', 10);
-  
+
   if (now < lockoutUntil) {
     const remainingMinutes = Math.ceil((lockoutUntil - now) / 60000);
     alert(`비밀번호 5회 연속 오류로 인해 ${remainingMinutes}분 동안 관리자 설정에 접근할 수 없습니다.`);
@@ -244,10 +237,10 @@ function updateAdminDashboardStats() {
 function renderCharts() {
   if (typeof Chart === 'undefined') return;
   const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
-  
+
   const hourlyCounts = Array(24).fill(0);
   logs.forEach(l => { if (typeof l.hour === 'number' && l.hour >= 0 && l.hour <= 23) hourlyCounts[l.hour]++; });
-  
+
   const ctxHourly = document.getElementById('chartHourly');
   if (ctxHourly) {
     if (hourlyChartInstance) hourlyChartInstance.destroy();
@@ -258,8 +251,9 @@ function renderCharts() {
     });
   }
 
+  // 통합 DB 기반 디바이스 누적 집계
   const deviceCounts = JSON.parse(localStorage.getItem('chueok_device_stats') || '{}');
-  const deviceLabels = ["아이폰", "안드로이드", "아이패드", "맥북", "윈도우 PC", "기타"];
+  const deviceLabels = ["스마트폰", "태블릿", "PC 데스크톱", "기타"];
   const deviceData = deviceLabels.map(k => deviceCounts[k] || 0);
 
   const ctxDev = document.getElementById('chartDevice');
@@ -270,8 +264,8 @@ function renderCharts() {
       data: { 
         labels: deviceLabels, 
         datasets: [{ 
-          data: deviceData.some(v => v > 0) ? deviceData : [1, 1, 1, 1, 1, 0], 
-          backgroundColor: ['#f43f5e', '#10b981', '#0284c7', '#8b5cf6', '#f59e0b', '#64748b'] 
+          data: deviceData.some(v => v > 0) ? deviceData : [1, 1, 1, 0], 
+          backgroundColor: ['#f43f5e', '#0284c7', '#10b981', '#64748b'] 
         }] 
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
@@ -351,68 +345,125 @@ function loadSavedTheme() {
 }
 
 // ========================================================
-// 4. 기기 판별 & 중앙 DB 방문자/위치 통합 누적
+// 4. 🌟 정밀 텔레메트리 & 중앙 DB 단일 연동 엔진
 // ========================================================
-function detectCurrentDevice() {
+async function collectDeviceTelemetry() {
   const ua = navigator.userAgent;
-  if (/iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "아이패드";
-  if (/iPhone/i.test(ua)) return "아이폰";
-  if (/Android/i.test(ua)) return "안드로이드";
-  if (/Macintosh|Mac OS X/i.test(ua)) return "맥북";
-  if (/Windows|Win32|Win64/i.test(ua)) return "윈도우 PC";
-  return "기타";
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(ua);
+  const isTablet = /(iPad|Tablet|(Android(?!.*Mobile)))/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const deviceType = isTablet ? "태블릿" : (isMobile ? "스마트폰" : "PC 데스크톱");
+
+  let os = "기타 OS";
+  if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS";
+  else if (/Android/i.test(ua)) os = "Android";
+  else if (/Windows/i.test(ua)) os = "Windows";
+  else if (/Macintosh|Mac OS X/i.test(ua)) os = "macOS";
+  else if (/Linux/i.test(ua)) os = "Linux";
+
+  let browser = "기타 브라우저";
+  if (/KAKAOTALK/i.test(ua)) browser = "카카오톡 인앱";
+  else if (/Instagram/i.test(ua)) browser = "인스타그램 인앱";
+  else if (/NAVER/i.test(ua)) browser = "네이버 인앱";
+  else if (/Whale/i.test(ua)) browser = "네이버 웨일";
+  else if (/Edg/i.test(ua)) browser = "Edge";
+  else if (/Chrome/i.test(ua)) browser = "Chrome";
+  else if (/Safari/i.test(ua)) browser = "Safari";
+  else if (/Firefox/i.test(ua)) browser = "Firefox";
+
+  const screenRes = `${window.screen.width} x ${window.screen.height}`;
+  const viewportRes = `${window.innerWidth} x ${window.innerHeight}`;
+
+  // 권한 팝업 없이 IP 기반 국가/도시 자동 파악
+  let locationText = "대한민국";
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const locRes = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (locRes.ok) {
+      const locData = await locRes.json();
+      locationText = `${locData.country_name || ""} ${locData.city || ""}`.trim();
+    }
+  } catch (e) {
+    locationText = "위치 확인 제한";
+  }
+
+  return {
+    device: deviceType,
+    os: os,
+    browser: browser,
+    screen: screenRes,
+    viewport: viewportRes,
+    location: locationText,
+    referrer: document.referrer || "직접 접속"
+  };
 }
 
 async function trackVisitorAccess() {
   const todayStr = getFormattedTodayDate();
   let todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '1', 10);
   let totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '2180', 10);
-  const currentDevice = detectCurrentDevice();
 
+  // 1) 구글 시트에서 최신 누적 통계 읽기
   try {
     const res = await fetch(GOOGLE_DB_URL);
     if (res.ok) {
       const data = await res.json();
-      if (data && data.success && data.visits) {
-        totalVisits = data.visits.total;
-        todayVisits = (data.visits.date === todayStr) ? data.visits.today : 1;
-        localStorage.setItem('chueok_stat_total', totalVisits);
-        localStorage.setItem('chueok_stat_today_' + todayStr, todayVisits);
+      if (data && data.success) {
+        if (data.visits) {
+          totalVisits = data.visits.total;
+          todayVisits = (data.visits.date === todayStr) ? data.visits.today : 1;
+          localStorage.setItem('chueok_stat_total', totalVisits);
+          localStorage.setItem('chueok_stat_today_' + todayStr, todayVisits);
+        }
+        if (data.deviceStats) {
+          localStorage.setItem('chueok_device_stats', JSON.stringify(data.deviceStats));
+        }
       }
     }
   } catch (e) {}
 
+  // 2) 신규 세션 방문 시 상세 텔레메트리를 포함해 구글 시트로 POST 전송
   if (!sessionStorage.getItem('chueok_session_logged')) {
     sessionStorage.setItem('chueok_session_logged', 'true');
 
+    const telemetry = await collectDeviceTelemetry();
+
+    // 로컬 디바이스 통계 캐시
     const devStats = JSON.parse(localStorage.getItem('chueok_device_stats') || '{}');
-    devStats[currentDevice] = (devStats[currentDevice] || 0) + 1;
+    devStats[telemetry.device] = (devStats[telemetry.device] || 0) + 1;
     localStorage.setItem('chueok_device_stats', JSON.stringify(devStats));
 
+    // 로컬 지역 통계 캐시
+    const locMap = JSON.parse(localStorage.getItem('chueok_location_stats') || '{}');
+    locMap[telemetry.location] = (locMap[telemetry.location] || 0) + 1;
+    localStorage.setItem('chueok_location_stats', JSON.stringify(locMap));
+
     try {
-      await fetch(GOOGLE_DB_URL, {
+      const postRes = await fetch(GOOGLE_DB_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           action: 'VISIT',
-          device: currentDevice
+          ...telemetry
         })
       });
+      if (postRes.ok) {
+        const postData = await postRes.json();
+        if (postData.success && postData.visits) {
+          todayVisits = postData.visits.today;
+          totalVisits = postData.visits.total;
+          localStorage.setItem('chueok_stat_total', totalVisits);
+          localStorage.setItem('chueok_stat_today_' + todayStr, todayVisits);
+        }
+      }
     } catch (e) {
       totalVisits++;
       todayVisits++;
     }
 
-    try {
-      await fetch(CLOUD_SYNC_ENDPOINT + 'device_stats_v14_4', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(devStats)
-      });
-    } catch (e) {}
-
     let logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
-    logs.unshift({ id: Date.now(), date: todayStr, hour: new Date().getHours(), device: currentDevice });
+    logs.unshift({ id: Date.now(), date: todayStr, hour: new Date().getHours(), device: telemetry.device });
     if (logs.length > 500) logs.pop();
     localStorage.setItem('chueok_visitor_logs', JSON.stringify(logs));
   }
@@ -434,37 +485,6 @@ function checkGeoConsent() {
 function acceptGeoConsent() {
   localStorage.setItem('chueok_geo_consent', 'accepted');
   document.getElementById('geoConsentModal').classList.add('hidden');
-
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(async pos => {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      let region = "수도권 / 기타";
-      if (lat >= 37.4 && lat <= 37.7 && lon >= 126.8 && lon <= 127.2) region = "서울특별시";
-      else if (lat >= 37.0 && lat <= 38.0 && lon >= 126.5 && lon <= 127.8) region = "경기도/인천";
-      else if (lat >= 35.0 && lat <= 35.5 && lon >= 128.8 && lon <= 129.3) region = "부산/경남";
-      else if (lat >= 35.7 && lat <= 36.1 && lon >= 128.4 && lon <= 128.8) region = "대구/경북";
-      else if (lat >= 36.2 && lat <= 36.5 && lon >= 127.2 && lon <= 127.5) region = "대전/충청";
-      else if (lat >= 35.0 && lat <= 35.3 && lon >= 126.7 && lon <= 127.0) region = "광주/전라";
-      else if (lat >= 33.1 && lat <= 33.6) region = "제주특별자치도";
-
-      const locMap = JSON.parse(localStorage.getItem('chueok_location_stats') || '{}');
-      locMap[region] = (locMap[region] || 0) + 1;
-      localStorage.setItem('chueok_location_stats', JSON.stringify(locMap));
-
-      try {
-        await fetch(CLOUD_SYNC_ENDPOINT + 'location_stats_v14_4', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(locMap)
-        });
-      } catch (e) {}
-    }, () => {
-      const locMap = JSON.parse(localStorage.getItem('chueok_location_stats') || '{}');
-      locMap["미확인 지역"] = (locMap["미확인 지역"] || 0) + 1;
-      localStorage.setItem('chueok_location_stats', JSON.stringify(locMap));
-    }, { timeout: 8000 });
-  }
 }
 
 function declineGeoConsent() {
@@ -650,10 +670,13 @@ async function deleteReviewPost(id) {
   renderAdminReviewManageList();
 
   try {
-    await fetch(CLOUD_SYNC_ENDPOINT + 'posts_v14_4', {
+    await fetch(GOOGLE_DB_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(posts)
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'DELETE_REVIEW',
+        id: id
+      })
     });
   } catch (e) {}
 }
@@ -664,7 +687,7 @@ function escapeHtml(str) {
 }
 
 // ========================================================
-// 6. 고객소리함 (이메일 수집 & 접수 확인 피드백)
+// 6. 🌟 고객소리함 (이메일 및 기기 스펙 자동 첨부 접수)
 // ========================================================
 function openCustomerBotModal() {
   document.getElementById('customerBotModal').classList.remove('hidden');
@@ -700,6 +723,10 @@ async function sendCustomerBotMessage() {
   const btn = document.getElementById('btnSendBot');
   btn.disabled = true;
 
+  // 기기 스펙 파악 후 구글 시트 전송
+  const telemetry = await collectDeviceTelemetry();
+  const deviceInfoStr = `${telemetry.device} / ${telemetry.os} / ${telemetry.browser} (물리:${telemetry.screen} | 뷰포트:${telemetry.viewport})`;
+
   setTimeout(async () => {
     let replyComment = "";
     if (email) {
@@ -720,6 +747,7 @@ async function sendCustomerBotMessage() {
     chatArea.scrollTop = chatArea.scrollHeight;
     btn.disabled = false;
 
+    // 구글 시트 inquiries 탭에 영구 저장
     try {
       await fetch(GOOGLE_DB_URL, {
         method: 'POST',
@@ -728,7 +756,7 @@ async function sendCustomerBotMessage() {
           action: 'ADD_INQUIRY',
           email: email,
           message: userMsg,
-          date: getFormattedTodayDate()
+          deviceInfo: deviceInfoStr
         })
       });
     } catch (e) {}
@@ -836,7 +864,7 @@ function setTimerSec(sec, btn) {
 }
 
 // ========================================================
-// 9. 카메라 촬영 세션 (거울 모드 캡처 완벽 연동)
+// 9. 카메라 촬영 세션 (거울 모드 캡처 연동)
 // ========================================================
 async function startPhotoSession() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
@@ -1159,7 +1187,7 @@ function resetEditorToDefault() {
   appState.filters = { bright: 100, contrast: 100, saturate: 100 }; 
   appState.showDate = true; 
   appState.typography = { fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() };
-  
+
   const sigInput = document.getElementById('frameSignatureInput'); 
   if (sigInput) {
     if (appState.frameStyle === 'middle') sigInput.value = "추억의 네컷";
@@ -1169,7 +1197,7 @@ function resetEditorToDefault() {
     else if (appState.frameStyle === 'birthday') sigInput.value = "Happy Birthday";
     else sigInput.value = "sangsangPhoto";
   }
-  
+
   const slThick = document.getElementById('sliderThickness'); if (slThick) slThick.value = 40;
   const fineTune = document.getElementById('filterFineTunePanel'); if (fineTune) fineTune.classList.add('hidden');
   const stBar = document.getElementById('stickerControlBar'); if (stBar) stBar.classList.add('hidden');
@@ -1318,14 +1346,14 @@ function setFrameStyle(styleKey, btn) {
   btn.className = "style-btn bg-theme text-white font-black py-1.5 rounded-xl border border-theme shadow-sm";
   const label = document.getElementById('labelCustomText'); 
   const sigInput = document.getElementById('frameSignatureInput');
-  
+
   if (styleKey === 'simple') { if (label) label.textContent = "상단 문구 설정"; if (sigInput) sigInput.value = "sangsangPhoto"; }
   else if (styleKey === 'middle') { if (label) label.textContent = "중간 문구 설정"; if (sigInput) sigInput.value = "추억의 네컷"; }
   else if (styleKey === 'bottom') { if (label) label.textContent = "하단 각인 문구 설정"; if (sigInput) sigInput.value = "인생4컷"; }
   else if (styleKey === 'photoism') { if (label) label.textContent = "포토이즘 로고 문구"; if (sigInput) sigInput.value = "photoism"; }
   else if (styleKey === 'baseball') { if (label) label.textContent = "야구 타이틀 문구"; if (sigInput) sigInput.value = "Play Baseball"; }
   else if (styleKey === 'birthday') { if (label) label.textContent = "생일 축하 문구"; if (sigInput) sigInput.value = "Happy Birthday"; }
-  
+
   renderStrip();
 }
 
@@ -1558,7 +1586,7 @@ function initCanvasInteractions() {
 }
 
 // ========================================================
-// 14. 🌟 메인 캔버스 렌더링 (2×2 격자 슬림화 및 6종 테마 그래픽 구현)
+// 14. 🌟 메인 캔버스 렌더링 (2×2 슬림화 & 6종 테마 그래픽)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
@@ -1618,7 +1646,7 @@ function renderStrip(isFinalExport = false) {
       const bottomFooterH = isBottom ? 220 : 45; 
       const imgW = canvas.width - (pad * 2); 
       const imgH = (canvas.height - topHeaderH - bottomFooterH - (gap * 3)) / 4;
-      
+
       renderHeaderOrDecor(ctx, 0, 0, canvas.width, canvas.height, customTitle, topHeaderH, isBottom); 
       for (let i = 0; i < 4; i++) { 
         const y = topHeaderH + (i * (imgH + gap)); 
@@ -1630,7 +1658,7 @@ function renderStrip(isFinalExport = false) {
       }
     }
   } 
-  // 3. 2×2 격자 렌더링 (추억의 네컷 중간 배너 & 하단 사진 완벽 복구)
+  // 3. 2×2 격자 렌더링
   else if (layout === 'grid') {
     const isBottom = (fStyle === 'bottom'); 
     const bannerH = (fStyle === 'middle') ? 150 : 0;
@@ -1638,12 +1666,12 @@ function renderStrip(isFinalExport = false) {
     const bottomFooterH = (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 180 : (fStyle === 'simple' ? 50 : pad + 20);
     const imgW = (canvas.width - (pad * 2) - gap) / 2; 
     const imgH = Math.round(imgW * (2 / 3));
-    
+
     if (fStyle === 'middle') {
       const topY = pad + 10;
       drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, topY, imgW, imgH); 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, topY, imgW, imgH); 
-      
+
       const bannerY = topY + imgH + gap; 
       drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle, 32); 
 
@@ -1741,7 +1769,6 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
   const fStyle = appState.frameStyle;
   ctx.save();
 
-  // 1. 포토이즘 (photoism) 필름 스타일
   if (fStyle === 'photoism') {
     ctx.fillStyle = '#FFFFFF';
     ctx.font = `700 ${isTwin ? 24 : 36}px 'Playfair Display', serif`;
@@ -1754,9 +1781,7 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
     ctx.textAlign = 'left';
     ctx.fillText('▶ 5', bx + (isTwin ? 15 : 25), by + (topH / 2) + 5);
   }
-  // 2. 플레이 야구 (baseball) 스타일[cite: 3]
   else if (fStyle === 'baseball') {
-    // 파란색 야구 캘리그라피 메인 로고
     ctx.fillStyle = '#1E3A8A';
     ctx.font = `900 ${isTwin ? 22 : 36}px 'Black Han Sans', sans-serif`;
     ctx.textAlign = 'left';
@@ -1767,7 +1792,6 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
     ctx.font = `bold ${isTwin ? 10 : 13}px 'Pretendard', sans-serif`;
     ctx.fillText("오늘도, 우리는 야구를 한다!", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
   }
-  // 3. 해피 버스데이 (birthday) 스타일[cite: 4]
   else if (fStyle === 'birthday') {
     ctx.fillStyle = '#E11D48';
     ctx.font = `900 ${isTwin ? 22 : 36}px 'Playfair Display', serif`;
@@ -1779,7 +1803,6 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
     ctx.font = `bold ${isTwin ? 10 : 13}px 'Pretendard', sans-serif`;
     ctx.fillText("오늘은 너라는 기적이 태어난 날! ♡", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
   }
-  // 4. 포토이지 기본 스타일
   else if (!isBottom && fStyle === 'simple') {
     const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827'); 
     const textColor = isDark ? '#FFFFFF' : '#1E293B'; 
@@ -1844,7 +1867,6 @@ function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
   const showDate = appState.showDate;
   ctx.save();
 
-  // 1. 포토이즘 하단 필름 마킹[cite: 2]
   if (fStyle === 'photoism') {
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
     ctx.font = `700 ${Math.max(13, Math.round(size * 0.5))}px monospace`;
@@ -1852,7 +1874,6 @@ function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
     ctx.textBaseline = 'middle';
     ctx.fillText("52    PHOTOISM    KEEP YOURSELF ALIVE", x, centerY);
   }
-  // 2. 플레이 야구 하단 레터링[cite: 3]
   else if (fStyle === 'baseball') {
     ctx.fillStyle = '#1E3A8A';
     ctx.font = `900 ${Math.max(14, Math.round(size * 0.6))}px 'Pretendard', sans-serif`;
@@ -1865,7 +1886,6 @@ function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
       ctx.fillText(appState.typography.date, x, centerY + 16);
     }
   }
-  // 3. 해피 버스데이 하단 리본 레터링[cite: 4]
   else if (fStyle === 'birthday') {
     ctx.fillStyle = '#E11D48';
     ctx.font = `900 ${Math.max(14, Math.round(size * 0.6))}px 'Playfair Display', serif`;
@@ -1878,7 +1898,6 @@ function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
       ctx.fillText(appState.typography.date, x, centerY + 16);
     }
   }
-  // 4. 일반 인생네컷 하단
   else {
     const weight = appState.typography.isBold ? '900' : 'bold';
     const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
@@ -1928,7 +1947,7 @@ function drawFilteredSlotPhoto(ctx, img, targetX, targetY, targetW, targetH) {
   const drawX = targetX + (targetW - renderW) / 2; 
   const drawY = targetY + (targetH - renderH) / 2;
   const isNormal = appState.activeFilter === 'normal' && appState.filters.bright === 100 && appState.filters.contrast === 100 && appState.filters.saturate === 100;
-  
+
   if (isNormal) { 
     ctx.drawImage(img, drawX, drawY, renderW, renderH); 
   } else {
@@ -2024,7 +2043,7 @@ async function autoSaveVideo() {
     const recorder = new MediaRecorder(stream, { mimeType }); 
     const chunks = []; 
     recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
-    
+
     recorder.onstop = async () => {
       const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'; 
       const blob = new Blob(chunks, { type: mimeType }); 
@@ -2262,7 +2281,7 @@ function applySnapshot(snap) {
 }
 
 // ========================================================
-// 17. 엔트리포인트
+// 17. 엔트리포인트 (초기 구동)
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
@@ -2274,72 +2293,3 @@ window.addEventListener('DOMContentLoaded', () => {
   fetchCloudBoardPosts();
   checkGeoConsent();
 });
-// ==========================================
-// 📊 [추가] 구글 시트 방문자 통계 & 접속 로그 연동
-// ==========================================
-const STATS_API_URL = "https://script.google.com/macros/s/AKfycbx0SeMxzjyt4ogx7wSAlhKK8XHzFweHrugBzHGYbr5n7Kc9JR-XU5MMHhI8mzu_D6id3Q/exec";
-
-async function recordVisitStats() {
-  try {
-    // 1. 접속 기기 및 브라우저 판별
-    const ua = navigator.userAgent;
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(ua);
-    const device = isMobile ? (navigator.maxTouchPoints > 1 ? "태블릿" : "스마트폰") : "PC 데스크톱";
-    
-    let os = "기타 OS";
-    if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS";
-    else if (/Android/i.test(ua)) os = "Android";
-    else if (/Windows/i.test(ua)) os = "Windows";
-    else if (/Mac/i.test(ua)) os = "macOS";
-
-    let browser = "기타 브라우저";
-    if (/Whale/i.test(ua)) browser = "네이버 웨일";
-    else if (/KAKAOTALK/i.test(ua)) browser = "카카오톡 인앱";
-    else if (/Chrome/i.test(ua)) browser = "Chrome";
-    else if (/Safari/i.test(ua)) browser = "Safari";
-
-    const screenRes = `${window.screen.width} x ${window.screen.height}`;
-
-    // 2. 대략적인 접속 위치 (무료 IP 조회 - 위치 권한 팝업 없이 국가/도시 자동 파악)
-    let locationText = "대한민국";
-    try {
-      const locRes = await fetch("https://ipapi.co/json/");
-      if (locRes.ok) {
-        const locData = await locRes.json();
-        locationText = `${locData.country_name || ""} ${locData.city || ""}`.trim();
-      }
-    } catch (e) {
-      locationText = "위치 확인 제한";
-    }
-
-    // 3. 구글 스프레드시트(Apps Script)로 전송
-    const payload = {
-      device: device,
-      os: os,
-      browser: browser,
-      screen: screenRes,
-      location: locationText,
-      referrer: document.referrer || "직접 접속"
-    };
-
-    const response = await fetch(STATS_API_URL, {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-
-    const result = await response.json();
-    
-    // (선택) 웹 화면에 오늘/누적 방문자 수를 보여주고 싶을 때
-    if (result.success) {
-      const counterEl = document.getElementById("visitCounter");
-      if (counterEl) {
-        counterEl.innerText = `오늘 ${result.today} | 누적 ${result.total}`;
-      }
-    }
-  } catch (err) {
-    console.error("통계 기록 오류:", err);
-  }
-}
-
-// 웹앱 접속 시 자동으로 1회 실행
-window.addEventListener("DOMContentLoaded", recordVisitStats);
