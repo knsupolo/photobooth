@@ -1,15 +1,13 @@
 /**
- * 추억의 네컷 Studio Pro v15.0
+ * 추억의 네컷 Studio Pro v15.2
  * 
- * [v15.0 핵심 업데이트]
- * 1. 촬영 전 규격 선(先) 선택 시스템:
- *    - 1×4 세로 스트립 (가로 3:2 와이드 뷰파인더 & 크롭)
- *    - 2×2 와이드 엽서형 (세로 4:5 맞춤 뷰파인더 & 크롭 -> 좌우 짤림 원천 차단)
- * 2. 구글 드라이브(추억의네컷_저장소) 다이렉트 업로드:
- *    - 사진(PNG) 및 4컷 비디오(WebM/MP4) 구글 드라이브 자동 저장
- *    - 임시서버가 아닌 구글 드라이브 영구 고유 링크 기반 QR코드 생성
- * 3. 6종 스페셜 프레임 테마 (포토이지, 추억의네컷, 인생4컷, 포토이즘, 야구, 생일)
- * 4. 5대 세부 접속 기기(아이폰, 안드로이드폰, 아이패드, 안드로이드패드, PC) 및 영문 지역 통계
+ * [v15.2 핵심 업데이트]
+ * 1. 2×2 촬영 뷰파인더: 화면 상하 높이를 최대한 확보하고 좌/우측을 반투명 검정(Pillarbox) 마스킹 처리
+ * 2. 사진 선택 화면 미니 프리뷰: 2×2 모드 선택 시 2열 2행 격자 배치로 자동 전환
+ * 3. 사진 선택 화면 대형 캐러셀 뷰어: 6장 사진을 한 장씩 크게 넘겨보며(좌우 버튼/스와이프) 표정을 확인하고 선택 슬롯에 배치
+ * 4. 에디터 스튜디오 캔버스 제어: 핀치 줌(확대/축소)과 캔버스 이동(Pan)을 동시에 부드럽게 조작
+ * 5. 4컷 비디오 생성 모달: 합성 완료 시 전용 팝업이 즉시 열려 미리보기 재생, 구글 드라이브(추억의네컷_저장소) 자동 백업, 기기 저장/공유 제공
+ * 6. QR코드 생성: 구글 드라이브 고속 업로드 및 영구 뷰어 링크 기반 QR 생성
  */
 
 // 🌟 구글 앱스 스크립트 웹앱 배포 URL
@@ -43,7 +41,7 @@ const FILTER_PRESETS = {
 
 let appState = {
   isAdmin: false, stream: null, facingMode: 'user', timerSec: 6, currentCount: 6, countdownTimer: null,
-  selectedFormat: 'strip', // 'strip' (1x4) or 'grid' (2x2)
+  selectedFormat: 'strip', // 'strip' (1x4 단체) | 'grid' (2x2 1~3인)
   shotImages: [], selectedImages: [], selectedIndices: [null, null, null, null], activeSlotIndex: 0,
   stickers: [], recentStickers: [], selectedStickerIdx: -1, dragTarget: null, dragStartPos: { x: 0, y: 0 },
   layout: 'strip', frameStyle: 'simple', frameThickness: 40, frameColor: '#000000',
@@ -51,6 +49,14 @@ let appState = {
   showDate: true, typography: { fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() },
   shotVideoBlobs: [], currentMediaRecorder: null, currentShotVideoChunks: [], resetInterval: null
 };
+
+// 캐러셀 뷰어 상태
+let currentCarouselIdx = 0;
+let carouselTouchStartX = 0;
+
+// 생성된 비디오 캐시 (모달 다운로드 및 공유용)
+let currentGeneratedVideoBlob = null;
+let currentGeneratedVideoFileName = "";
 
 let galleryAccumulator = [];
 let canvasZoom = 1.0;
@@ -145,28 +151,29 @@ function renderRecentStickers() {
 }
 
 // ========================================================
-// 2. 🌟 규격 선(先) 선택 & 뷰파인더 마스킹 전환
+// 2. 🌟 규격 선택 & 뷰파인더 상하 극대화 + 좌우 암전 마스킹
 // ========================================================
 function startSessionWithFormat(format) {
-  appState.selectedFormat = format; // 'strip' | 'grid'
+  appState.selectedFormat = format; 
   appState.layout = format;
 
   const liveBadge = document.getElementById('liveFormatBadge');
-  if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
+  if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립 (단체)" : "2×2 엽서형 (1~3인)";
   
   const editBadge = document.getElementById('editorFormatBadge');
   if (editBadge) editBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
 
-  // 뷰파인더 박스 비율 동적 전환
   const box = document.getElementById('dynamicViewfinderBox');
   const ratioBadge = document.getElementById('viewfinderRatioBadge');
+  
+  // 🌟 2x2는 화면 상하를 80% 이상 최대한 채우고 좌우를 필러박스 암전 처리
   if (box) {
     if (format === 'strip') {
-      box.className = "w-full aspect-[3/2] border border-white/60 relative flex items-center justify-center transition-all duration-300";
-      if (ratioBadge) ratioBadge.textContent = "3:2 가로촬영";
+      box.className = "viewfinder-cutout border-2 border-white/80 w-[92vw] max-w-[540px] aspect-[3/2] relative flex items-center justify-center transition-all duration-300";
+      if (ratioBadge) ratioBadge.textContent = "3:2 가로촬영 (단체)";
     } else {
-      box.className = "w-[68vw] max-w-[340px] aspect-[4/5] border border-white/60 relative flex items-center justify-center transition-all duration-300";
-      if (ratioBadge) ratioBadge.textContent = "4:5 세로촬영";
+      box.className = "viewfinder-cutout border-2 border-white/80 h-[82vh] max-h-[740px] aspect-[4/5] relative flex items-center justify-center transition-all duration-300";
+      if (ratioBadge) ratioBadge.textContent = "4:5 세로촬영 (1~3인)";
     }
   }
 
@@ -329,7 +336,7 @@ function renderAdminLocationStats() {
 }
 
 // ========================================================
-// 4. 10종 UI 테마 바인딩
+// 4. 10종 UI 테마
 // ========================================================
 const APP_THEMES = {
   rose:   { color: '#f43f5e', hover: '#e11d48', light: '#fff1f2', name: '로즈 핑크' },
@@ -529,7 +536,7 @@ async function shareWebAppUrl() {
 }
 
 // ========================================================
-// 6. 이용 후기 (전체 기기 100% 실시간 공유)
+// 6. 후기 & 고객소리함
 // ========================================================
 function handleStarClick(starNum) {
   if (currentRatingValue === starNum - 0.5) currentRatingValue = starNum;
@@ -711,9 +718,6 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// ========================================================
-// 7. 고객소리함 (문의 접수)
-// ========================================================
 function openCustomerBotModal() {
   document.getElementById('customerBotModal').classList.remove('hidden');
   if (window.lucide) lucide.createIcons();
@@ -786,15 +790,15 @@ async function sendCustomerBotMessage() {
 }
 
 // ========================================================
-// 8. 공지사항
+// 7. 공지사항 & 오디오
 // ========================================================
 function getStoredNotices() {
   const stored = localStorage.getItem('vibe_notices');
   let list = [];
   if (stored) { try { list = JSON.parse(stored); } catch(e) { list = []; } }
-  list = list.filter(n => !n.version || n.version === 'v15.0');
-  if (!list.some(n => n.version === 'v15.0')) {
-    list.unshift({ id: 'v15_0', date: getFormattedTodayDate(), version: 'v15.0', content: '1x4 및 2x2 규격 선선택 맞춤촬영 & 구글 드라이브 영구 QR 저장 엔진 탑재 완료!' });
+  list = list.filter(n => !n.version || n.version === 'v15.2');
+  if (!list.some(n => n.version === 'v15.2')) {
+    list.unshift({ id: 'v15_2', date: getFormattedTodayDate(), version: 'v15.2', content: '2x2 뷰파인더 화면 극대화, 대형 캐러셀 넘겨보기 뷰어 & 비디오 전용 팝업 탑재 완료!' });
   }
   localStorage.setItem('vibe_notices', JSON.stringify(list));
   return list;
@@ -848,7 +852,7 @@ function renderAdminNoticeManageList() {
 function writeAdminNotice() {
   const content = prompt("새 공지사항 내용을 입력하세요:\n(작성일 기준 14일 동안 홈 화면에 노출됩니다)");
   if (!content || !content.trim()) return;
-  const newNotice = { id: Date.now().toString(), date: getFormattedTodayDate(), version: 'v15.0', content: content.trim() };
+  const newNotice = { id: Date.now().toString(), date: getFormattedTodayDate(), version: 'v15.2', content: content.trim() };
   const list = getStoredNotices();
   list.unshift(newNotice);
   localStorage.setItem('vibe_notices', JSON.stringify(list));
@@ -866,9 +870,6 @@ function deleteNotice(id) {
   }
 }
 
-// ========================================================
-// 9. 오디오 & 셔터 효과
-// ========================================================
 let audioCtx = null;
 function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
 function playBeep(freq = 700) { try { initAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1); } catch (e) {} }
@@ -886,13 +887,14 @@ function setTimerSec(sec, btn) {
 }
 
 // ========================================================
-// 10. 🌟 규격별 맞춤 카메라 촬영 & 크롭 엔진
+// 8. 카메라 촬영 & 뷰파인더 맞춤 크롭
 // ========================================================
 async function startPhotoSession() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
-    alert("카메라를 실행할 수 없습니다. HTTPS 환경인지 확인해 주세요!"); 
+    alert("카메라를 실행할 수 없습니다. 웹 브라우저의 카메라 권한 및 HTTPS 접속 여부를 확인해 주세요!"); 
     return; 
   }
+  
   initAudio(); 
   stopCameraAndAudio();
   appState.shotImages = []; 
@@ -903,49 +905,76 @@ async function startPhotoSession() {
 
   for (let i = 0; i < 6; i++) { 
     const t = document.getElementById(`liveThumb${i}`); 
-    if (t) { t.innerHTML = (i + 1).toString(); t.className = "w-12 h-8 bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center text-[10px] text-white/50 font-bold"; } 
+    if (t) { 
+      t.innerHTML = (i + 1).toString(); 
+      t.className = "w-12 h-8 bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center text-[10px] text-white/50 font-bold"; 
+    } 
   }
 
-  try {
-    let stream;
-    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: appState.facingMode }, audio: false }); } 
-    catch (err1) { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); }
-    appState.stream = stream;
-    const video = document.getElementById('liveWebcamVideo'); 
-    if (video) { 
-      video.srcObject = stream; 
-      video.classList.add('mirror');
-      await video.play(); 
+  const videoConstraints = [
+    { video: { facingMode: appState.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+    { video: { facingMode: appState.facingMode }, audio: false },
+    { video: true, audio: false }
+  ];
+
+  let stream = null;
+  for (const constraint of videoConstraints) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraint);
+      if (stream) break;
+    } catch (e) {
+      console.warn("카메라 제약조건 폴백:", e);
     }
-    runContinuousLiveShoot(0);
-  } catch (err) { 
-    alert("카메라 실행 실패: " + err.message); 
-    showScreen('screenHome'); 
   }
+
+  if (!stream) {
+    alert("카메라 장치 접근에 실패했습니다. 다른 앱이 카메라를 사용 중인지 확인해 주세요.");
+    showScreen('screenHome');
+    return;
+  }
+
+  appState.stream = stream;
+  const video = document.getElementById('liveWebcamVideo'); 
+  if (video) { 
+    video.srcObject = stream; 
+    video.classList.add('mirror');
+    try { await video.play(); } catch (playErr) {}
+  }
+
+  runContinuousLiveShoot(0);
 }
 
-async function flipCameraFacing() { appState.facingMode = (appState.facingMode === 'user') ? 'environment' : 'user'; startPhotoSession(); }
+async function flipCameraFacing() { 
+  appState.facingMode = (appState.facingMode === 'user') ? 'environment' : 'user'; 
+  startPhotoSession(); 
+}
 
 function startSingleCutVideoRecording() {
   if (!appState.stream) return;
   appState.currentShotVideoChunks = [];
-  try { appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/webm' }); } 
-  catch (e) { 
-    try { appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/mp4' }); } 
-    catch (e2) { 
+  try { 
+    appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/webm' }); 
+  } catch (e) { 
+    try { 
+      appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/mp4' }); 
+    } catch (e2) { 
       try { appState.currentMediaRecorder = new MediaRecorder(appState.stream); } 
       catch (e3) { appState.currentMediaRecorder = null; } 
     } 
   }
   if (appState.currentMediaRecorder) { 
-    appState.currentMediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) appState.currentShotVideoChunks.push(e.data); }; 
+    appState.currentMediaRecorder.ondataavailable = e => { 
+      if (e.data && e.data.size > 0) appState.currentShotVideoChunks.push(e.data); 
+    }; 
     appState.currentMediaRecorder.start(); 
   }
 }
 
 function stopSingleCutVideoRecording(shotIndex) {
   if (appState.currentMediaRecorder && appState.currentMediaRecorder.state !== 'inactive') {
-    appState.currentMediaRecorder.onstop = () => { appState.shotVideoBlobs[shotIndex] = new Blob(appState.currentShotVideoChunks, { type: 'video/webm' }); };
+    appState.currentMediaRecorder.onstop = () => { 
+      appState.shotVideoBlobs[shotIndex] = new Blob(appState.currentShotVideoChunks, { type: 'video/webm' }); 
+    };
     appState.currentMediaRecorder.stop();
   }
 }
@@ -994,7 +1023,6 @@ function triggerInstantOneSec() {
   }, 1000);
 }
 
-// 🌟 선택된 규격(3:2 가로 vs 4:5 세로)에 맞춘 정밀 캔버스 크롭
 function captureWebcamFrame(shotIndex, onDone) {
   playRealisticShutter(); 
   flashScreen();
@@ -1004,7 +1032,6 @@ function captureWebcamFrame(shotIndex, onDone) {
   if (!video || !guide || !canvas) return;
 
   const isStrip = (appState.selectedFormat === 'strip');
-  // 1x4 스트립: 720 x 480 (3:2) | 2x2 엽서형: 576 x 720 (4:5)
   canvas.width = isStrip ? 720 : 576;
   canvas.height = isStrip ? 480 : 720;
   const ctx = canvas.getContext('2d');
@@ -1064,45 +1091,127 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 11. 사진 선택 화면 (규격별 미니프리뷰 형태 자동 변환)
+// 9. 🌟 사진 선택 화면 (2×2 격자 미니프리뷰 & 대형 캐러셀 뷰어)
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
   appState.selectedIndices = [null, null, null, null]; 
   appState.activeSlotIndex = 0; 
-  updatePreviewSlots();
+  currentCarouselIdx = 0;
+
+  // 🌟 미니 프리뷰를 선택된 규격(1x4 스트립 vs 2x2 격자)에 따라 구조 동적 생성
+  buildPickMiniPreviewStructure();
   setPickPreviewTheme(appState.frameStyle || 'simple', null);
 
-  const miniFrame = document.getElementById('pickMiniFramePreview');
-  if (miniFrame) {
-    if (appState.selectedFormat === 'grid') {
-      miniFrame.className = "w-44 sm:w-48 aspect-[2/3] bg-black p-2.5 shadow-2xl flex flex-col space-y-1.5 border border-slate-300 rounded-md";
-    } else {
-      miniFrame.className = "w-40 sm:w-44 bg-black p-2 shadow-2xl flex flex-col space-y-1 border border-slate-300 rounded-md";
-    }
-  }
+  // 🌟 대형 캐러셀 뷰어 초기화
+  setupCarouselViewer();
+  updateCarouselView();
+}
 
-  const grid = document.getElementById('pickGrid'); 
-  if (!grid) return; 
-  grid.innerHTML = '';
+function buildPickMiniPreviewStructure() {
+  const container = document.getElementById('pickMiniFramePreview');
+  if (!container) return;
 
-  const isGridFormat = (appState.selectedFormat === 'grid');
-
-  appState.shotImages.forEach((img, idx) => {
-    const card = document.createElement('div'); 
-    card.id = `pickCard_${idx}`; 
-    card.className = `relative ${isGridFormat ? 'aspect-[4/5]' : 'aspect-[3/2]'} rounded-2xl overflow-hidden border-2 border-slate-300 bg-slate-200 cursor-pointer group active:scale-95 transition shadow-sm`;
-    card.innerHTML = `
-      <img src="${img.src}" class="w-full h-full object-cover">
-      <div class="absolute bottom-2 left-2 bg-black/75 backdrop-blur text-white font-black text-xs px-2 py-0.5 rounded-md">
-        #${idx + 1}번 컷
+  const isGrid = (appState.selectedFormat === 'grid');
+  
+  if (isGrid) {
+    // 🌟 2×2 격자 형태 미니 프리뷰 (위 2장, 아래 2장)
+    container.className = "w-48 sm:w-52 aspect-[2/3] bg-black p-2.5 shadow-2xl flex flex-col justify-between border border-slate-300 rounded-md transition-all";
+    container.innerHTML = `
+      <div id="pickPreviewHeader" class="text-center text-white text-[10px] font-black font-serif py-0.5">sangsangPhoto</div>
+      <div class="grid grid-cols-2 gap-1.5 flex-1 my-1">
+        <div onclick="selectSlotForAssignment(0)" id="previewSlot0" class="aspect-[4/5] bg-slate-900 border-2 border-theme flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">1번 슬롯</div>
+        <div onclick="selectSlotForAssignment(1)" id="previewSlot1" class="aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">2번 슬롯</div>
+        <div onclick="selectSlotForAssignment(2)" id="previewSlot2" class="aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">3번 슬롯</div>
+        <div onclick="selectSlotForAssignment(3)" id="previewSlot3" class="aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">4번 슬롯</div>
       </div>
-      <div id="pickBadge_${idx}" class="hidden absolute top-2 right-2 w-7 h-7 rounded-full bg-theme text-white font-black text-xs flex items-center justify-center shadow-lg border-2 border-white"></div>
+      <div id="pickPreviewMiddleBanner" class="hidden text-center text-white text-[9px] font-black py-0.5 bg-white/10 rounded my-0.5">추억의 네컷</div>
+      <div id="pickPreviewFooter" class="hidden text-center text-white text-[10px] font-black font-serif pt-1 border-t border-white/20">인생4컷</div>
     `;
-    card.onclick = () => assignPhotoToCurrentSlot(idx);
-    grid.appendChild(card);
-  });
-  refreshPickUI();
+  } else {
+    // 🌟 1×4 세로 스트립 형태 미니 프리뷰 (1열 4장)
+    container.className = "w-40 sm:w-44 bg-black p-2 shadow-2xl flex flex-col space-y-1 border border-slate-300 rounded-md transition-all";
+    container.innerHTML = `
+      <div id="pickPreviewHeader" class="text-center text-white text-[10px] font-black font-serif py-0.5 border-b border-white/20">sangsangPhoto</div>
+      <div onclick="selectSlotForAssignment(0)" id="previewSlot0" class="aspect-[3/2] bg-slate-900 border-2 border-theme flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">1번 슬롯</div>
+      <div onclick="selectSlotForAssignment(1)" id="previewSlot1" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">2번 슬롯</div>
+      <div id="pickPreviewMiddleBanner" class="hidden text-center text-white text-[9px] font-black py-0.5 bg-white/10 rounded">추억의 네컷</div>
+      <div onclick="selectSlotForAssignment(2)" id="previewSlot2" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">3번 슬롯</div>
+      <div onclick="selectSlotForAssignment(3)" id="previewSlot3" class="aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative">4번 슬롯</div>
+      <div id="pickPreviewFooter" class="hidden text-center text-white text-[10px] font-black font-serif pt-1 border-t border-white/20">인생4컷</div>
+    `;
+  }
+}
+
+// 🌟 캐러셀 터치 스와이프 등록
+function setupCarouselViewer() {
+  const wrapper = document.getElementById('carouselImageWrapper');
+  if (!wrapper) return;
+
+  wrapper.addEventListener('touchstart', (e) => {
+    carouselTouchStartX = e.touches[0].clientX;
+  }, { passive: true });
+
+  wrapper.addEventListener('touchend', (e) => {
+    const endX = e.changedTouches[0].clientX;
+    const diff = carouselTouchStartX - endX;
+    if (diff > 45) {
+      nextCarouselPhoto();
+    } else if (diff < -45) {
+      prevCarouselPhoto();
+    }
+  }, { passive: true });
+}
+
+function prevCarouselPhoto() {
+  if (appState.shotImages.length === 0) return;
+  currentCarouselIdx = (currentCarouselIdx - 1 + appState.shotImages.length) % appState.shotImages.length;
+  updateCarouselView();
+}
+
+function nextCarouselPhoto() {
+  if (appState.shotImages.length === 0) return;
+  currentCarouselIdx = (currentCarouselIdx + 1) % appState.shotImages.length;
+  updateCarouselView();
+}
+
+function goToCarouselPhoto(idx) {
+  currentCarouselIdx = idx;
+  updateCarouselView();
+}
+
+function updateCarouselView() {
+  if (appState.shotImages.length === 0) return;
+
+  const imgEl = document.getElementById('carouselCurrentImg');
+  const badgeEl = document.getElementById('carouselCutBadge');
+  const btnText = document.getElementById('btnAssignText');
+  const strip = document.getElementById('carouselIndicatorStrip');
+
+  if (imgEl) imgEl.src = appState.shotImages[currentCarouselIdx].src;
+  if (badgeEl) badgeEl.textContent = `#${currentCarouselIdx + 1}번 컷`;
+  if (btnText) btnText.textContent = `이 사진을 ${appState.activeSlotIndex + 1}번 슬롯에 넣기`;
+
+  // 1~6번 미니 인디케이터 썸네일 스트립 렌더링
+  if (strip) {
+    strip.innerHTML = appState.shotImages.map((img, idx) => {
+      const isCurrent = (idx === currentCarouselIdx);
+      const isAssigned = appState.selectedIndices.includes(idx);
+      const assignedSlot = appState.selectedIndices.indexOf(idx);
+
+      return `
+        <button onclick="goToCarouselPhoto(${idx})" class="w-10 h-8 rounded-lg overflow-hidden border-2 relative transition ${isCurrent ? 'border-theme scale-110 shadow-md ring-2 ring-rose-400/50' : 'border-slate-300 opacity-60'}">
+          <img src="${img.src}" class="w-full h-full object-cover">
+          ${isAssigned ? `<div class="absolute inset-0 bg-theme/80 flex items-center justify-center text-white text-[9px] font-black">${assignedSlot + 1}번</div>` : ''}
+        </button>
+      `;
+    }).join('');
+  }
+}
+
+function assignCurrentCarouselPhoto() {
+  if (appState.shotImages.length === 0) return;
+  assignPhotoToCurrentSlot(currentCarouselIdx);
 }
 
 function setPickPreviewTheme(themeKey, btn) {
@@ -1157,6 +1266,7 @@ function selectSlotForAssignment(slotIdx) {
   appState.activeSlotIndex = slotIdx;
   const badge = document.getElementById('currentActiveSlotBadge'); 
   if (badge) badge.textContent = `${slotIdx + 1}번 슬롯 채우는 중`;
+  
   for (let i = 0; i < 4; i++) {
     const el = document.getElementById(`previewSlot${i}`);
     if (el) { 
@@ -1164,24 +1274,29 @@ function selectSlotForAssignment(slotIdx) {
       else el.classList.replace('border-theme', 'border-transparent'); 
     }
   }
+  updateCarouselView();
 }
 
 function assignPhotoToCurrentSlot(shotIdx) {
   appState.selectedIndices[appState.activeSlotIndex] = shotIdx; 
   updatePreviewSlots();
+  
+  // 다음 빈 슬롯으로 자동 포커스 이동
   const nextEmpty = appState.selectedIndices.indexOf(null);
-  if (nextEmpty !== -1) selectSlotForAssignment(nextEmpty); 
-  else selectSlotForAssignment((appState.activeSlotIndex + 1) % 4);
+  if (nextEmpty !== -1) {
+    selectSlotForAssignment(nextEmpty);
+  } else {
+    selectSlotForAssignment((appState.activeSlotIndex + 1) % 4);
+  }
+  updateCarouselView();
   refreshPickUI();
 }
 
 function updatePreviewSlots() {
-  const isGrid = (appState.selectedFormat === 'grid');
   for (let i = 0; i < 4; i++) {
     const shotIdx = appState.selectedIndices[i]; 
     const slotEl = document.getElementById(`previewSlot${i}`);
     if (slotEl) { 
-      slotEl.className = `${isGrid ? 'aspect-[4/5]' : 'aspect-[3/2]'} bg-slate-900 border-2 ${i === appState.activeSlotIndex ? 'border-theme' : 'border-transparent'} flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative`;
       if (shotIdx !== null && appState.shotImages[shotIdx]) { 
         slotEl.innerHTML = `<img src="${appState.shotImages[shotIdx].src}" class="w-full h-full object-cover">`; 
       } else { 
@@ -1195,20 +1310,6 @@ function refreshPickUI() {
   const chosenCount = appState.selectedIndices.filter(idx => idx !== null).length;
   const btn = document.getElementById('btnConfirmPick');
   if (btn) btn.textContent = chosenCount === 4 ? "이 4장으로 스튜디오 꾸미기 (선택 완료!)" : `이 4장으로 스튜디오 꾸미기 (${chosenCount}/4장 선택됨)`;
-  for (let i = 0; i < appState.shotImages.length; i++) {
-    const card = document.getElementById(`pickCard_${i}`); 
-    const badge = document.getElementById(`pickBadge_${i}`);
-    if (!card || !badge) continue;
-    const pos = appState.selectedIndices.indexOf(i);
-    if (pos !== -1) { 
-      card.classList.replace('border-slate-300', 'border-theme'); 
-      badge.textContent = (pos + 1).toString(); 
-      badge.classList.remove('hidden'); 
-    } else { 
-      card.classList.replace('border-theme', 'border-slate-300'); 
-      badge.classList.add('hidden'); 
-    }
-  }
 }
 
 function confirmSelectedFour() {
@@ -1249,7 +1350,7 @@ function resetEditorToDefault() {
 }
 
 // ========================================================
-// 12. 앨범 업로드
+// 10. 앨범 업로드
 // ========================================================
 function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
 
@@ -1298,7 +1399,7 @@ function updateGalleryCollectModal() {
 function cancelGalleryCollect() { galleryAccumulator = []; const m = document.getElementById('galleryCollectModal'); if (m) m.classList.add('hidden'); }
 
 // ========================================================
-// 13. 핀치 줌 & 패닝(Pan)
+// 11. 🌟 핀치 줌 & 캔버스 팬(Pan, 이동) 동시 제어 엔진
 // ========================================================
 function zoomCanvas(amount) {
   canvasZoom = Math.max(0.4, Math.min(3.0, canvasZoom + amount));
@@ -1327,6 +1428,10 @@ function setupCanvasPinchZoom() {
 
   let initialPinchDist = 0;
   let initialZoom = 1.0;
+  let initialMidX = 0;
+  let initialMidY = 0;
+  let initialPanX = 0;
+  let initialPanY = 0;
 
   viewport.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
@@ -1336,6 +1441,10 @@ function setupCanvasPinchZoom() {
         e.touches[0].clientY - e.touches[1].clientY
       );
       initialZoom = canvasZoom;
+      initialMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      initialMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      initialPanX = canvasPanX;
+      initialPanY = canvasPanY;
     }
   }, { passive: false });
 
@@ -1346,9 +1455,15 @@ function setupCanvasPinchZoom() {
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
       );
+      const currentMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const currentMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+      // 🌟 핀치 줌과 이동(Pan)을 동시에 갱신
       if (initialPinchDist > 0) {
         const factor = currentDist / initialPinchDist;
         canvasZoom = Math.max(0.4, Math.min(3.0, initialZoom * factor));
+        canvasPanX = initialPanX + (currentMidX - initialMidX);
+        canvasPanY = initialPanY + (currentMidY - initialMidY);
         applyZoomTransform();
       }
     }
@@ -1547,7 +1662,7 @@ function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx
 function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
 
 // ========================================================
-// 14. 캔버스 인터랙션 & 패닝(Pan)
+// 12. 캔버스 1손가락 패닝 조작
 // ========================================================
 function initCanvasInteractions() {
   const canvas = document.getElementById('photoCanvas');
@@ -1629,7 +1744,7 @@ function initCanvasInteractions() {
 }
 
 // ========================================================
-// 15. 🌟 메인 캔버스 렌더링 (1×4 스트립 vs 2×2 엽서형)
+// 13. 메인 캔버스 렌더링 (1×4 스트립 vs 2×2 엽서형)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
@@ -1643,23 +1758,18 @@ function renderStrip(isFinalExport = false) {
   const gap = Math.round(pad * 0.5);
   const fStyle = appState.frameStyle;
 
-  // 1. 규격별 해상도 결정
-  // 1×4 스트립: 800 × 2400 px (미국 표준 2×6인치)
-  // 2×2 엽서형: 1200 × 1800 px (표준 4×6인치 엽서 비율)
   if (layout === 'strip') {
     canvas.width = 800; canvas.height = 2400;
   } else if (layout === 'grid') {
     canvas.width = 1200; canvas.height = 1800;
   }
 
-  // 테마 배경색상
   if (fStyle === 'photoism') ctx.fillStyle = '#0A0A0A';
   else if (fStyle === 'baseball') ctx.fillStyle = '#FAF7EE';
   else if (fStyle === 'birthday') ctx.fillStyle = '#FDFBF7';
   else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 2. 1×4 스트립 렌더링 (사진 비율: 가로 3:2)
   if (layout === 'strip') {
     if (fStyle === 'middle') {
       const bannerH = 160; 
@@ -1690,7 +1800,6 @@ function renderStrip(isFinalExport = false) {
       }
     }
   } 
-  // 3. 2×2 엽서형 렌더링 (사진 비율: 세로 4:5 완벽 매칭 -> 좌우 짤림 제로)
   else if (layout === 'grid') {
     const isBottom = (fStyle === 'bottom'); 
     const bannerH = (fStyle === 'middle') ? 140 : 0;
@@ -1698,7 +1807,7 @@ function renderStrip(isFinalExport = false) {
     const bottomFooterH = (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 190 : (fStyle === 'simple' ? 50 : pad + 20);
 
     const imgW = (canvas.width - (pad * 2) - gap) / 2; 
-    const imgH = Math.round(imgW * 1.25); // 4:5 세로 비율 매칭
+    const imgH = Math.round(imgW * 1.25); // 4:5 맞춤
 
     if (fStyle === 'middle') {
       const totalContentH = (imgH * 2) + gap + bannerH;
@@ -1731,7 +1840,6 @@ function renderStrip(isFinalExport = false) {
     }
   }
 
-  // 스티커 그리기
   appState.stickers.forEach((st, idx) => {
     ctx.save();
     ctx.translate(st.x, st.y);
@@ -1998,68 +2106,9 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 }
 
 // ========================================================
-// 16. 🌟 구글 드라이브 다이렉트 업로드 & 영구 QR 엔진
+// 14. 🌟 4컷 비디오 생성 모달 & 구글 드라이브 백업
 // ========================================================
-async function uploadMediaToGoogleDrive(base64Data, fileType, fileName, mimeType) {
-  try {
-    const res = await fetch(GOOGLE_DB_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'UPLOAD_MEDIA',
-        base64Data: base64Data,
-        fileType: fileType,
-        fileName: fileName,
-        mimeType: mimeType
-      })
-    });
-    return await res.json();
-  } catch (err) {
-    console.error("구글 드라이브 업로드 통신 에러:", err);
-    return { success: false, error: err.message };
-  }
-}
-
-// 🌟 사진 캔버스를 구글 드라이브에 올리고 영구 링크 QR 생성
-async function saveAndGenerateQRToDrive() {
-  const btn = document.getElementById('btnSaveQR'); 
-  if (btn) { 
-    btn.disabled = true; 
-    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>구글 드라이브 업로드 중...</span>`; 
-  }
-  if (window.lucide) lucide.createIcons();
-
-  renderStrip(true); 
-  const canvas = document.getElementById('photoCanvas'); 
-  if (!canvas) return;
-
-  const base64Img = canvas.toDataURL('image/png');
-  const fileName = `[추억의네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
-
-  try {
-    const uploadResult = await uploadMediaToGoogleDrive(base64Img, 'image', fileName, 'image/png');
-    if (btn) { 
-      btn.disabled = false; 
-      btn.innerHTML = `<span>📱 구글 드라이브 업로드 & 영구 QR코드 생성</span>`; 
-    }
-    if (window.lucide) lucide.createIcons();
-
-    if (uploadResult && uploadResult.success && uploadResult.fileUrl) {
-      displayResultWithQR(uploadResult.fileUrl);
-    } else {
-      displayResultWithQR(window.location.href);
-    }
-  } catch (err) {
-    if (btn) { 
-      btn.disabled = false; 
-      btn.innerHTML = `<span>📱 구글 드라이브 업로드 & 영구 QR코드 생성</span>`; 
-    }
-    displayResultWithQR(window.location.href);
-  }
-}
-
-// 🌟 4컷 비디오 자동 다운로드 및 구글 드라이브 백업
-async function autoSaveVideoToDrive() {
+async function generateFourCutVideo() {
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
   if (!hasValidVideo) {
     alert("촬영 영상 데이터가 부족합니다.\n동영상 합성은 부스에서 4컷을 연속 촬영했을 때 가능합니다.");
@@ -2067,7 +2116,10 @@ async function autoSaveVideoToDrive() {
   }
 
   const btn = document.getElementById('btnAutoVideo'); 
-  if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>비디오 합성 & 드라이브 저장 중...</span>`;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>4컷 비디오 합성 중...</span>`;
+  }
   if (window.lucide) lucide.createIcons();
 
   try {
@@ -2098,25 +2150,31 @@ async function autoSaveVideoToDrive() {
     recorder.onstop = async () => {
       const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'; 
       const blob = new Blob(chunks, { type: mimeType }); 
-      const fileName = `[추억의네컷]_Video_${Date.now()}.${ext}`;
-      const file = new File([blob], fileName, { type: mimeType });
+      currentGeneratedVideoBlob = blob;
+      currentGeneratedVideoFileName = `[추억의네컷]_Video_${Date.now()}.${ext}`;
 
-      // 1) 로컬 브라우저 즉시 다운로드 / 공유
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { 
-        try { await navigator.share({ files: [file], title: '추억의 네컷 비디오', text: '추억의 네컷 실시간 4컷 비디오입니다!' }); } catch (err) {} 
-      } else {
-        const url = URL.createObjectURL(blob); 
-        const a = document.createElement('a'); a.href = url; a.download = file.name; 
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      // 🌟 비디오 결과 모달 열기 & 미리보기 재생
+      openVideoResultModal(blob);
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 생성</span>`;
       }
+      if (window.lucide) lucide.createIcons();
 
-      // 2) 구글 드라이브 백그라운드 자동 업로드
+      // 백그라운드 구글 드라이브(추억의네컷_저장소) 자동 업로드
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64Video = reader.result;
-        await uploadMediaToGoogleDrive(base64Video, 'video', fileName, mimeType);
-        if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 구글 드라이브 저장</span>`;
-        if (window.lucide) lucide.createIcons();
+        const statusBadge = document.getElementById('videoDriveStatusBadge');
+        try {
+          const res = await uploadMediaToGoogleDrive(reader.result, 'video', currentGeneratedVideoFileName, mimeType);
+          if (res && res.success && statusBadge) {
+            statusBadge.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 mr-1"></i><span class="text-emerald-700 font-bold">구글 드라이브에 안전하게 자동 저장됨</span>`;
+            if (window.lucide) lucide.createIcons();
+          }
+        } catch (e) {
+          if (statusBadge) statusBadge.textContent = "기기 저장 준비 완료";
+        }
       };
       reader.readAsDataURL(blob);
     };
@@ -2161,8 +2219,125 @@ async function autoSaveVideoToDrive() {
     requestAnimationFrame(renderVideoLoop);
   } catch (err) { 
     alert("비디오 생성 실패: " + err.message); 
-    if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 구글 드라이브 저장</span>`; 
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 생성</span>`; 
+    }
     if (window.lucide) lucide.createIcons(); 
+  }
+}
+
+// 🌟 비디오 모달 제어 함수들
+function openVideoResultModal(blob) {
+  const modal = document.getElementById('videoResultModal');
+  const player = document.getElementById('videoResultPlayer');
+  const statusBadge = document.getElementById('videoDriveStatusBadge');
+  if (!modal || !player) return;
+
+  player.src = URL.createObjectURL(blob);
+  if (statusBadge) {
+    statusBadge.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-theme mr-1"></i><span>구글 드라이브(추억의네컷_저장소) 자동 저장 중...</span>`;
+  }
+  modal.classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeVideoResultModal() {
+  const modal = document.getElementById('videoResultModal');
+  const player = document.getElementById('videoResultPlayer');
+  if (player) player.pause();
+  if (modal) modal.classList.add('hidden');
+}
+
+function downloadCurrentVideoFile() {
+  if (!currentGeneratedVideoBlob) return;
+  const url = URL.createObjectURL(currentGeneratedVideoBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentGeneratedVideoFileName || `[추억의네컷]_Video_${Date.now()}.mp4`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+async function shareCurrentVideoFile() {
+  if (!currentGeneratedVideoBlob) return;
+  const ext = currentGeneratedVideoFileName.endsWith('.mp4') ? 'mp4' : 'webm';
+  const file = new File([currentGeneratedVideoBlob], currentGeneratedVideoFileName, { type: `video/${ext}` });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: '추억의 네컷 비디오',
+        text: '추억의 네컷 4컷 움직이는 비디오입니다! 🎬'
+      });
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  downloadCurrentVideoFile();
+}
+
+// ========================================================
+// 15. 🌟 QR코드 생성 & 구글 드라이브 영구 연동
+// ========================================================
+async function generateImageQRCode() {
+  const btn = document.getElementById('btnSaveQR'); 
+  if (btn) { 
+    btn.disabled = true; 
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>QR코드 생성 중...</span>`; 
+  }
+  if (window.lucide) lucide.createIcons();
+
+  renderStrip(true); 
+  const canvas = document.getElementById('photoCanvas'); 
+  if (!canvas) return;
+
+  const base64Img = canvas.toDataURL('image/png');
+  const fileName = `[추억의네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
+
+  let qrTargetUrl = window.location.href;
+
+  // 구글 드라이브 업로드 비동기 시도 (최대 4초)
+  try {
+    const uploadPromise = uploadMediaToGoogleDrive(base64Img, 'image', fileName, 'image/png');
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000));
+    const uploadResult = await Promise.race([uploadPromise, timeoutPromise]);
+
+    if (uploadResult && uploadResult.success && uploadResult.fileUrl) {
+      qrTargetUrl = uploadResult.fileUrl;
+    }
+  } catch (err) {
+    console.warn("구글 드라이브 지연으로 웹앱 URL로 폴백 QR 생성:", err);
+  }
+
+  if (btn) { 
+    btn.disabled = false; 
+    btn.innerHTML = `<span>📱 QR코드 생성 (이미지 다운로드)</span>`; 
+  }
+  if (window.lucide) lucide.createIcons();
+
+  displayResultWithQR(qrTargetUrl);
+}
+
+async function uploadMediaToGoogleDrive(base64Data, fileType, fileName, mimeType) {
+  try {
+    const res = await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'UPLOAD_MEDIA',
+        base64Data: base64Data,
+        fileType: fileType,
+        fileName: fileName,
+        mimeType: mimeType
+      })
+    });
+    return await res.json();
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 }
 
@@ -2173,8 +2348,6 @@ function autoSavePDF() {
   const imgData = canvas.toDataURL('image/jpeg', 0.95); 
   const { jsPDF } = window.jspdf; 
 
-  // 규격에 따른 인쇄 포맷 (4×6 엽서지 102mm × 152mm)
-  const isGrid = (appState.selectedFormat === 'grid');
   const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait'; 
   const pdf = new jsPDF({ orientation, unit: 'mm', format: [102, 152] }); 
 
@@ -2260,7 +2433,7 @@ function startAutoReset() {
 }
 
 // ========================================================
-// 17. 실행취소 & 다시실행
+// 16. 실행취소 & 다시실행
 // ========================================================
 let historyStack = []; 
 let redoStack = [];
@@ -2318,7 +2491,7 @@ function applySnapshot(snap) {
 }
 
 // ========================================================
-// 18. 엔트리포인트 (초기 구동)
+// 17. 엔트리포인트 (초기 구동)
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
