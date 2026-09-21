@@ -1,13 +1,13 @@
 /**
- * 추억의 네컷 Studio Pro v15.2
+ * 추억의 네컷 Studio Pro v15.3
  * 
- * [v15.2 핵심 업데이트]
- * 1. 2×2 촬영 뷰파인더: 화면 상하 높이를 최대한 확보하고 좌/우측을 반투명 검정(Pillarbox) 마스킹 처리
- * 2. 사진 선택 화면 미니 프리뷰: 2×2 모드 선택 시 2열 2행 격자 배치로 자동 전환
- * 3. 사진 선택 화면 대형 캐러셀 뷰어: 6장 사진을 한 장씩 크게 넘겨보며(좌우 버튼/스와이프) 표정을 확인하고 선택 슬롯에 배치
- * 4. 에디터 스튜디오 캔버스 제어: 핀치 줌(확대/축소)과 캔버스 이동(Pan)을 동시에 부드럽게 조작
- * 5. 4컷 비디오 생성 모달: 합성 완료 시 전용 팝업이 즉시 열려 미리보기 재생, 구글 드라이브(추억의네컷_저장소) 자동 백업, 기기 저장/공유 제공
- * 6. QR코드 생성: 구글 드라이브 고속 업로드 및 영구 뷰어 링크 기반 QR 생성
+ * [v15.3 핵심 수정 & 복구 사항]
+ * 1. 공지사항 전 기기 실시간 동기화: 구글 스프레드시트(notices) 양방향 연동
+ * 2. 1×4 촬영 뷰파인더 전체 화면 너비(3:2 가로) 및 상하 레터박스 구도 완벽 복구
+ * 3. 2×2 촬영 뷰파인더 상하 화면 극대화 (태블릿/아이패드 세로 꽉 찬 화면 지원 & 좌우 암전)
+ * 4. 4컷 비디오 생성 모달: 대형 플레이어로 확대 & 구글 드라이브(추억의네컷_저장소) 백업 안정화
+ * 5. QR코드 생성: 이전 고속 직다운로드 링크(tmpfiles.org/dl/...) 100% 복원 + 구글 드라이브 자동 백업
+ * 6. 에디터 스튜디오: 핀치 줌(확대/축소)과 캔버스 이동(Pan) 동시 조작 지원
  */
 
 // 🌟 구글 앱스 스크립트 웹앱 배포 URL
@@ -151,7 +151,7 @@ function renderRecentStickers() {
 }
 
 // ========================================================
-// 2. 🌟 규격 선택 & 뷰파인더 상하 극대화 + 좌우 암전 마스킹
+// 2. 🌟 규격 선택 (1x4 전체 화면 복구 & 2x2 패드 세로 극대화)
 // ========================================================
 function startSessionWithFormat(format) {
   appState.selectedFormat = format; 
@@ -166,13 +166,14 @@ function startSessionWithFormat(format) {
   const box = document.getElementById('dynamicViewfinderBox');
   const ratioBadge = document.getElementById('viewfinderRatioBadge');
   
-  // 🌟 2x2는 화면 상하를 80% 이상 최대한 채우고 좌우를 필러박스 암전 처리
   if (box) {
     if (format === 'strip') {
-      box.className = "viewfinder-cutout border-2 border-white/80 w-[92vw] max-w-[540px] aspect-[3/2] relative flex items-center justify-center transition-all duration-300";
+      // 🌟 1x4: 전체 너비 100% 3:2 와이드 화면 복구 (축소 해제)
+      box.className = "viewfinder-cutout border-2 border-white/80 w-full aspect-[3/2] relative flex items-center justify-center transition-all duration-300";
       if (ratioBadge) ratioBadge.textContent = "3:2 가로촬영 (단체)";
     } else {
-      box.className = "viewfinder-cutout border-2 border-white/80 h-[82vh] max-h-[740px] aspect-[4/5] relative flex items-center justify-center transition-all duration-300";
+      // 🌟 2x2: 화면 상하 90% 극대화 (아이패드 세로 꽉 찬 화면 지원 & 좌우 필러박스 암전)
+      box.className = "viewfinder-cutout border-2 border-white/80 h-[90vh] max-h-[92%] max-w-[95vw] aspect-[4/5] relative flex items-center justify-center transition-all duration-300";
       if (ratioBadge) ratioBadge.textContent = "4:5 세로촬영 (1~3인)";
     }
   }
@@ -448,6 +449,7 @@ async function collectDeviceTelemetry() {
   };
 }
 
+// 🌟 중앙 DB로부터 방문자, 후기, 공지사항을 일괄 동기화
 async function trackVisitorAccess() {
   const todayStr = getFormattedTodayDate();
   let todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '1', 10);
@@ -469,6 +471,17 @@ async function trackVisitorAccess() {
         }
         if (data.locationStats) {
           localStorage.setItem('chueok_location_stats', JSON.stringify(data.locationStats));
+        }
+        // 🌟 공지사항 전 기기 실시간 동기화
+        if (Array.isArray(data.notices)) {
+          localStorage.setItem('vibe_notices', JSON.stringify(data.notices));
+          renderMainNotices();
+          renderAdminNoticeManageList();
+        }
+        if (Array.isArray(data.reviews)) {
+          localStorage.setItem('vibe_posts', JSON.stringify(data.reviews));
+          renderBoard();
+          renderAdminReviewManageList();
         }
       }
     }
@@ -790,17 +803,12 @@ async function sendCustomerBotMessage() {
 }
 
 // ========================================================
-// 7. 공지사항 & 오디오
+// 7. 🌟 공지사항 관리 (구글 스프레드시트 실시간 동기화)
 // ========================================================
 function getStoredNotices() {
   const stored = localStorage.getItem('vibe_notices');
   let list = [];
   if (stored) { try { list = JSON.parse(stored); } catch(e) { list = []; } }
-  list = list.filter(n => !n.version || n.version === 'v15.2');
-  if (!list.some(n => n.version === 'v15.2')) {
-    list.unshift({ id: 'v15_2', date: getFormattedTodayDate(), version: 'v15.2', content: '2x2 뷰파인더 화면 극대화, 대형 캐러셀 넘겨보기 뷰어 & 비디오 전용 팝업 탑재 완료!' });
-  }
-  localStorage.setItem('vibe_notices', JSON.stringify(list));
   return list;
 }
 
@@ -837,7 +845,12 @@ function renderMainNotices() {
 function renderAdminNoticeManageList() {
   const listEl = document.getElementById('adminNoticeManageList');
   if (!listEl) return;
-  listEl.innerHTML = getStoredNotices().map(n => `
+  const notices = getStoredNotices();
+  if (notices.length === 0) {
+    listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">등록된 공지사항이 없습니다.</p>`;
+    return;
+  }
+  listEl.innerHTML = notices.map(n => `
     <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
       <div>
         <span class="font-black text-theme text-[10px] mr-1">[${n.version || '공지'}]</span>
@@ -849,41 +862,53 @@ function renderAdminNoticeManageList() {
   `).join('');
 }
 
-function writeAdminNotice() {
-  const content = prompt("새 공지사항 내용을 입력하세요:\n(작성일 기준 14일 동안 홈 화면에 노출됩니다)");
+async function writeAdminNotice() {
+  const content = prompt("새 공지사항 내용을 입력하세요:\n(모든 접속자의 홈 화면에 실시간 노출됩니다)");
   if (!content || !content.trim()) return;
-  const newNotice = { id: Date.now().toString(), date: getFormattedTodayDate(), version: 'v15.2', content: content.trim() };
-  const list = getStoredNotices();
+
+  const newNotice = { 
+    id: Date.now().toString(), 
+    date: getFormattedTodayDate(), 
+    version: 'v15.3', 
+    content: content.trim() 
+  };
+  let list = getStoredNotices();
   list.unshift(newNotice);
   localStorage.setItem('vibe_notices', JSON.stringify(list));
   renderMainNotices(); 
   renderAdminNoticeManageList();
-  alert("새 공지가 등록되었습니다.");
-}
 
-function deleteNotice(id) {
-  if (confirm("이 공지를 삭제하시겠습니까?")) {
-    let list = getStoredNotices().filter(n => n.id !== id);
-    localStorage.setItem('vibe_notices', JSON.stringify(list));
-    renderMainNotices(); 
-    renderAdminNoticeManageList();
+  // 구글 시트 notices 탭 영구 등록
+  try {
+    await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'ADD_NOTICE',
+        content: newNotice.content,
+        version: newNotice.version
+      })
+    });
+    alert("새 공지사항이 중앙 DB에 등록되어 전 기기에 실시간 공유됩니다.");
+  } catch (e) {
+    console.warn("공지사항 동기화 오류:", e);
   }
 }
 
-let audioCtx = null;
-function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
-function playBeep(freq = 700) { try { initAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1); } catch (e) {} }
-function playRealisticShutter() {
+async function deleteNotice(id) {
+  if (!confirm("이 공지를 영구 삭제하시겠습니까?")) return;
+  let list = getStoredNotices().filter(n => String(n.id) !== String(id));
+  localStorage.setItem('vibe_notices', JSON.stringify(list));
+  renderMainNotices(); 
+  renderAdminNoticeManageList();
+
   try {
-    initAudio(); const now = audioCtx.currentTime; const clickBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.03, audioCtx.sampleRate); const clickData = clickBuf.getChannelData(0); for (let i = 0; i < clickData.length; i++) clickData[i] = Math.random() * 2 - 1; const click = audioCtx.createBufferSource(); click.buffer = clickBuf; const clickGain = audioCtx.createGain(); clickGain.gain.setValueAtTime(0.35, now); clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.03); click.connect(clickGain); clickGain.connect(audioCtx.destination); click.start(now); const shutBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.08, audioCtx.sampleRate); const shutData = shutBuf.getChannelData(0); for (let i = 0; i < shutData.length; i++) shutData[i] = Math.random() * 2 - 1; const shut = audioCtx.createBufferSource(); shut.buffer = shutBuf; const shutGain = audioCtx.createGain(); shutGain.gain.setValueAtTime(0.45, now + 0.05); shutGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12); shut.connect(shutGain); shutGain.connect(audioCtx.destination); shut.start(now + 0.05);
+    await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'DELETE_NOTICE', id: id })
+    });
   } catch (e) {}
-}
-function setTimerSec(sec, btn) { 
-  appState.timerSec = sec; 
-  document.querySelectorAll('.timer-chip').forEach(b => { 
-    b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded text-[10px]"; 
-  }); 
-  btn.className = "timer-chip bg-theme text-white font-bold px-1.5 py-0.5 rounded text-[10px] shadow-xs"; 
 }
 
 // ========================================================
@@ -901,6 +926,7 @@ async function startPhotoSession() {
   appState.selectedImages = []; 
   appState.selectedIndices = [null, null, null, null]; 
   appState.shotVideoBlobs = [];
+
   showScreen('screenLiveShoot');
 
   for (let i = 0; i < 6; i++) { 
@@ -958,8 +984,11 @@ function startSingleCutVideoRecording() {
     try { 
       appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/mp4' }); 
     } catch (e2) { 
-      try { appState.currentMediaRecorder = new MediaRecorder(appState.stream); } 
-      catch (e3) { appState.currentMediaRecorder = null; } 
+      try { 
+        appState.currentMediaRecorder = new MediaRecorder(appState.stream); 
+      } catch (e3) { 
+        appState.currentMediaRecorder = null; 
+      } 
     } 
   }
   if (appState.currentMediaRecorder) { 
@@ -1023,6 +1052,7 @@ function triggerInstantOneSec() {
   }, 1000);
 }
 
+// 🌟 선택된 규격(3:2 가로 vs 4:5 세로) 맞춤 캔버스 크롭
 function captureWebcamFrame(shotIndex, onDone) {
   playRealisticShutter(); 
   flashScreen();
@@ -1099,11 +1129,9 @@ function renderPickScreen() {
   appState.activeSlotIndex = 0; 
   currentCarouselIdx = 0;
 
-  // 🌟 미니 프리뷰를 선택된 규격(1x4 스트립 vs 2x2 격자)에 따라 구조 동적 생성
   buildPickMiniPreviewStructure();
   setPickPreviewTheme(appState.frameStyle || 'simple', null);
 
-  // 🌟 대형 캐러셀 뷰어 초기화
   setupCarouselViewer();
   updateCarouselView();
 }
@@ -1143,7 +1171,6 @@ function buildPickMiniPreviewStructure() {
   }
 }
 
-// 🌟 캐러셀 터치 스와이프 등록
 function setupCarouselViewer() {
   const wrapper = document.getElementById('carouselImageWrapper');
   if (!wrapper) return;
@@ -1192,7 +1219,6 @@ function updateCarouselView() {
   if (badgeEl) badgeEl.textContent = `#${currentCarouselIdx + 1}번 컷`;
   if (btnText) btnText.textContent = `이 사진을 ${appState.activeSlotIndex + 1}번 슬롯에 넣기`;
 
-  // 1~6번 미니 인디케이터 썸네일 스트립 렌더링
   if (strip) {
     strip.innerHTML = appState.shotImages.map((img, idx) => {
       const isCurrent = (idx === currentCarouselIdx);
@@ -1281,7 +1307,6 @@ function assignPhotoToCurrentSlot(shotIdx) {
   appState.selectedIndices[appState.activeSlotIndex] = shotIdx; 
   updatePreviewSlots();
   
-  // 다음 빈 슬롯으로 자동 포커스 이동
   const nextEmpty = appState.selectedIndices.indexOf(null);
   if (nextEmpty !== -1) {
     selectSlotForAssignment(nextEmpty);
@@ -1319,6 +1344,16 @@ function confirmSelectedFour() {
   resetEditorToDefault(); 
   showScreen('screenEdit'); 
   renderStrip();
+
+  // 🌟 스튜디오 입장 시 완성 원본 사진을 구글 드라이브(추억의네컷_저장소)로 백그라운드 자동 백업
+  setTimeout(() => {
+    const canvas = document.getElementById('photoCanvas');
+    if (canvas) {
+      const pureBase64 = extractPureBase64(canvas.toDataURL('image/png'));
+      const fileName = `[추억의네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
+      uploadMediaToGoogleDrive(pureBase64, 'image', fileName, 'image/png').catch(() => {});
+    }
+  }, 1000);
 }
 
 function resetEditorToDefault() {
@@ -1458,7 +1493,6 @@ function setupCanvasPinchZoom() {
       const currentMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const currentMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
-      // 🌟 핀치 줌과 이동(Pan)을 동시에 갱신
       if (initialPinchDist > 0) {
         const factor = currentDist / initialPinchDist;
         canvasZoom = Math.max(0.4, Math.min(3.0, initialZoom * factor));
@@ -1483,16 +1517,6 @@ function setupCanvasPinchZoom() {
       lastTap = now;
     }
   });
-}
-
-function changeLayout(mode, btn) {
-  saveStateForUndo(); 
-  appState.layout = mode;
-  document.querySelectorAll('.layout-btn').forEach(b => { 
-    b.className = "layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs"; 
-  });
-  btn.className = "layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs";
-  renderStrip();
 }
 
 function setFrameStyle(styleKey, btn) {
@@ -2106,8 +2130,14 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 }
 
 // ========================================================
-// 14. 🌟 4컷 비디오 생성 모달 & 구글 드라이브 백업
+// 14. 🌟 비디오 생성 & 구글 드라이브 백업 & 전용 모달
 // ========================================================
+function extractPureBase64(dataUrl) {
+  if (!dataUrl) return "";
+  const commaIdx = dataUrl.indexOf(',');
+  return commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+}
+
 async function generateFourCutVideo() {
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
   if (!hasValidVideo) {
@@ -2153,7 +2183,6 @@ async function generateFourCutVideo() {
       currentGeneratedVideoBlob = blob;
       currentGeneratedVideoFileName = `[추억의네컷]_Video_${Date.now()}.${ext}`;
 
-      // 🌟 비디오 결과 모달 열기 & 미리보기 재생
       openVideoResultModal(blob);
 
       if (btn) {
@@ -2162,18 +2191,21 @@ async function generateFourCutVideo() {
       }
       if (window.lucide) lucide.createIcons();
 
-      // 백그라운드 구글 드라이브(추억의네컷_저장소) 자동 업로드
+      // 🌟 구글 드라이브(추억의네컷_저장소) 안전 백업
       const reader = new FileReader();
       reader.onloadend = async () => {
         const statusBadge = document.getElementById('videoDriveStatusBadge');
         try {
-          const res = await uploadMediaToGoogleDrive(reader.result, 'video', currentGeneratedVideoFileName, mimeType);
+          const pureBase64 = extractPureBase64(reader.result);
+          const res = await uploadMediaToGoogleDrive(pureBase64, 'video', currentGeneratedVideoFileName, mimeType);
           if (res && res.success && statusBadge) {
-            statusBadge.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 mr-1"></i><span class="text-emerald-700 font-bold">구글 드라이브에 안전하게 자동 저장됨</span>`;
+            statusBadge.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 mr-1"></i><span class="text-emerald-700 font-bold">구글 드라이브(추억의네컷_저장소)에 안전하게 자동 저장됨</span>`;
             if (window.lucide) lucide.createIcons();
+          } else if (statusBadge) {
+            statusBadge.innerHTML = `<span class="text-slate-600 font-bold">기기 저장 준비 완료 (아래 버튼으로 다운로드/공유 가능)</span>`;
           }
         } catch (e) {
-          if (statusBadge) statusBadge.textContent = "기기 저장 준비 완료";
+          if (statusBadge) statusBadge.innerHTML = `<span class="text-slate-600 font-bold">기기 저장 준비 완료 (아래 버튼으로 다운로드/공유 가능)</span>`;
         }
       };
       reader.readAsDataURL(blob);
@@ -2227,7 +2259,6 @@ async function generateFourCutVideo() {
   }
 }
 
-// 🌟 비디오 모달 제어 함수들
 function openVideoResultModal(blob) {
   const modal = document.getElementById('videoResultModal');
   const player = document.getElementById('videoResultPlayer');
@@ -2281,7 +2312,7 @@ async function shareCurrentVideoFile() {
 }
 
 // ========================================================
-// 15. 🌟 QR코드 생성 & 구글 드라이브 영구 연동
+// 15. 🌟 QR코드 생성 (이전 tmpfiles 다운로드 직링크 복구 & 드라이브 백업)
 // ========================================================
 async function generateImageQRCode() {
   const btn = document.getElementById('btnSaveQR'); 
@@ -2298,28 +2329,41 @@ async function generateImageQRCode() {
   const base64Img = canvas.toDataURL('image/png');
   const fileName = `[추억의네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
 
-  let qrTargetUrl = window.location.href;
+  // 1) 백그라운드 구글 드라이브(추억의네컷_저장소) 자동 백업
+  uploadMediaToGoogleDrive(extractPureBase64(base64Img), 'image', fileName, 'image/png').catch(() => {});
 
-  // 구글 드라이브 업로드 비동기 시도 (최대 4초)
-  try {
-    const uploadPromise = uploadMediaToGoogleDrive(base64Img, 'image', fileName, 'image/png');
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000));
-    const uploadResult = await Promise.race([uploadPromise, timeoutPromise]);
+  // 2) 🌟 스마트폰 카메라 스캔 즉시 다운로드 가능한 직링크(tmpfiles.org/dl/...) 복원
+  canvas.toBlob(async (blob) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', blob, fileName);
 
-    if (uploadResult && uploadResult.success && uploadResult.fileUrl) {
-      qrTargetUrl = uploadResult.fileUrl;
+      const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', {
+        method: 'POST',
+        body: formData
+      }).then(r => r.json());
+
+      if (btn) { 
+        btn.disabled = false; 
+        btn.innerHTML = `<span>📱 QR코드 생성 (이미지 다운로드)</span>`; 
+      }
+      if (window.lucide) lucide.createIcons();
+
+      if (uploadRes && uploadRes.status === 'success' && uploadRes.data && uploadRes.data.url) { 
+        const dlUrl = uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+        displayResultWithQR(dlUrl); 
+      } else { 
+        displayResultWithQR(window.location.href); 
+      }
+    } catch (err) {
+      if (btn) { 
+        btn.disabled = false; 
+        btn.innerHTML = `<span>📱 QR코드 생성 (이미지 다운로드)</span>`; 
+      }
+      if (window.lucide) lucide.createIcons();
+      displayResultWithQR(window.location.href);
     }
-  } catch (err) {
-    console.warn("구글 드라이브 지연으로 웹앱 URL로 폴백 QR 생성:", err);
-  }
-
-  if (btn) { 
-    btn.disabled = false; 
-    btn.innerHTML = `<span>📱 QR코드 생성 (이미지 다운로드)</span>`; 
-  }
-  if (window.lucide) lucide.createIcons();
-
-  displayResultWithQR(qrTargetUrl);
+  }, 'image/png');
 }
 
 async function uploadMediaToGoogleDrive(base64Data, fileType, fileName, mimeType) {
