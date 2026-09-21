@@ -1,14 +1,18 @@
 /**
- * 추억의 네컷 Studio Pro v14.4.1
- * [v14.4.1 핵심 개선 사항]
- * 1. 후기 등록 및 조회 시 '?api=true' 강제 호출로 전 기기 실시간 100% 동기화 (로컬 갇힘 해결)
- * 2. 5대 세부 기기 판별 (아이폰, 안드로이드폰, 아이패드, 안드로이드패드, PC)
- * 3. 기기별 도넛 차트 전체 누적 데이터 연동 (접속 기기만 나오던 오류 해결)
- * 4. 접속 지역 영문 자동 포맷팅 ('South Korea Suwon' 등)
- * 5. 웹앱 공유 버튼 (shareWebAppUrl) 탑재
+ * 추억의 네컷 Studio Pro v15.0
+ * 
+ * [v15.0 핵심 업데이트]
+ * 1. 촬영 전 규격 선(先) 선택 시스템:
+ *    - 1×4 세로 스트립 (가로 3:2 와이드 뷰파인더 & 크롭)
+ *    - 2×2 와이드 엽서형 (세로 4:5 맞춤 뷰파인더 & 크롭 -> 좌우 짤림 원천 차단)
+ * 2. 구글 드라이브(추억의네컷_저장소) 다이렉트 업로드:
+ *    - 사진(PNG) 및 4컷 비디오(WebM/MP4) 구글 드라이브 자동 저장
+ *    - 임시서버가 아닌 구글 드라이브 영구 고유 링크 기반 QR코드 생성
+ * 3. 6종 스페셜 프레임 테마 (포토이지, 추억의네컷, 인생4컷, 포토이즘, 야구, 생일)
+ * 4. 5대 세부 접속 기기(아이폰, 안드로이드폰, 아이패드, 안드로이드패드, PC) 및 영문 지역 통계
  */
 
-// 🌟 본인의 구글 앱스 스크립트 배포 URL
+// 🌟 구글 앱스 스크립트 웹앱 배포 URL
 const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
 
 function getFormattedTodayDate() {
@@ -39,6 +43,7 @@ const FILTER_PRESETS = {
 
 let appState = {
   isAdmin: false, stream: null, facingMode: 'user', timerSec: 6, currentCount: 6, countdownTimer: null,
+  selectedFormat: 'strip', // 'strip' (1x4) or 'grid' (2x2)
   shotImages: [], selectedImages: [], selectedIndices: [null, null, null, null], activeSlotIndex: 0,
   stickers: [], recentStickers: [], selectedStickerIdx: -1, dragTarget: null, dragStartPos: { x: 0, y: 0 },
   layout: 'strip', frameStyle: 'simple', frameThickness: 40, frameColor: '#000000',
@@ -58,7 +63,7 @@ let panStartY = 0;
 let currentRatingValue = 5.0;
 
 // ========================================================
-// 1. UI 및 프리셋 초기화
+// 1. UI 동적 바인딩 & 프리셋 초기화
 // ========================================================
 function initDynamicUI() {
   const fonts = [
@@ -140,7 +145,40 @@ function renderRecentStickers() {
 }
 
 // ========================================================
-// 2. 관리자 인증 & 대시보드 통계
+// 2. 🌟 규격 선(先) 선택 & 뷰파인더 마스킹 전환
+// ========================================================
+function startSessionWithFormat(format) {
+  appState.selectedFormat = format; // 'strip' | 'grid'
+  appState.layout = format;
+
+  const liveBadge = document.getElementById('liveFormatBadge');
+  if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
+  
+  const editBadge = document.getElementById('editorFormatBadge');
+  if (editBadge) editBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
+
+  // 뷰파인더 박스 비율 동적 전환
+  const box = document.getElementById('dynamicViewfinderBox');
+  const ratioBadge = document.getElementById('viewfinderRatioBadge');
+  if (box) {
+    if (format === 'strip') {
+      box.className = "w-full aspect-[3/2] border border-white/60 relative flex items-center justify-center transition-all duration-300";
+      if (ratioBadge) ratioBadge.textContent = "3:2 가로촬영";
+    } else {
+      box.className = "w-[68vw] max-w-[340px] aspect-[4/5] border border-white/60 relative flex items-center justify-center transition-all duration-300";
+      if (ratioBadge) ratioBadge.textContent = "4:5 세로촬영";
+    }
+  }
+
+  startPhotoSession();
+}
+
+function restartSessionWithCurrentFormat() {
+  startSessionWithFormat(appState.selectedFormat || 'strip');
+}
+
+// ========================================================
+// 3. 관리자 센터 & 대시보드 통계
 // ========================================================
 function promptAdminMode() {
   const now = Date.now();
@@ -248,7 +286,6 @@ function renderCharts() {
     });
   }
 
-  // 🌟 구글 시트에서 집계된 5종 세부 기기 전체 누적 분포 바인딩
   const deviceCounts = JSON.parse(localStorage.getItem('chueok_device_stats') || '{}');
   const deviceLabels = ["아이폰", "안드로이드폰", "아이패드", "안드로이드패드", "PC", "기타"];
   const deviceData = deviceLabels.map(k => deviceCounts[k] || 0);
@@ -292,7 +329,7 @@ function renderAdminLocationStats() {
 }
 
 // ========================================================
-// 3. 10종 테마 색상 설정
+// 4. 10종 UI 테마 바인딩
 // ========================================================
 const APP_THEMES = {
   rose:   { color: '#f43f5e', hover: '#e11d48', light: '#fff1f2', name: '로즈 핑크' },
@@ -328,7 +365,7 @@ function applyAppTheme(themeKey) {
     window.event.currentTarget.classList.add('border-theme', 'border-2');
   }
 
-  alert(`[${t.name}] 테마가 전체 화면에 즉시 적용되었습니다!`);
+  alert(`[${t.name}] 테마가 전체 화면에 적용되었습니다!`);
 }
 
 function loadSavedTheme() {
@@ -342,23 +379,17 @@ function loadSavedTheme() {
 }
 
 // ========================================================
-// 4. 🌟 5종 세부 기기 판별 & 영문 위치 텔레메트리
+// 5. 정밀 텔레메트리 & 중앙 DB 동기화
 // ========================================================
 function detectCurrentDevice() {
   const ua = navigator.userAgent;
-  // 1. 아이폰
   if (/iPhone/i.test(ua)) return "아이폰";
-  // 2. 아이패드 (iPadOS 데스크톱 모드 MacIntel 터치 포함)
   if (/iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "아이패드";
-  // 3. 안드로이드폰 vs 안드로이드패드
   if (/Android/i.test(ua)) {
     if (/Mobile/i.test(ua)) return "안드로이드폰";
     return "안드로이드패드";
   }
-  // 4. PC 데스크톱 및 랩톱
-  if (/Macintosh|Mac OS X/i.test(ua) || /Windows/i.test(ua) || /Linux/i.test(ua) || /CrOS/i.test(ua)) {
-    return "PC";
-  }
+  if (/Macintosh|Mac OS X|Windows|Linux|CrOS/i.test(ua)) return "PC";
   return "기타";
 }
 
@@ -371,22 +402,18 @@ async function collectDeviceTelemetry() {
   else if (/Android/i.test(ua)) os = "Android";
   else if (/Windows/i.test(ua)) os = "Windows";
   else if (/Macintosh|Mac OS X/i.test(ua)) os = "macOS";
-  else if (/Linux/i.test(ua)) os = "Linux";
 
   let browser = "기타 브라우저";
   if (/KAKAOTALK/i.test(ua)) browser = "카카오톡 인앱";
   else if (/Instagram/i.test(ua)) browser = "인스타그램 인앱";
   else if (/NAVER/i.test(ua)) browser = "네이버 인앱";
   else if (/Whale/i.test(ua)) browser = "네이버 웨일";
-  else if (/Edg/i.test(ua)) browser = "Edge";
   else if (/Chrome/i.test(ua)) browser = "Chrome";
   else if (/Safari/i.test(ua)) browser = "Safari";
-  else if (/Firefox/i.test(ua)) browser = "Firefox";
 
   const screenRes = `${window.screen.width} x ${window.screen.height}`;
   const viewportRes = `${window.innerWidth} x ${window.innerHeight}`;
 
-  // 🌟 영어 표기 규격: e.g. "South Korea Suwon"
   let locationText = "South Korea Suwon";
   try {
     const controller = new AbortController();
@@ -419,7 +446,6 @@ async function trackVisitorAccess() {
   let todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '1', 10);
   let totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '2180', 10);
 
-  // 🌟 핵심: ?api=true&_t= 파라미터로 구글 시트의 전체 누적 데이터 수신
   try {
     const res = await fetch(`${GOOGLE_DB_URL}?api=true&_t=${Date.now()}`);
     if (res.ok) {
@@ -449,10 +475,7 @@ async function trackVisitorAccess() {
       const postRes = await fetch(GOOGLE_DB_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action: 'VISIT',
-          ...telemetry
-        })
+        body: JSON.stringify({ action: 'VISIT', ...telemetry })
       });
       if (postRes.ok) {
         const postData = await postRes.json();
@@ -480,12 +503,11 @@ async function trackVisitorAccess() {
   if (totalEl) totalEl.textContent = totalVisits.toLocaleString();
 }
 
-// 🌟 웹앱 공유하기 버튼 함수 (고객소리함 우측)
 async function shareWebAppUrl() {
   const shareUrl = window.location.href.split('?')[0];
   const shareData = {
     title: '추억의 네컷 Studio Pro',
-    text: '언제 어디서나 감성 가득한 네컷 사진을 촬영하고 꾸며보세요! 📸',
+    text: '감성 가득한 셀프 네컷 사진을 촬영하고 꾸며보세요! 📸',
     url: shareUrl
   };
 
@@ -498,26 +520,21 @@ async function shareWebAppUrl() {
     }
   }
 
-  // 클립보드 복사 폴백
   try {
     await navigator.clipboard.writeText(shareUrl);
-    alert("스튜디오 링크가 클립보드에 복사되었습니다!\n친구들에게 공유해 보세요. 📋");
+    alert("스튜디오 링크가 클립보드에 복사되었습니다! 📋");
   } catch (err) {
-    prompt("아래 링크를 복사하여 공유하세요:", shareUrl);
+    prompt("링크를 복사하여 공유하세요:", shareUrl);
   }
 }
 
 // ========================================================
-// 5. 🌟 이용 후기 & 별점 (전체 기기 100% 실시간 공유)
+// 6. 이용 후기 (전체 기기 100% 실시간 공유)
 // ========================================================
 function handleStarClick(starNum) {
-  if (currentRatingValue === starNum - 0.5) {
-    currentRatingValue = starNum;
-  } else if (currentRatingValue === starNum) {
-    currentRatingValue = starNum - 0.5;
-  } else {
-    currentRatingValue = starNum - 0.5;
-  }
+  if (currentRatingValue === starNum - 0.5) currentRatingValue = starNum;
+  else if (currentRatingValue === starNum) currentRatingValue = starNum - 0.5;
+  else currentRatingValue = starNum - 0.5;
   updateRatingUI(currentRatingValue);
 }
 
@@ -531,7 +548,6 @@ function updateRatingUI(val) {
   for (let i = 1; i <= 5; i++) {
     const starEl = document.getElementById('star' + i);
     if (!starEl) continue;
-
     if (num >= i) {
       starEl.textContent = '★';
       starEl.className = 'text-amber-500 transition hover:scale-110 cursor-pointer';
@@ -545,7 +561,6 @@ function updateRatingUI(val) {
   }
 }
 
-// 🌟 ?api=true&_t= 로 구글 시트의 전체 후기를 실시간 동기화
 async function fetchCloudBoardPosts() {
   try {
     const res = await fetch(`${GOOGLE_DB_URL}?api=true&_t=${Date.now()}`);
@@ -642,7 +657,6 @@ async function submitBoardPost() {
   btn.disabled = true; 
   btn.textContent = "업로드 중...";
 
-  // 낙관적 UI 업데이트
   const tempPost = {
     id: Date.now(),
     nickname: nickname,
@@ -662,14 +676,8 @@ async function submitBoardPost() {
     await fetch(GOOGLE_DB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'ADD_REVIEW',
-        nickname: nickname,
-        rating: rating,
-        content: content
-      })
+      body: JSON.stringify({ action: 'ADD_REVIEW', nickname: nickname, rating: rating, content: content })
     });
-    // 구글 시트 저장 후 즉시 최신 전체 후기 재동기화
     setTimeout(fetchCloudBoardPosts, 500);
   } catch (err) {
     console.warn("후기 동기화 지연:", err);
@@ -692,10 +700,7 @@ async function deleteReviewPost(id) {
     await fetch(GOOGLE_DB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'DELETE_REVIEW',
-        id: id
-      })
+      body: JSON.stringify({ action: 'DELETE_REVIEW', id: id })
     });
     setTimeout(fetchCloudBoardPosts, 500);
   } catch (e) {}
@@ -707,7 +712,7 @@ function escapeHtml(str) {
 }
 
 // ========================================================
-// 6. 고객소리함 (정확한 기기환경 자동 첨부)
+// 7. 고객소리함 (문의 접수)
 // ========================================================
 function openCustomerBotModal() {
   document.getElementById('customerBotModal').classList.remove('hidden');
@@ -748,7 +753,7 @@ async function sendCustomerBotMessage() {
   setTimeout(async () => {
     let replyComment = "";
     if (email) {
-      replyComment = `소중한 의견이 정상적으로 접수되었습니다. 남겨주신 피드백을 바탕으로 시스템을 개선하며, 기재해주신 이메일(<b>${escapeHtml(email)}</b>)로 검토 후 상세히 답변드리도록 하겠습니다. 감사합니다! 💖`;
+      replyComment = `소중한 의견이 정상적으로 접수되었습니다. 남겨주신 피드백을 바탕으로 시스템을 개선하며, 기재해주신 이메일(<b>${escapeHtml(email)}</b>)로 검토 후 상세히 답변드리겠습니다. 감사합니다! 💖`;
     } else {
       replyComment = `남겨주신 소중한 의견이 정상 접수되었습니다! 보내주신 내용을 토대로 서비스 개선에 적극 반영하겠습니다. (※ 개별 답변이 필요하신 경우 이메일 주소를 함께 남겨주시면 감사하겠습니다.) 😊`;
     }
@@ -781,15 +786,15 @@ async function sendCustomerBotMessage() {
 }
 
 // ========================================================
-// 7. 공지사항 관리
+// 8. 공지사항
 // ========================================================
 function getStoredNotices() {
   const stored = localStorage.getItem('vibe_notices');
   let list = [];
   if (stored) { try { list = JSON.parse(stored); } catch(e) { list = []; } }
-  list = list.filter(n => !n.version || n.version === 'v14.4');
-  if (!list.some(n => n.version === 'v14.4')) {
-    list.unshift({ id: 'v14_4', date: getFormattedTodayDate(), version: 'v14.4', content: '실시간 전 기기 후기 공유, 5종 기기 통계 및 스튜디오 공유 버튼 신설 완료!' });
+  list = list.filter(n => !n.version || n.version === 'v15.0');
+  if (!list.some(n => n.version === 'v15.0')) {
+    list.unshift({ id: 'v15_0', date: getFormattedTodayDate(), version: 'v15.0', content: '1x4 및 2x2 규격 선선택 맞춤촬영 & 구글 드라이브 영구 QR 저장 엔진 탑재 완료!' });
   }
   localStorage.setItem('vibe_notices', JSON.stringify(list));
   return list;
@@ -843,7 +848,7 @@ function renderAdminNoticeManageList() {
 function writeAdminNotice() {
   const content = prompt("새 공지사항 내용을 입력하세요:\n(작성일 기준 14일 동안 홈 화면에 노출됩니다)");
   if (!content || !content.trim()) return;
-  const newNotice = { id: Date.now().toString(), date: getFormattedTodayDate(), version: 'v14.4', content: content.trim() };
+  const newNotice = { id: Date.now().toString(), date: getFormattedTodayDate(), version: 'v15.0', content: content.trim() };
   const list = getStoredNotices();
   list.unshift(newNotice);
   localStorage.setItem('vibe_notices', JSON.stringify(list));
@@ -862,7 +867,7 @@ function deleteNotice(id) {
 }
 
 // ========================================================
-// 8. 오디오 & 셔터 효과
+// 9. 오디오 & 셔터 효과
 // ========================================================
 let audioCtx = null;
 function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
@@ -875,13 +880,13 @@ function playRealisticShutter() {
 function setTimerSec(sec, btn) { 
   appState.timerSec = sec; 
   document.querySelectorAll('.timer-chip').forEach(b => { 
-    b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold py-1 rounded-lg text-[11px] transition"; 
+    b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded text-[10px]"; 
   }); 
-  btn.className = "timer-chip bg-theme text-white font-bold py-1 rounded-lg text-[11px] shadow-xs transition"; 
+  btn.className = "timer-chip bg-theme text-white font-bold px-1.5 py-0.5 rounded text-[10px] shadow-xs"; 
 }
 
 // ========================================================
-// 9. 카메라 촬영 세션 (거울 모드 캡처)
+// 10. 🌟 규격별 맞춤 카메라 촬영 & 크롭 엔진
 // ========================================================
 async function startPhotoSession() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
@@ -989,16 +994,21 @@ function triggerInstantOneSec() {
   }, 1000);
 }
 
+// 🌟 선택된 규격(3:2 가로 vs 4:5 세로)에 맞춘 정밀 캔버스 크롭
 function captureWebcamFrame(shotIndex, onDone) {
   playRealisticShutter(); 
   flashScreen();
   const video = document.getElementById('liveWebcamVideo');
-  const guide = document.getElementById('viewfinder32Box');
+  const guide = document.getElementById('dynamicViewfinderBox');
   const canvas = document.getElementById('hiddenSnapCanvas');
   if (!video || !guide || !canvas) return;
 
-  canvas.width = 720; canvas.height = 480;
+  const isStrip = (appState.selectedFormat === 'strip');
+  // 1x4 스트립: 720 x 480 (3:2) | 2x2 엽서형: 576 x 720 (4:5)
+  canvas.width = isStrip ? 720 : 576;
+  canvas.height = isStrip ? 480 : 720;
   const ctx = canvas.getContext('2d');
+
   const vRect = video.getBoundingClientRect(); 
   const gRect = guide.getBoundingClientRect();
 
@@ -1032,7 +1042,10 @@ function captureWebcamFrame(shotIndex, onDone) {
   img.onload = () => {
     appState.shotImages.push(img);
     const thumb = document.getElementById(`liveThumb${shotIndex}`);
-    if (thumb) { thumb.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`; thumb.className = "w-12 h-8 border-2 border-theme overflow-hidden shadow-lg"; }
+    if (thumb) { 
+      thumb.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`; 
+      thumb.className = "w-12 h-8 border-2 border-theme overflow-hidden shadow-lg"; 
+    }
     if (onDone) onDone();
   };
   img.src = canvas.toDataURL('image/jpeg', 0.92);
@@ -1051,7 +1064,7 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 10. 사진 선택 화면 & 스페셜 6종 테마 프리뷰
+// 11. 사진 선택 화면 (규격별 미니프리뷰 형태 자동 변환)
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
@@ -1060,14 +1073,25 @@ function renderPickScreen() {
   updatePreviewSlots();
   setPickPreviewTheme(appState.frameStyle || 'simple', null);
 
+  const miniFrame = document.getElementById('pickMiniFramePreview');
+  if (miniFrame) {
+    if (appState.selectedFormat === 'grid') {
+      miniFrame.className = "w-44 sm:w-48 aspect-[2/3] bg-black p-2.5 shadow-2xl flex flex-col space-y-1.5 border border-slate-300 rounded-md";
+    } else {
+      miniFrame.className = "w-40 sm:w-44 bg-black p-2 shadow-2xl flex flex-col space-y-1 border border-slate-300 rounded-md";
+    }
+  }
+
   const grid = document.getElementById('pickGrid'); 
   if (!grid) return; 
   grid.innerHTML = '';
 
+  const isGridFormat = (appState.selectedFormat === 'grid');
+
   appState.shotImages.forEach((img, idx) => {
     const card = document.createElement('div'); 
     card.id = `pickCard_${idx}`; 
-    card.className = "relative aspect-[3/2] rounded-2xl overflow-hidden border-2 border-slate-300 bg-slate-200 cursor-pointer group active:scale-95 transition shadow-sm";
+    card.className = `relative ${isGridFormat ? 'aspect-[4/5]' : 'aspect-[3/2]'} rounded-2xl overflow-hidden border-2 border-slate-300 bg-slate-200 cursor-pointer group active:scale-95 transition shadow-sm`;
     card.innerHTML = `
       <img src="${img.src}" class="w-full h-full object-cover">
       <div class="absolute bottom-2 left-2 bg-black/75 backdrop-blur text-white font-black text-xs px-2 py-0.5 rounded-md">
@@ -1152,10 +1176,12 @@ function assignPhotoToCurrentSlot(shotIdx) {
 }
 
 function updatePreviewSlots() {
+  const isGrid = (appState.selectedFormat === 'grid');
   for (let i = 0; i < 4; i++) {
     const shotIdx = appState.selectedIndices[i]; 
     const slotEl = document.getElementById(`previewSlot${i}`);
     if (slotEl) { 
+      slotEl.className = `${isGrid ? 'aspect-[4/5]' : 'aspect-[3/2]'} bg-slate-900 border-2 ${i === appState.activeSlotIndex ? 'border-theme' : 'border-transparent'} flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative`;
       if (shotIdx !== null && appState.shotImages[shotIdx]) { 
         slotEl.innerHTML = `<img src="${appState.shotImages[shotIdx].src}" class="w-full h-full object-cover">`; 
       } else { 
@@ -1197,7 +1223,7 @@ function confirmSelectedFour() {
 function resetEditorToDefault() {
   appState.stickers = []; 
   appState.selectedStickerIdx = -1; 
-  appState.layout = 'strip'; 
+  appState.layout = appState.selectedFormat || 'strip'; 
   appState.frameThickness = 40; 
   appState.frameColor = (appState.frameStyle === 'photoism') ? '#0A0A0A' : ((appState.frameStyle === 'baseball') ? '#FAF7EE' : ((appState.frameStyle === 'birthday') ? '#FDFBF7' : '#000000'));
   appState.activeFilter = 'normal'; 
@@ -1223,7 +1249,7 @@ function resetEditorToDefault() {
 }
 
 // ========================================================
-// 11. 앨범 업로드
+// 12. 앨범 업로드
 // ========================================================
 function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
 
@@ -1272,7 +1298,7 @@ function updateGalleryCollectModal() {
 function cancelGalleryCollect() { galleryAccumulator = []; const m = document.getElementById('galleryCollectModal'); if (m) m.classList.add('hidden'); }
 
 // ========================================================
-// 12. 핀치 줌 & 패닝(Pan)
+// 13. 핀치 줌 & 패닝(Pan)
 // ========================================================
 function zoomCanvas(amount) {
   canvasZoom = Math.max(0.4, Math.min(3.0, canvasZoom + amount));
@@ -1521,7 +1547,7 @@ function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx
 function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
 
 // ========================================================
-// 13. 캔버스 인터랙션 & 패닝(Pan)
+// 14. 캔버스 인터랙션 & 패닝(Pan)
 // ========================================================
 function initCanvasInteractions() {
   const canvas = document.getElementById('photoCanvas');
@@ -1603,45 +1629,37 @@ function initCanvasInteractions() {
 }
 
 // ========================================================
-// 14. 메인 캔버스 렌더링 (2×2 슬림화 & 6종 테마)
+// 15. 🌟 메인 캔버스 렌더링 (1×4 스트립 vs 2×2 엽서형)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return; 
   const ctx = canvas.getContext('2d');
   if (!appState.selectedImages || appState.selectedImages.length < 4) return;
-  const layout = appState.layout; 
+  const layout = appState.selectedFormat || 'strip'; 
   const sigInp = document.getElementById('frameSignatureInput'); 
   const customTitle = sigInp ? sigInp.value : 'sangsangPhoto';
   const pad = appState.frameThickness; 
   const gap = Math.round(pad * 0.5);
   const fStyle = appState.frameStyle;
 
+  // 1. 규격별 해상도 결정
+  // 1×4 스트립: 800 × 2400 px (미국 표준 2×6인치)
+  // 2×2 엽서형: 1200 × 1800 px (표준 4×6인치 엽서 비율)
   if (layout === 'strip') {
     canvas.width = 800; canvas.height = 2400;
   } else if (layout === 'grid') {
-    canvas.width = 1100;
-    const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = Math.round(imgW * (2 / 3));
-    const bannerH = (fStyle === 'middle') ? 150 : 0;
-    const topH = (fStyle === 'simple' || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 120 : (fStyle === 'bottom' ? 45 : pad + 20);
-    const bottomH = (fStyle === 'bottom' || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 180 : (fStyle === 'simple' ? 50 : pad + 20);
-
-    if (fStyle === 'middle') {
-      canvas.height = pad + 10 + imgH + gap + bannerH + gap + imgH + pad + 20;
-    } else {
-      canvas.height = topH + (imgH * 2) + gap + bottomH;
-    }
-  } else if (layout === 'twin') {
     canvas.width = 1200; canvas.height = 1800;
   }
-  
+
+  // 테마 배경색상
   if (fStyle === 'photoism') ctx.fillStyle = '#0A0A0A';
   else if (fStyle === 'baseball') ctx.fillStyle = '#FAF7EE';
   else if (fStyle === 'birthday') ctx.fillStyle = '#FDFBF7';
   else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // 2. 1×4 스트립 렌더링 (사진 비율: 가로 3:2)
   if (layout === 'strip') {
     if (fStyle === 'middle') {
       const bannerH = 160; 
@@ -1672,21 +1690,25 @@ function renderStrip(isFinalExport = false) {
       }
     }
   } 
+  // 3. 2×2 엽서형 렌더링 (사진 비율: 세로 4:5 완벽 매칭 -> 좌우 짤림 제로)
   else if (layout === 'grid') {
     const isBottom = (fStyle === 'bottom'); 
-    const bannerH = (fStyle === 'middle') ? 150 : 0;
-    const topHeaderH = (fStyle === 'simple' || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 120 : (isBottom ? 45 : pad + 20);
-    const bottomFooterH = (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 180 : (fStyle === 'simple' ? 50 : pad + 20);
+    const bannerH = (fStyle === 'middle') ? 140 : 0;
+    const topHeaderH = (fStyle === 'simple' || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 140 : (isBottom ? 45 : pad + 20);
+    const bottomFooterH = (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') ? 190 : (fStyle === 'simple' ? 50 : pad + 20);
+
     const imgW = (canvas.width - (pad * 2) - gap) / 2; 
-    const imgH = Math.round(imgW * (2 / 3));
+    const imgH = Math.round(imgW * 1.25); // 4:5 세로 비율 매칭
 
     if (fStyle === 'middle') {
-      const topY = pad + 10;
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, topY, imgW, imgH); 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, topY, imgW, imgH); 
+      const totalContentH = (imgH * 2) + gap + bannerH;
+      const startY = Math.max(pad, (canvas.height - totalContentH) / 2);
 
-      const bannerY = topY + imgH + gap; 
-      drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle, 32); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, startY, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, startY, imgW, imgH); 
+
+      const bannerY = startY + imgH + gap; 
+      drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle, 34); 
 
       const lowerY = bannerY + bannerH + gap; 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerY, imgW, imgH); 
@@ -1704,52 +1726,12 @@ function renderStrip(isFinalExport = false) {
       }
       if (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') {
         const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
-        drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle, 30);
+        drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle, 32);
       }
     }
-  } 
-  else if (layout === 'twin') {
-    const stripW = (canvas.width / 2) - 20; 
-    const padX = pad * 0.65; 
-    const imgW = stripW - (padX * 2);
-    if (fStyle === 'middle') {
-      const bannerH = 120; 
-      const imgH = (canvas.height - (pad * 2) - bannerH - (gap * 3)) / 4;
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], 10 + padX, pad, imgW, imgH); 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], 10 + padX, pad + imgH + gap, imgW, imgH); 
-      drawMiddleBanner(ctx, stripW / 2, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 26); 
-      const lowerY = pad + (imgH * 2) + (gap * 2) + bannerH + gap; 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], 10 + padX, lowerY, imgW, imgH); 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], 10 + padX, lowerY + imgH + gap, imgW, imgH); 
-      const rx = canvas.width / 2 + 10; 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], rx + padX, pad, imgW, imgH); 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], rx + padX, pad + imgH + gap, imgW, imgH); 
-      drawMiddleBanner(ctx, rx + (stripW / 2) - 10, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 26); 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], rx + padX, lowerY, imgW, imgH); 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], rx + padX, lowerY + imgH + gap, imgW, imgH); 
-    } else {
-      const isBottom = (fStyle === 'bottom'); 
-      const topHeaderH = isBottom ? 35 : 95; 
-      const bottomFooterH = isBottom ? 160 : 35; 
-      const imgH = (canvas.height - topHeaderH - bottomFooterH - 20 - (gap * 3)) / 4;
-      renderHeaderOrDecor(ctx, 10, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottom, true); 
-      for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], 10 + padX, 10 + topHeaderH + (i * (imgH + gap)), imgW, imgH); }
-      if (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') {
-        const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
-        drawBottomStyleFooter(ctx, stripW / 2, footerCenterY, customTitle, 26);
-      }
-      const rx = canvas.width / 2 + 10; 
-      renderHeaderOrDecor(ctx, rx, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottom, true); 
-      for (let i = 0; i < 4; i++) { drawFilteredSlotPhoto(ctx, appState.selectedImages[i], rx + padX, 10 + topHeaderH + (i * (imgH + gap)), imgW, imgH); }
-      if (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday') {
-        const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
-        drawBottomStyleFooter(ctx, rx + (stripW / 2) - 10, footerCenterY, customTitle, 26);
-      }
-    }
-    ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(canvas.width / 2, 20); ctx.lineTo(canvas.width / 2, canvas.height - 20); ctx.stroke(); ctx.font = '22px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('✂️', canvas.width / 2, 60); ctx.fillText('✂️', canvas.width / 2, canvas.height / 2); ctx.fillText('✂️', canvas.width / 2, canvas.height - 60); ctx.restore();
   }
 
-  // 스티커 렌더링
+  // 스티커 그리기
   appState.stickers.forEach((st, idx) => {
     ctx.save();
     ctx.translate(st.x, st.y);
@@ -1776,43 +1758,43 @@ function renderStrip(isFinalExport = false) {
   });
 }
 
-function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin = false) {
+function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom) {
   const fStyle = appState.frameStyle;
   ctx.save();
 
   if (fStyle === 'photoism') {
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `700 ${isTwin ? 24 : 36}px 'Playfair Display', serif`;
+    ctx.font = `700 38px 'Playfair Display', serif`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText("photoism", bx + bw - (isTwin ? 20 : 35), by + (topH / 2) + 5);
+    ctx.fillText("photoism", bx + bw - 35, by + (topH / 2) + 5);
 
-    ctx.font = `bold ${isTwin ? 11 : 14}px monospace`;
+    ctx.font = `bold 14px monospace`;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.textAlign = 'left';
-    ctx.fillText('▶ 5', bx + (isTwin ? 15 : 25), by + (topH / 2) + 5);
+    ctx.fillText('▶ 5', bx + 25, by + (topH / 2) + 5);
   }
   else if (fStyle === 'baseball') {
     ctx.fillStyle = '#1E3A8A';
-    ctx.font = `900 ${isTwin ? 22 : 36}px 'Black Han Sans', sans-serif`;
+    ctx.font = `900 38px 'Black Han Sans', sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText("⚾ Play Baseball", bx + (isTwin ? 15 : 25), by + (topH / 2) - 6);
+    ctx.fillText("⚾ Play Baseball", bx + 25, by + (topH / 2) - 6);
 
     ctx.fillStyle = '#DC2626';
-    ctx.font = `bold ${isTwin ? 10 : 13}px 'Pretendard', sans-serif`;
-    ctx.fillText("오늘도, 우리는 야구를 한다!", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
+    ctx.font = `bold 14px 'Pretendard', sans-serif`;
+    ctx.fillText("오늘도, 우리는 야구를 한다!", bx + 25, by + (topH / 2) + 20);
   }
   else if (fStyle === 'birthday') {
     ctx.fillStyle = '#E11D48';
-    ctx.font = `900 ${isTwin ? 22 : 36}px 'Playfair Display', serif`;
+    ctx.font = `900 38px 'Playfair Display', serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText("🎂 Happy Birthday", bx + (isTwin ? 15 : 25), by + (topH / 2) - 6);
+    ctx.fillText("🎂 Happy Birthday", bx + 25, by + (topH / 2) - 6);
 
     ctx.fillStyle = '#9F1239';
-    ctx.font = `bold ${isTwin ? 10 : 13}px 'Pretendard', sans-serif`;
-    ctx.fillText("오늘은 너라는 기적이 태어난 날! ♡", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
+    ctx.font = `bold 14px 'Pretendard', sans-serif`;
+    ctx.fillText("오늘은 너라는 기적이 태어난 날! ♡", bx + 25, by + (topH / 2) + 20);
   }
   else if (!isBottom && fStyle === 'simple') {
     const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827'); 
@@ -1820,19 +1802,19 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
     const weight = appState.typography.isBold ? '900' : 'bold';
 
     ctx.fillStyle = textColor; 
-    ctx.font = `${weight} ${isTwin ? 26 : 38}px '${appState.typography.fontFamily}', serif`; 
+    ctx.font = `${weight} 38px '${appState.typography.fontFamily}', serif`; 
     ctx.textAlign = 'right'; 
     ctx.textBaseline = 'middle'; 
-    ctx.fillText(title, bx + bw - (isTwin ? 20 : 35), by + (topH / 2) + 5);
-    ctx.font = `bold ${isTwin ? 10 : 13}px monospace`; 
+    ctx.fillText(title, bx + bw - 35, by + (topH / 2) + 5);
+    ctx.font = `bold 13px monospace`; 
     ctx.textAlign = 'left'; 
-    ctx.fillText('◀◀ A beautiful memory is a picture ▶▶', bx + (isTwin ? 15 : 25), by + (topH / 2) + 5);
-    ctx.font = `bold ${isTwin ? 11 : 14}px monospace`; 
+    ctx.fillText('◀◀ A beautiful memory is a picture ▶▶', bx + 25, by + (topH / 2) + 5);
+    ctx.font = `bold 14px monospace`; 
     ctx.fillStyle = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)'; 
     ctx.fillText('▶ 4', bx + 14, by + (bh * 0.28)); 
     ctx.fillText('▶ 5', bx + 14, by + (bh * 0.72));
-    ctx.save(); ctx.translate(bx + bw - 14, by + (bh * 0.35)); ctx.rotate(Math.PI / 2); ctx.font = `900 ${isTwin ? 9 : 12}px monospace`; ctx.letterSpacing = "2px"; ctx.fillText("KEEP YOUR MEMORY", 0, 0); ctx.restore();
-    ctx.save(); ctx.translate(bx + bw - 14, by + (bh * 0.78)); ctx.rotate(Math.PI / 2); ctx.font = `900 ${isTwin ? 9 : 12}px monospace`; ctx.fillText("PHOTO.IS", 0, 0); ctx.restore();
+    ctx.save(); ctx.translate(bx + bw - 14, by + (bh * 0.35)); ctx.rotate(Math.PI / 2); ctx.font = `900 12px monospace`; ctx.letterSpacing = "2px"; ctx.fillText("KEEP YOUR MEMORY", 0, 0); ctx.restore();
+    ctx.save(); ctx.translate(bx + bw - 14, by + (bh * 0.78)); ctx.rotate(Math.PI / 2); ctx.font = `900 12px monospace`; ctx.fillText("PHOTO.IS", 0, 0); ctx.restore();
   }
   ctx.restore();
 }
@@ -2016,9 +1998,68 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 }
 
 // ========================================================
-// 15. 비디오 / PDF / 공유 및 QR 생성
+// 16. 🌟 구글 드라이브 다이렉트 업로드 & 영구 QR 엔진
 // ========================================================
-async function autoSaveVideo() {
+async function uploadMediaToGoogleDrive(base64Data, fileType, fileName, mimeType) {
+  try {
+    const res = await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'UPLOAD_MEDIA',
+        base64Data: base64Data,
+        fileType: fileType,
+        fileName: fileName,
+        mimeType: mimeType
+      })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("구글 드라이브 업로드 통신 에러:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+// 🌟 사진 캔버스를 구글 드라이브에 올리고 영구 링크 QR 생성
+async function saveAndGenerateQRToDrive() {
+  const btn = document.getElementById('btnSaveQR'); 
+  if (btn) { 
+    btn.disabled = true; 
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>구글 드라이브 업로드 중...</span>`; 
+  }
+  if (window.lucide) lucide.createIcons();
+
+  renderStrip(true); 
+  const canvas = document.getElementById('photoCanvas'); 
+  if (!canvas) return;
+
+  const base64Img = canvas.toDataURL('image/png');
+  const fileName = `[추억의네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
+
+  try {
+    const uploadResult = await uploadMediaToGoogleDrive(base64Img, 'image', fileName, 'image/png');
+    if (btn) { 
+      btn.disabled = false; 
+      btn.innerHTML = `<span>📱 구글 드라이브 업로드 & 영구 QR코드 생성</span>`; 
+    }
+    if (window.lucide) lucide.createIcons();
+
+    if (uploadResult && uploadResult.success && uploadResult.fileUrl) {
+      displayResultWithQR(uploadResult.fileUrl);
+    } else {
+      displayResultWithQR(window.location.href);
+    }
+  } catch (err) {
+    if (btn) { 
+      btn.disabled = false; 
+      btn.innerHTML = `<span>📱 구글 드라이브 업로드 & 영구 QR코드 생성</span>`; 
+    }
+    displayResultWithQR(window.location.href);
+  }
+}
+
+// 🌟 4컷 비디오 자동 다운로드 및 구글 드라이브 백업
+async function autoSaveVideoToDrive() {
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
   if (!hasValidVideo) {
     alert("촬영 영상 데이터가 부족합니다.\n동영상 합성은 부스에서 4컷을 연속 촬영했을 때 가능합니다.");
@@ -2026,7 +2067,7 @@ async function autoSaveVideo() {
   }
 
   const btn = document.getElementById('btnAutoVideo'); 
-  if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>비디오 합성 렌더링 중...</span>`;
+  if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>비디오 합성 & 드라이브 저장 중...</span>`;
   if (window.lucide) lucide.createIcons();
 
   try {
@@ -2057,19 +2098,27 @@ async function autoSaveVideo() {
     recorder.onstop = async () => {
       const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'; 
       const blob = new Blob(chunks, { type: mimeType }); 
-      const file = new File([blob], `[추억의네컷]_Video_${Date.now()}.${ext}`, { type: mimeType });
-      if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 저장 (자동 다운로드)</span>`;
-      if (window.lucide) lucide.createIcons();
+      const fileName = `[추억의네컷]_Video_${Date.now()}.${ext}`;
+      const file = new File([blob], fileName, { type: mimeType });
 
+      // 1) 로컬 브라우저 즉시 다운로드 / 공유
       if (navigator.canShare && navigator.canShare({ files: [file] })) { 
-        try { 
-          await navigator.share({ files: [file], title: '추억의 네컷 비디오', text: '추억의 네컷 실시간 4컷 비디오입니다!' }); 
-          return; 
-        } catch (err) { if (err.name === 'AbortError') return; } 
+        try { await navigator.share({ files: [file], title: '추억의 네컷 비디오', text: '추억의 네컷 실시간 4컷 비디오입니다!' }); } catch (err) {} 
+      } else {
+        const url = URL.createObjectURL(blob); 
+        const a = document.createElement('a'); a.href = url; a.download = file.name; 
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
       }
-      const url = URL.createObjectURL(blob); 
-      const a = document.createElement('a'); a.href = url; a.download = file.name; 
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+      // 2) 구글 드라이브 백그라운드 자동 업로드
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Video = reader.result;
+        await uploadMediaToGoogleDrive(base64Video, 'video', fileName, mimeType);
+        if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 구글 드라이브 저장</span>`;
+        if (window.lucide) lucide.createIcons();
+      };
+      reader.readAsDataURL(blob);
     };
     recorder.start();
 
@@ -2112,20 +2161,23 @@ async function autoSaveVideo() {
     requestAnimationFrame(renderVideoLoop);
   } catch (err) { 
     alert("비디오 생성 실패: " + err.message); 
-    if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 저장 (자동 다운로드)</span>`; 
+    if (btn) btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>🎬 4컷 비디오 구글 드라이브 저장</span>`; 
     if (window.lucide) lucide.createIcons(); 
   }
 }
 
-function autoSavePDF() { exportCenteredPDF(); }
-function exportCenteredPDF() {
+function autoSavePDF() {
   renderStrip(true); 
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return; 
   const imgData = canvas.toDataURL('image/jpeg', 0.95); 
   const { jsPDF } = window.jspdf; 
+
+  // 규격에 따른 인쇄 포맷 (4×6 엽서지 102mm × 152mm)
+  const isGrid = (appState.selectedFormat === 'grid');
   const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait'; 
   const pdf = new jsPDF({ orientation, unit: 'mm', format: [102, 152] }); 
+
   const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight(); 
   const margin = 2; 
   const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2); 
@@ -2133,7 +2185,7 @@ function exportCenteredPDF() {
   let printW = maxW, printH = printW / imgRatio; 
   if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
   pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH); 
-  pdf.save(`[추억의네컷]_Print_${Date.now()}.pdf`);
+  pdf.save(`[추억의네컷]_Print_${appState.selectedFormat}_${Date.now()}.pdf`);
 }
 
 function sharePhotoDirectly() {
@@ -2144,36 +2196,11 @@ function sharePhotoDirectly() {
     if (!blob) return; 
     const file = new File([blob], `[추억의네컷]_Photo_${Date.now()}.png`, { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) { 
-      try { await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 실시간 사진입니다!' }); } catch (err) {} 
+      try { await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 사진입니다!' }); } catch (err) {} 
     } else { 
       const url = URL.createObjectURL(blob); 
       const a = document.createElement('a'); a.href = url; a.download = file.name; 
       document.body.appendChild(a); a.click(); document.body.removeChild(a); 
-    }
-  }, 'image/png');
-}
-
-async function saveAndGenerateQR() {
-  const btn = document.getElementById('btnSaveQR'); 
-  if (btn) { btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>서버 업로드 중...</span>`; }
-  if (window.lucide) lucide.createIcons();
-  renderStrip(true); 
-  const canvas = document.getElementById('photoCanvas'); 
-  if (!canvas) return;
-
-  canvas.toBlob(async (blob) => {
-    try {
-      const formData = new FormData(); formData.append('file', blob, `Chueok4cut_${Date.now()}.png`);
-      const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: formData }).then(r => r.json());
-      if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성</span>`; }
-      if (uploadRes && uploadRes.status === 'success' && uploadRes.data.url) { 
-        displayResultWithQR(uploadRes.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/')); 
-      } else { 
-        displayResultWithQR(window.location.href); 
-      }
-    } catch (err) {
-      if (btn) { btn.disabled = false; btn.innerHTML = `<span>📱 QR코드 생성</span>`; }
-      displayResultWithQR(window.location.href);
     }
   }, 'image/png');
 }
@@ -2233,7 +2260,7 @@ function startAutoReset() {
 }
 
 // ========================================================
-// 16. 실행취소 & 다시실행
+// 17. 실행취소 & 다시실행
 // ========================================================
 let historyStack = []; 
 let redoStack = [];
@@ -2291,7 +2318,7 @@ function applySnapshot(snap) {
 }
 
 // ========================================================
-// 17. 엔트리포인트 (초기 구동)
+// 18. 엔트리포인트 (초기 구동)
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
