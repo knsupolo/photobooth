@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>추억의 네컷 Studio Pro v15.3</title>
+  <title>추억의 네컷 Studio Pro v15.4</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -14,7 +14,9 @@
 <body class="bg-white text-slate-900 h-screen w-screen overflow-hidden flex flex-col antialiased">
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
-  <!-- 화면 1: 홈 화면 -->
+  <!-- ========================================================
+        화면 1: 메인 홈 화면
+  ======================================================== -->
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
     <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-4 justify-between relative">
       
@@ -27,7 +29,7 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-xl font-black tracking-tight text-slate-900">추억의 네컷</span>
             <span class="bg-rose-500 text-black text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm">Pro</span>
-            <span class="text-xs text-theme font-extrabold tracking-tighter">v15.3</span>
+            <span class="text-xs text-theme font-extrabold tracking-tighter">v15.4</span>
           </div>
         </div>
 
@@ -44,7 +46,7 @@
         </div>
       </header>
 
-      <!-- 실시간 공지사항 영역 -->
+      <!-- 실시간 공지사항 -->
       <div id="mainNoticeArea" class="shrink-0 mt-2 hidden bg-theme-light border border-rose-200 rounded-2xl p-2.5 shadow-sm">
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-xs font-black text-theme flex items-center">
@@ -59,37 +61,37 @@
       <section class="flex-1 flex flex-col justify-center my-auto space-y-3 w-full max-w-sm mx-auto">
         <div class="text-center space-y-0.5">
           <h3 class="text-sm font-black text-slate-900">촬영할 사진 규격을 먼저 선택해 주세요</h3>
-          <p class="text-[11px] text-slate-500">규격에 딱 맞춘 뷰파인더 가이드로 촬영됩니다</p>
+          <p class="text-[11px] text-slate-500">선택한 규격에 맞춰 카메라 방향 안내가 시작됩니다</p>
         </div>
 
         <div class="grid grid-cols-2 gap-3 w-full">
-          <!-- 1×4 스트립 (단체 추천) -->
-          <button onclick="startSessionWithFormat('strip')" class="bg-gradient-to-b from-rose-50 to-white hover:from-rose-100 border-2 border-theme p-4 rounded-3xl shadow-md flex flex-col items-center justify-between text-center h-48 active:scale-[0.97] transition group">
+          <!-- 1×4 스트립 (가로모드 풀화면 촬영) -->
+          <button onclick="requestSessionWithFormat('strip')" class="bg-gradient-to-b from-rose-50 to-white hover:from-rose-100 border-2 border-theme p-4 rounded-3xl shadow-md flex flex-col items-center justify-between text-center h-48 active:scale-[0.97] transition group">
             <div class="w-8 h-8 rounded-xl bg-theme text-white flex items-center justify-center shadow-sm group-hover:scale-110 transition">
-              <i data-lucide="columns-2" class="w-4 h-4"></i>
+              <i data-lucide="smartphone" class="w-4 h-4 rotate-90"></i>
             </div>
             <div>
-              <span class="bg-rose-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full">클래식 2×6인치</span>
+              <span class="bg-rose-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full">가로 풀화면</span>
               <h4 class="font-black text-sm text-slate-900 mt-1">1×4 스트립</h4>
-              <p class="text-[10px] text-slate-500 mt-0.5 leading-tight">가로 와이드 구도<br><b class="text-theme">단체 사진 추천</b></p>
+              <p class="text-[10px] text-slate-500 mt-0.5 leading-tight">가로모드 전용<br><b class="text-theme">단체 사진 추천</b></p>
             </div>
             <div class="w-12 h-6 bg-slate-900 rounded-md border border-slate-700 flex items-center justify-center text-[9px] font-mono text-white/70 font-bold">
-              3 : 2
+              가로 풀화면
             </div>
           </button>
 
-          <!-- 2×2 엽서형 (1~3인 추천) -->
-          <button onclick="startSessionWithFormat('grid')" class="bg-gradient-to-b from-indigo-50 to-white hover:from-indigo-100 border-2 border-indigo-500 p-4 rounded-3xl shadow-md flex flex-col items-center justify-between text-center h-48 active:scale-[0.97] transition group">
+          <!-- 2×2 엽서형 (세로모드 풀화면 촬영) -->
+          <button onclick="requestSessionWithFormat('grid')" class="bg-gradient-to-b from-indigo-50 to-white hover:from-indigo-100 border-2 border-indigo-500 p-4 rounded-3xl shadow-md flex flex-col items-center justify-between text-center h-48 active:scale-[0.97] transition group">
             <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm group-hover:scale-110 transition">
-              <i data-lucide="layout-grid" class="w-4 h-4"></i>
+              <i data-lucide="smartphone" class="w-4 h-4"></i>
             </div>
             <div>
-              <span class="bg-indigo-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full">엽서형 4×6인치</span>
+              <span class="bg-indigo-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full">세로 풀화면</span>
               <h4 class="font-black text-sm text-slate-900 mt-1">2×2 엽서형</h4>
-              <p class="text-[10px] text-slate-500 mt-0.5 leading-tight">세로 집중 구도<br><b class="text-indigo-600">1~3인 추천</b></p>
+              <p class="text-[10px] text-slate-500 mt-0.5 leading-tight">세로모드 전용<br><b class="text-indigo-600">1~3인 추천</b></p>
             </div>
-            <div class="w-8 h-10 bg-indigo-950 rounded-md border border-indigo-700 flex items-center justify-center text-[9px] font-mono text-white/70 font-bold">
-              4 : 5
+            <div class="w-12 h-6 bg-indigo-950 rounded-md border border-indigo-700 flex items-center justify-center text-[9px] font-mono text-white/70 font-bold">
+              세로 풀화면
             </div>
           </button>
         </div>
@@ -122,7 +124,7 @@
             </div>
             <div class="text-left overflow-hidden">
               <h4 class="font-bold text-xs text-slate-900 truncate">이용 후기</h4>
-              <p class="text-[9px] text-slate-400 truncate">별점 & 사용소감</p>
+              <p class="text-[9px] text-slate-400 truncate">별점 & 소감</p>
             </div>
           </button>
 
@@ -143,7 +145,7 @@
         </div>
 
         <footer class="text-center text-[10px] text-slate-400 pb-0.5">
-          추억의 네컷 Studio Pro v15.3
+          추억의 네컷 Studio Pro v15.4
         </footer>
       </div>
     </div>
@@ -327,19 +329,33 @@
     </div>
   </div>
 
-  <!-- 화면 2: 🌟 촬영 화면 (1x4 전체 화면 복구 & 2x2 패드 세로 극대화) -->
+  <!-- ========================================================
+        화면 2: 촬영 화면 (🌟 풀 화면 뷰파인더 & 회전 가이드 오버레이)
+  ======================================================== -->
   <section id="screenLiveShoot" class="hidden fixed inset-0 bg-black flex flex-col items-center justify-center z-50 overflow-hidden">
     <div id="flashOverlay" class="hidden absolute inset-0 bg-white z-[60] pointer-events-none"></div>
     <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror"></video>
     
-    <!-- 뷰파인더 컷아웃 영역 -->
+    <!-- 🌟 회전 필요 시 화면 전체를 덮는 방향 안내 오버레이 -->
+    <div id="orientationGuideOverlay" class="hidden absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 space-y-4">
+      <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center animate-bounce text-theme">
+        <i id="orientationGuideIcon" data-lucide="rotate-cw" class="w-8 h-8"></i>
+      </div>
+      <div class="space-y-1">
+        <h3 id="orientationGuideTitle" class="text-lg font-black text-white">카메라를 가로로 돌려주세요!</h3>
+        <p id="orientationGuideDesc" class="text-xs text-slate-300">1×4 스트립 규격은 가로모드 전체화면으로 촬영됩니다.</p>
+      </div>
+      <span class="text-[10px] text-slate-400">기기를 회전하면 자동으로 촬영이 시작됩니다.</span>
+    </div>
+
+    <!-- 뷰파인더 풀 화면 안내 라인 -->
     <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10 overflow-hidden">
-      <div id="dynamicViewfinderBox" class="border-2 border-white/80 relative flex items-center justify-center transition-all duration-300">
-        <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-theme -mt-0.5 -ml-0.5"></div>
-        <div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-theme -mt-0.5 -mr-0.5"></div>
-        <div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-theme -mb-0.5 -ml-0.5"></div>
-        <div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-theme -mb-0.5 -mr-0.5"></div>
-        <span id="viewfinderRatioBadge" class="absolute bottom-2 right-2 bg-black/75 text-white font-mono text-[9px] px-2 py-0.5 rounded backdrop-blur">3:2 가로촬영</span>
+      <div id="dynamicViewfinderBox" class="border-2 border-white/40 w-full h-full relative flex items-center justify-center transition-all duration-300">
+        <div class="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-theme"></div>
+        <div class="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-theme"></div>
+        <div class="absolute bottom-16 left-4 w-6 h-6 border-b-4 border-l-4 border-theme"></div>
+        <div class="absolute bottom-16 right-4 w-6 h-6 border-b-4 border-r-4 border-theme"></div>
+        <span id="viewfinderRatioBadge" class="absolute bottom-20 right-4 bg-black/75 text-white font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur">풀 화면 촬영</span>
       </div>
     </div>
 
@@ -374,7 +390,7 @@
     </div>
   </section>
 
-  <!-- 화면 3: 🌟 사진 선택 화면 (대형 캐러셀 & 2x2 격자 미니프리뷰) -->
+  <!-- 화면 3: 사진 선택 화면 -->
   <section id="screenPick" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row items-center justify-between p-3 sm:p-5 gap-3 bg-white text-slate-900 overflow-y-auto touch-scroll">
     <div class="w-full lg:w-1/2 flex flex-col items-center justify-center shrink-0">
       <div class="w-full max-w-xs mb-2">
@@ -389,7 +405,6 @@
         </div>
       </div>
 
-      <!-- 동적 미니 프리뷰 (1x4 스트립 or 2x2 격자 자동 교체) -->
       <div id="pickMiniFramePreview" class="bg-black p-2.5 shadow-2xl flex flex-col border border-slate-300 rounded-md transition-all duration-300"></div>
     </div>
 
@@ -398,14 +413,14 @@
       <div class="flex items-center justify-between">
         <div>
           <h3 class="font-black text-sm text-slate-900">사진 크게 보고 선택하기</h3>
-          <p class="text-[11px] text-slate-500">좌우로 넘기며 마음에 드는 컷을 골라주세요</p>
+          <p class="text-[11px] text-slate-500">손으로 밀거나 좌우 버튼을 눌러 사진을 채워보세요</p>
         </div>
         <span id="currentActiveSlotBadge" class="bg-rose-50 text-theme font-black text-xs px-2.5 py-1 rounded-lg border border-rose-200">1번 슬롯 채우는 중</span>
       </div>
 
       <div class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center p-2 min-h-[300px]">
-        <div id="carouselImageWrapper" class="w-full h-full flex items-center justify-center">
-          <img id="carouselCurrentImg" src="" class="max-h-[320px] w-auto object-contain rounded-xl shadow-lg transition-transform duration-200">
+        <div id="carouselImageWrapper" class="w-full h-full flex items-center justify-center touch-pan-y cursor-grab select-none">
+          <img id="carouselCurrentImg" src="" class="max-h-[320px] w-auto object-contain rounded-xl shadow-lg transition-transform duration-200 pointer-events-none">
         </div>
 
         <div id="carouselCutBadge" class="absolute top-3 left-3 bg-black/80 backdrop-blur text-white text-xs font-black px-2.5 py-1 rounded-lg border border-white/20">
@@ -581,6 +596,7 @@
           </div>
         </div>
 
+        <!-- 4컷 비디오 생성 / QR코드 생성 버튼 -->
         <div class="space-y-2 pt-3 border-t border-slate-200">
           <button onclick="generateFourCutVideo()" id="btnAutoVideo" class="w-full bg-theme text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
             <i data-lucide="video" class="w-4 h-4"></i>
@@ -605,9 +621,11 @@
     </div>
   </section>
 
-  <!-- 🌟 비디오 대형 모달 (화면 꽉 차게 확대) -->
+  <!-- ========================================================
+        🌟 비디오 대형 모달 (화면 꽉 차게 확대 & 버튼명 변경)
+  ======================================================== -->
   <div id="videoResultModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
-    <div class="bg-white rounded-3xl p-5 max-w-md w-full shadow-2xl flex flex-col items-center space-y-3">
+    <div class="bg-white rounded-3xl p-4 sm:p-5 max-w-md w-full shadow-2xl flex flex-col items-center space-y-3">
       <div class="flex items-center justify-between w-full border-b border-slate-100 pb-2">
         <h3 class="font-black text-sm text-slate-900 flex items-center">
           <i data-lucide="video" class="w-4 h-4 text-theme mr-1"></i> 4컷 비디오 합성 완료
@@ -615,24 +633,20 @@
         <button onclick="closeVideoResultModal()" class="text-slate-400 hover:text-slate-700 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <!-- 🌟 비디오 미리보기 크기 대폭 확대 -->
-      <div class="w-full h-[58vh] max-h-[520px] bg-black rounded-2xl overflow-hidden flex items-center justify-center shadow-inner">
+      <!-- 비디오 미리보기 크기 대폭 극대화 -->
+      <div class="w-full h-[62vh] max-h-[560px] bg-black rounded-2xl overflow-hidden flex items-center justify-center shadow-inner">
         <video id="videoResultPlayer" autoplay loop muted playsinline controls class="w-full h-full object-contain"></video>
       </div>
 
-      <div id="videoDriveStatusBadge" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-center text-[11px] font-bold text-slate-600 flex items-center justify-center space-x-1.5">
-        <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-theme"></i>
-        <span>구글 드라이브 자동 저장 중...</span>
-      </div>
-
+      <!-- 🌟 버튼 이름: [파일의 저장] | [공유] -->
       <div class="grid grid-cols-2 gap-2 w-full pt-1">
-        <button onclick="downloadCurrentVideoFile()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1 shadow active:scale-95 transition">
+        <button onclick="downloadCurrentVideoFile()" class="bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
           <i data-lucide="download" class="w-3.5 h-3.5"></i>
-          <span>동영상 기기 저장</span>
+          <span>파일의 저장</span>
         </button>
-        <button onclick="shareCurrentVideoFile()" class="bg-theme hover:bg-theme text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1 shadow active:scale-95 transition">
+        <button onclick="shareCurrentVideoFile()" class="bg-theme hover:bg-theme text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
           <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
-          <span>비디오 공유</span>
+          <span>공유</span>
         </button>
       </div>
     </div>
