@@ -1,11 +1,14 @@
 /**
- * 추억의 네컷 Studio Pro v15.6 UHD [1편 / 총 2편]
+ * 추억의 네컷 Studio Pro v15.7 Theme
  * 
- * [1편 포함 영역]
- * - 전역 설정, 테마 팔레트, 오디오 엔진
- * - UHD 카메라 스트림 획득 & 풀 화면 촬영
- * - 사진 선택 대형 캐러셀 & 미선택 사진 자동 스와이프
- * - 앨범 사진 4장 수집 엔진
+ * [v15.7 테마 팩 & 트렌드 필터 완성본]
+ * 1. 올인원 감성 테마 팩 8종 (색상+서체+문구+필터 원클릭 동기화)
+ * 2. 스튜디오 트렌드 5대 필터 추가 (하루쿨블루, 딥모노, Y2K사이버, 피치글로우, 클리어광택) -> 총 15종
+ * 3. 초고화질 UHD 렌더링 엔진 (1x4: 1200×3600 px / 2x2 및 Twin: 1800×2700 px)
+ * 4. 4K/FHD 네이티브 화소 수신 & 왜곡 없는 풀 화면 100% 캡처
+ * 5. 슬롯 피드백(비프음 + 펄스 링) 및 미선택 사진 자동 스와이프 포커싱
+ * 6. 1x4 2줄 인쇄용 (Twin 4x6) 레이아웃 지원
+ * 7. 대형 비디오 팝업 (파일의 저장 | 공유) 및 QR 이미지 직다운로드(tmpfiles.org/dl/...) 복원
  */
 
 // 🌟 구글 앱스 스크립트 웹앱 배포 URL
@@ -33,19 +36,109 @@ const POSE_SUGGESTIONS = [
   "자유로운 힙합 포즈 🤙", "꽃받침하고 방긋 🌸", "눈 꼭 감고 윙크 😉", "볼 빵빵 귀요미 🐹"
 ];
 
+// 🌟 트렌드 5종 포함 총 15종 감성 필터 프리셋
 const FILTER_PRESETS = {
-  normal:  { bright: 100, contrast: 100, saturate: 100, name: '원본' },
-  bright:  { bright: 115, contrast: 105, saturate: 108, name: '뽀샤시' },
-  radiant: { bright: 112, contrast: 115, saturate: 125, name: '화사한' },
-  warm:    { bright: 108, contrast: 105, saturate: 120, name: '따뜻한' },
-  cool:    { bright: 106, contrast: 112, saturate: 95,  name: '차가운' },
-  mood:    { bright: 105, contrast: 95,  saturate: 85,  name: '감성무드' },
-  retro:   { bright: 108, contrast: 90,  saturate: 80,  name: '레트로' },
-  mono:    { bright: 105, contrast: 130, saturate: 0,   name: '흑백' },
-  sunset:  { bright: 110, contrast: 110, saturate: 135, name: '노을빛' },
-  cyan:    { bright: 108, contrast: 115, saturate: 110, name: '청량블루' },
-  green:   { bright: 105, contrast: 100, saturate: 90,  name: '빈티지그린' },
-  pink:    { bright: 112, contrast: 108, saturate: 120, name: '로맨틱핑크' }
+  // 트렌드 5대 대표 필터
+  harublue:     { bright: 110, contrast: 105, saturate: 105, name: '하루쿨블루' },
+  deepmono:     { bright: 102, contrast: 138, saturate: 0,   name: '딥모노' },
+  y2kcyber:     { bright: 108, contrast: 92,  saturate: 85,  name: 'Y2K사이버' },
+  peachglow:    { bright: 114, contrast: 108, saturate: 118, name: '피치글로우' },
+  naturalgloss: { bright: 116, contrast: 110, saturate: 108, name: '클리어광택' },
+  // 클래식 감성 필터 10종
+  normal:       { bright: 100, contrast: 100, saturate: 100, name: '원본' },
+  bright:       { bright: 115, contrast: 105, saturate: 108, name: '뽀샤시' },
+  radiant:      { bright: 112, contrast: 115, saturate: 125, name: '화사한' },
+  warm:         { bright: 108, contrast: 105, saturate: 120, name: '따뜻한' },
+  cool:         { bright: 106, contrast: 112, saturate: 95,  name: '차가운' },
+  mood:         { bright: 105, contrast: 95,  saturate: 85,  name: '감성무드' },
+  retro:        { bright: 108, contrast: 90,  saturate: 80,  name: '레트로' },
+  mono:         { bright: 105, contrast: 130, saturate: 0,   name: '흑백' },
+  sunset:       { bright: 110, contrast: 110, saturate: 135, name: '노을빛' },
+  pink:         { bright: 112, contrast: 108, saturate: 120, name: '로맨틱핑크' }
+};
+
+// 🌟 올인원 테마 팩 8종 프리셋 정의
+const THEME_PACKS = {
+  theme_chueok: {
+    name: '시그니처 추억네컷',
+    frameColor: '#000000',
+    fontColor: '#FFFFFF',
+    fontFamily: 'Pretendard',
+    fontSize: 60,
+    titleText: '추억네컷',
+    styleKey: 'middle',
+    filterKey: 'naturalgloss'
+  },
+  theme_haru: {
+    name: '청량 하루 팩',
+    frameColor: '#BAE6FD',
+    fontColor: '#0369A1',
+    fontFamily: 'Pretendard',
+    fontSize: 55,
+    titleText: 'HARU MEMORY',
+    styleKey: 'simple',
+    filterKey: 'harublue'
+  },
+  theme_photoism: {
+    name: '포토이즘 아카이브',
+    frameColor: '#0A0A0A',
+    fontColor: '#FFFFFF',
+    fontFamily: 'Playfair Display',
+    fontSize: 60,
+    titleText: 'photoism',
+    styleKey: 'photoism',
+    filterKey: 'deepmono'
+  },
+  theme_y2k: {
+    name: 'Y2K 레트로 사이버',
+    frameColor: '#18181B',
+    fontColor: '#38BDF8',
+    fontFamily: 'Black Han Sans',
+    fontSize: 55,
+    titleText: 'CYBER VIBE 1999',
+    styleKey: 'retro90s',
+    filterKey: 'y2kcyber'
+  },
+  theme_vintage: {
+    name: '빈티지 필름 롤',
+    frameColor: '#27272A',
+    fontColor: '#E4E4E7',
+    fontFamily: 'Nanum Pen Script',
+    fontSize: 65,
+    titleText: 'FILM ROLL 400',
+    styleKey: 'classicmono',
+    filterKey: 'retro'
+  },
+  theme_youth: {
+    name: '청춘 우정 & 졸업',
+    frameColor: '#EFF6FF',
+    fontColor: '#1D4ED8',
+    fontFamily: 'Gowun Batang',
+    fontSize: 55,
+    titleText: '우리의 눈부신 청춘',
+    styleKey: 'graduation',
+    filterKey: 'bright'
+  },
+  theme_birthday: {
+    name: '생일 & 파티 팝',
+    frameColor: '#FDFBF7',
+    fontColor: '#E11D48',
+    fontFamily: 'Playfair Display',
+    fontSize: 58,
+    titleText: 'Happy Birthday',
+    styleKey: 'birthday',
+    filterKey: 'peachglow'
+  },
+  theme_romantic: {
+    name: '로맨틱 커플 웜',
+    frameColor: '#FECDD3',
+    fontColor: '#9F1239',
+    fontFamily: 'Playfair Display',
+    fontSize: 58,
+    titleText: 'Our Love Story',
+    styleKey: 'bottom',
+    filterKey: 'pink'
+  }
 };
 
 const APP_THEMES = {
@@ -69,13 +162,13 @@ const PALETTE_COLORS = [
 
 let appState = {
   isAdmin: false, stream: null, facingMode: 'user', timerSec: 6, currentCount: 6, countdownTimer: null,
-  selectedFormat: 'strip',
+  selectedFormat: 'strip', activeThemePackKey: 'theme_chueok',
   isOrientationMatched: true,
   shotImages: [], selectedImages: [], selectedIndices: [null, null, null, null], activeSlotIndex: 0,
   stickers: [], recentStickers: [], selectedStickerIdx: -1, dragTarget: null, dragStartPos: { x: 0, y: 0 },
   layout: 'strip', frameStyle: 'middle', frameThickness: 60, frameColor: '#000000',
-  activeFilter: 'normal', filters: { bright: 100, contrast: 100, saturate: 100 },
-  showDate: true, typography: { fontFamily: 'Playfair Display', fontSize: 60, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() },
+  activeFilter: 'naturalgloss', filters: { ...FILTER_PRESETS.naturalgloss },
+  showDate: true, typography: { fontFamily: 'Pretendard', fontSize: 60, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() },
   shotVideoBlobs: [], currentMediaRecorder: null, currentShotVideoChunks: [], resetInterval: null
 };
 
@@ -104,7 +197,6 @@ function initAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }
-
 function playBeep(freq = 700) {
   try {
     initAudio();
@@ -119,7 +211,6 @@ function playBeep(freq = 700) {
     osc.stop(audioCtx.currentTime + 0.1);
   } catch (e) {}
 }
-
 function playRealisticShutter() {
   try {
     initAudio();
@@ -186,7 +277,7 @@ function loadSavedTheme() {
 }
 
 // ========================================================
-// 3. UI 동적 바인딩 & 컬러칩 바
+// 3. UI 동적 바인딩 & 프리셋 초기화
 // ========================================================
 function initDynamicUI() {
   const fonts = [
@@ -284,7 +375,48 @@ function setTimerSec(sec, btn) {
 }
 
 // ========================================================
-// 4. 가로/세로 촬영 방향 감지
+// 4. 🌟 올인원 감성 테마 팩 원클릭 적용 함수
+// ========================================================
+function applyAllInOneTheme(themePackKey, btn) {
+  const pack = THEME_PACKS[themePackKey];
+  if (!pack) return;
+
+  saveStateForUndo();
+  appState.activeThemePackKey = themePackKey;
+  appState.frameColor = pack.frameColor;
+  appState.frameStyle = pack.styleKey;
+  appState.activeFilter = pack.filterKey;
+  appState.filters = { ...FILTER_PRESETS[pack.filterKey] };
+  appState.typography.fontFamily = pack.fontFamily;
+  appState.typography.fontColor = pack.fontColor;
+  appState.typography.fontSize = pack.fontSize;
+
+  // 버튼 활성화 스타일 갱신
+  document.querySelectorAll('.theme-pack-btn, .editor-theme-btn').forEach(b => {
+    b.classList.remove('bg-white', 'text-rose-600', 'border-rose-300', 'shadow-2xs', 'font-black');
+    b.classList.add('text-slate-600', 'border-transparent');
+  });
+  if (btn) {
+    btn.classList.add('bg-white', 'text-rose-600', 'border-rose-300', 'shadow-2xs', 'font-black');
+  }
+
+  // 인풋 및 배지 갱신
+  const sigInput = document.getElementById('frameSignatureInput');
+  if (sigInput) sigInput.value = pack.titleText;
+
+  const filterBadge = document.getElementById('filterStateBadge');
+  if (filterBadge) filterBadge.textContent = FILTER_PRESETS[pack.filterKey].name;
+
+  const fontColorPicker = document.getElementById('fontColorPicker');
+  if (fontColorPicker) fontColorPicker.value = pack.fontColor;
+
+  renderPickColorChips();
+  renderStrip();
+  playBeep(900);
+}
+
+// ========================================================
+// 5. 가로/세로 촬영 방향 감지
 // ========================================================
 function requestSessionWithFormat(format) {
   appState.selectedFormat = format; 
@@ -349,7 +481,7 @@ function checkOrientationState() {
 }
 
 // ========================================================
-// 5. 카메라 촬영 (UHD 네이티브 해상도 수신)
+// 6. 카메라 촬영 (UHD 4K/FHD 네이티브 해상도)
 // ========================================================
 async function startPhotoSession() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
@@ -552,7 +684,7 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 6. 사진 선택 (대형 캐러셀 & 미선택 사진 자동 스와이프)
+// 7. 사진 선택 (대형 뷰어 & 미선택 사진 자동 스와이프)
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
@@ -561,9 +693,7 @@ function renderPickScreen() {
   currentCarouselIdx = 0;
 
   buildPickMiniPreviewStructure();
-  setPickPreviewTheme(appState.frameStyle || 'middle', null);
   renderPickColorChips();
-
   setupCarouselViewer();
   updateCarouselView();
 }
@@ -764,13 +894,18 @@ function resetEditorToDefault() {
   appState.selectedStickerIdx = -1; 
   appState.layout = appState.selectedFormat || 'strip'; 
   appState.frameThickness = 60; 
-  appState.activeFilter = 'normal'; 
-  appState.filters = { bright: 100, contrast: 100, saturate: 100 }; 
-  appState.showDate = true; 
-  appState.typography = { fontFamily: 'Playfair Display', fontSize: 60, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() };
+
+  const pack = THEME_PACKS[appState.activeThemePackKey] || THEME_PACKS.theme_chueok;
+  appState.frameColor = pack.frameColor;
+  appState.frameStyle = pack.styleKey;
+  appState.activeFilter = pack.filterKey;
+  appState.filters = { ...FILTER_PRESETS[pack.filterKey] };
+  appState.typography.fontFamily = pack.fontFamily;
+  appState.typography.fontColor = pack.fontColor;
+  appState.typography.fontSize = pack.fontSize;
 
   const sigInput = document.getElementById('frameSignatureInput'); 
-  if (sigInput) sigInput.value = "추억네컷";
+  if (sigInput) sigInput.value = pack.titleText;
 
   const slThick = document.getElementById('sliderThickness'); if (slThick) slThick.value = 40;
   const fineTune = document.getElementById('filterFineTunePanel'); if (fineTune) fineTune.classList.add('hidden');
@@ -780,7 +915,7 @@ function resetEditorToDefault() {
 }
 
 // ========================================================
-// 7. 앨범 업로드 & 캔버스 줌/팬
+// 8. 앨범 업로드 & 에디터 캔버스 줌/팬 제어
 // ========================================================
 function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
 
@@ -957,7 +1092,7 @@ function handleFilterClick(filterKey, btn) {
   if (!isAlreadyActive) {
     saveStateForUndo(); 
     appState.activeFilter = filterKey; 
-    const p = FILTER_PRESETS[filterKey]; 
+    const p = FILTER_PRESETS[filterKey] || FILTER_PRESETS.normal; 
     appState.filters = { ...p };
     document.querySelectorAll('.filter-btn').forEach(b => { b.className = "filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent"; });
     btn.className = "filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg border border-theme";
@@ -1078,32 +1213,87 @@ function onSelectedStickerColorChange(color) { if (appState.selectedStickerIdx >
 function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].fontFamily = fontName; renderStrip(); } }
 function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
 
-function setFrameStyle(styleKey, btn) {
-  saveStateForUndo(); 
-  appState.frameStyle = styleKey;
-  document.querySelectorAll('.style-btn').forEach(b => { 
-    b.className = "style-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-transparent truncate"; 
-  });
-  if (btn) btn.className = "style-btn bg-theme text-white font-black py-1.5 rounded-xl border border-theme shadow-sm truncate";
+function initCanvasInteractions() {
+  const canvas = document.getElementById('photoCanvas');
+  const viewport = document.getElementById('canvasViewport');
+  if (!canvas || !viewport) return;
 
-  const label = document.getElementById('labelCustomText'); 
-  const sigInput = document.getElementById('frameSignatureInput');
+  function getCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      clientX, clientY,
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
 
-  if (styleKey === 'middle') { if (label) label.textContent = "중간 문구 설정"; if (sigInput) sigInput.value = "추억네컷"; }
-  else if (styleKey === 'simple') { if (label) label.textContent = "상단 문구 설정"; if (sigInput) sigInput.value = "sangsangPhoto"; }
-  else if (styleKey === 'bottom') { if (label) label.textContent = "하단 각인 문구 설정"; if (sigInput) sigInput.value = "인생4컷"; }
-  else if (styleKey === 'photoism') { if (label) label.textContent = "포토이즘 로고 문구"; if (sigInput) sigInput.value = "photoism"; }
-  else if (styleKey === 'baseball') { if (label) label.textContent = "야구 타이틀 문구"; if (sigInput) sigInput.value = "Play Baseball"; }
-  else if (styleKey === 'birthday') { if (label) label.textContent = "생일 축하 문구"; if (sigInput) sigInput.value = "Happy Birthday"; }
-  else if (styleKey === 'retro90s') { if (label) label.textContent = "Y2K 레트로 타이틀"; if (sigInput) sigInput.value = "CYBER VIBE 1999"; }
-  else if (styleKey === 'classicmono') { if (label) label.textContent = "아날로그 필름 문구"; if (sigInput) sigInput.value = "FILM ROLL 400"; }
-  else if (styleKey === 'graduation') { if (label) label.textContent = "청춘 우정 타이틀"; if (sigInput) sigInput.value = "우리의 눈부신 청춘"; }
+  function handleStart(e) {
+    if (e.touches && e.touches.length > 1) return;
+    const c = getCoords(e);
+    let hitSticker = false;
 
-  renderStrip();
+    for (let i = appState.stickers.length - 1; i >= 0; i--) {
+      const st = appState.stickers[i];
+      const dist = Math.hypot(c.x - st.x, c.y - st.y);
+      if (dist <= Math.max(105, st.size * 1.4)) {
+        appState.selectedStickerIdx = i;
+        appState.dragTarget = i;
+        appState.dragStartPos = { x: c.x - st.x, y: c.y - st.y };
+        showStickerControls(st);
+        renderStrip();
+        hitSticker = true;
+        break;
+      }
+    }
+
+    if (!hitSticker) {
+      isPanning = true;
+      panStartX = c.clientX - canvasPanX;
+      panStartY = c.clientY - canvasPanY;
+      appState.selectedStickerIdx = -1;
+      appState.dragTarget = null;
+      const bar = document.getElementById('stickerControlBar'); 
+      if (bar) bar.classList.add('hidden');
+      renderStrip();
+    }
+  }
+
+  function handleMove(e) {
+    if (e.touches && e.touches.length > 1) return;
+    const c = getCoords(e);
+
+    if (appState.dragTarget !== null) {
+      if (e.cancelable) e.preventDefault();
+      const st = appState.stickers[appState.dragTarget];
+      st.x = c.x - appState.dragStartPos.x;
+      st.y = c.y - appState.dragStartPos.y;
+      renderStrip();
+    } else if (isPanning) {
+      if (e.cancelable) e.preventDefault();
+      canvasPanX = c.clientX - panStartX;
+      canvasPanY = c.clientY - panStartY;
+      applyZoomTransform();
+    }
+  }
+
+  function handleEnd() { 
+    if (appState.dragTarget !== null) saveStateForUndo(); 
+    appState.dragTarget = null; 
+    isPanning = false;
+  }
+
+  viewport.addEventListener('mousedown', handleStart); 
+  window.addEventListener('mousemove', handleMove); 
+  window.addEventListener('mouseup', handleEnd);
+  viewport.addEventListener('touchstart', handleStart, { passive: false }); 
+  window.addEventListener('touchmove', handleMove, { passive: false }); 
+  window.addEventListener('touchend', handleEnd);
 }
 
 // ========================================================
-// 8. 메인 캔버스 UHD 초고화질 렌더링 엔진 (1200×3600 / 1800×2700)
+// 9. 🌟 메인 캔버스 UHD 초고화질 렌더링 엔진 (1200×3600 / 1800×2700)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
@@ -1562,6 +1752,7 @@ function drawFilteredSlotPhoto(ctx, img, targetX, targetY, targetW, targetH) {
   ctx.restore();
 }
 
+// 🌟 트렌드 5종 포함 총 15종 필터 픽셀 수학 엔진
 function applyPixelFilterMath(imageData, filterKey, customAdjust) {
   const d = imageData.data; 
   const len = d.length; 
@@ -1571,7 +1762,30 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 
   for (let i = 0; i < len; i += 4) {
     let r = d[i], g = d[i+1], b = d[i+2];
-    if (filterKey === 'bright') { r = r*1.1+10; g = g*1.08+8; b = b*1.05+6; }
+
+    // 트렌드 5대 대표 필터 수식
+    if (filterKey === 'harublue') {
+      r = r * 0.94; 
+      g = g * 1.05 + 6; 
+      b = b * 1.20 + 16;
+    } else if (filterKey === 'deepmono') {
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      r = g = b = gray;
+    } else if (filterKey === 'y2kcyber') {
+      r = r * 0.90; 
+      g = g * 1.08 + 10; 
+      b = b * 1.02 + 5;
+    } else if (filterKey === 'peachglow') {
+      r = r * 1.15 + 14; 
+      g = g * 1.04 + 6; 
+      b = b * 0.92;
+    } else if (filterKey === 'naturalgloss') {
+      r = r * 1.12 + 10; 
+      g = g * 1.10 + 8; 
+      b = b * 1.12 + 10;
+    }
+    // 클래식 감성 필터 수식
+    else if (filterKey === 'bright') { r = r*1.1+10; g = g*1.08+8; b = b*1.05+6; }
     else if (filterKey === 'radiant') { r = r*1.12+15; g = g*1.1+12; b = b*1.15+15; }
     else if (filterKey === 'warm') { r = r*1.12+12; g = g*1.05+6; b = b*0.92; }
     else if (filterKey === 'cool') { r = r*0.92; g = g*1.02+4; b = b*1.15+12; }
@@ -1579,8 +1793,6 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
     else if (filterKey === 'retro') { r = r*1.08+15; g = g*0.95+8; b = b*0.82+12; }
     else if (filterKey === 'mono') { const gray = 0.299*r + 0.587*g + 0.114*b; r = g = b = gray; }
     else if (filterKey === 'sunset') { r = r*1.18+15; g = g*1.02+5; b = b*0.85; }
-    else if (filterKey === 'cyan') { r = r*0.88; g = g*1.08+8; b = b*1.2+15; }
-    else if (filterKey === 'green') { r = r*0.95; g = g*1.12+10; b = b*0.95; }
     else if (filterKey === 'pink') { r = r*1.15+12; g = g*0.95; b = b*1.1+10; }
 
     r *= bMul; g *= bMul; b *= bMul; 
@@ -1588,7 +1800,7 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
     g = ((g / 255 - 0.5) * cFactor + 0.5) * 255; 
     b = ((b / 255 - 0.5) * cFactor + 0.5) * 255;
 
-    if (sMul !== 1 && filterKey !== 'mono') { 
+    if (sMul !== 1 && filterKey !== 'mono' && filterKey !== 'deepmono') { 
       const lum = 0.299*r + 0.587*g + 0.114*b; 
       r = lum + (r - lum)*sMul; g = lum + (g - lum)*sMul; b = lum + (b - lum)*sMul; 
     }
@@ -1599,7 +1811,7 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 }
 
 // ========================================================
-// 9. 4컷 비디오 생성 & 대형 모달 (파일의 저장 | 공유)
+// 10. 4컷 비디오 생성 & 대형 모달 (파일의 저장 | 공유)
 // ========================================================
 async function generateFourCutVideo() {
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
@@ -1759,7 +1971,7 @@ async function shareCurrentVideoFile() {
 }
 
 // ========================================================
-// 10. QR코드 생성 (이미지 다운로드 직링크 tmpfiles.org/dl/)
+// 11. QR코드 생성 (이미지 직다운로드 링크 tmpfiles.org/dl/)
 // ========================================================
 async function generateImageQRCode() {
   const btn = document.getElementById('btnSaveQR'); 
@@ -1922,7 +2134,7 @@ function startAutoReset() {
 }
 
 // ========================================================
-// 11. 관리자 센터, 후기 & 고객소리함
+// 12. 관리자 센터, 후기 & 고객소리함
 // ========================================================
 function promptAdminMode() {
   const now = Date.now();
@@ -2319,7 +2531,7 @@ async function sendCustomerBotMessage() {
 }
 
 // ========================================================
-// 12. 공지사항 관리
+// 13. 공지사항 관리
 // ========================================================
 function getStoredNotices() {
   const stored = localStorage.getItem('vibe_notices');
@@ -2329,10 +2541,10 @@ function getStoredNotices() {
   }
   if (!list || list.length === 0) {
     list = [{ 
-      id: 'v15_6', 
+      id: 'v15_7', 
       date: getFormattedTodayDate(), 
-      version: 'v15.6', 
-      content: 'UHD 초고화질 엔진, 1x4/2x2 풀화면 & 9종 스페셜 테마 업데이트 완료!' 
+      version: 'v15.7', 
+      content: '8종 올인원 감성 테마 팩 & 15종 트렌드 필터 시스템 업데이트 완료!' 
     }];
   }
   return list;
@@ -2391,7 +2603,7 @@ async function writeAdminNotice() {
   const newNotice = { 
     id: Date.now().toString(), 
     date: getFormattedTodayDate(), 
-    version: 'v15.6', 
+    version: 'v15.7', 
     content: content.trim() 
   };
   let list = getStoredNotices();
@@ -2588,7 +2800,7 @@ async function shareWebAppUrl() {
 }
 
 // ========================================================
-// 13. 실행취소 & 다시실행
+// 14. 실행취소 & 다시실행
 // ========================================================
 let historyStack = []; 
 let redoStack = [];
@@ -2646,7 +2858,7 @@ function applySnapshot(snap) {
 }
 
 // ========================================================
-// 14. 초기 엔트리포인트 & 이벤트 리스너
+// 15. 초기 엔트리포인트 & 회전 리스너
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
