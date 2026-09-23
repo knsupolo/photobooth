@@ -1,5 +1,6 @@
 /**
- * 추억의 네컷 Studio Pro v16.0 - 안정화 통합본
+ * 추억의 네컷 Studio Pro v16.0
+ * [통합 엔진: 촬영 대기실 시작버튼, 대형 슬롯 선택기, 에디터 전환 보장, 투명 PNG 프레임, Loupe 돋보기, 구글 드라이브 QR]
  */
 
 const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
@@ -20,6 +21,7 @@ function extractPureBase64(dataUrl) {
   return commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
 }
 
+// 24종 포즈 가이드
 const POSE_SUGGESTIONS_24 = [
   { emoji: "🫂", text: "어깨동무하고 다정하게 찰칵!" },
   { emoji: "✌️", text: "다같이 볼 옆에 브이~" },
@@ -47,6 +49,7 @@ const POSE_SUGGESTIONS_24 = [
   { emoji: "🎉", text: "마지막 컷! 가장 행복한 표정으로!" }
 ];
 
+// 15종 감성 필터
 const FILTER_PRESETS = {
   normal:       { bright: 100, contrast: 100, saturate: 100, name: '원본' },
   harublue:     { bright: 110, contrast: 105, saturate: 105, name: '하루블루' },
@@ -84,6 +87,10 @@ const APP_THEMES = {
   mint:   { color: '#14b8a6', hover: '#0d9488', light: '#f0fdfa', name: '민트 브리즈' }
 };
 
+// 🌟 스택 및 런타임 변수 최상단 선언
+let historyStack = [];
+let redoStack = [];
+
 let appState = {
   isAdmin: false,
   stream: null,
@@ -94,6 +101,7 @@ let appState = {
   selectedFormat: 'strip',
   viewfinderRatio: 'full',
   currentShotIndex: 0,
+  
   shotImages: [],
   selectedImages: [],
   selectedIndices: [null, null, null, null],
@@ -101,12 +109,13 @@ let appState = {
   shotVideoBlobs: [],
   currentMediaRecorder: null,
   currentShotVideoChunks: [],
-  themeCategory: 'basic',
+
   frameStyle: 'middle',
   frameColor: '#000000',
   frameThickness: 60,
   layout: 'strip',
   customPngOverlayImage: null,
+
   activeFilter: 'normal',
   filters: { bright: 100, contrast: 100, saturate: 100 },
   showDate: true,
@@ -117,11 +126,13 @@ let appState = {
     isBold: true,
     date: getFormattedTodayDate()
   },
+
   stickers: [],
   recentStickers: [],
   selectedStickerIdx: -1,
   dragTarget: null,
-  dragStartPos: { x: 0, y: 0 }
+  dragStartPos: { x: 0, y: 0 },
+  resetInterval: null
 };
 
 let currentCarouselIdx = 0;
@@ -138,6 +149,9 @@ let panStartX = 0;
 let panStartY = 0;
 let currentRatingValue = 5.0;
 
+// ========================================================
+// 1. 오디오 & 햅틱 진동 엔진
+// ========================================================
 let audioCtx = null;
 function initAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -181,11 +195,14 @@ function triggerHaptic(type = 'light') {
   if (!navigator.vibrate) return;
   try {
     if (type === 'light') navigator.vibrate(25);
+    else if (type === 'medium') navigator.vibrate(50);
     else if (type === 'shutter') navigator.vibrate([40, 30, 80]);
   } catch (e) {}
 }
 
-// 🌟 모든 형태의 버튼 호출을 100% 수용하는 단일 진입점
+// ========================================================
+// 2. 1x4 & 2x2 세션 진입점
+// ========================================================
 function startSession(format) {
   appState.selectedFormat = format || 'strip';
   appState.layout = format || 'strip';
@@ -197,15 +214,18 @@ function startSession(format) {
 
   const liveBadge = document.getElementById('liveFormatBadge');
   if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
+  const editBadge = document.getElementById('editorFormatBadge');
+  if (editBadge) editBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
   const progressBadge = document.getElementById('liveProgressBadge');
   if (progressBadge) progressBadge.textContent = "구도 대기실";
 
-  // 화면 즉시 전환
   showScreen('screenLiveShoot');
 
+  // 대기실 UI 활성화
   const waitCtrl = document.getElementById('waitingRoomControls');
   const shootLayer = document.getElementById('activeShootingLayer');
   const bottomBar = document.getElementById('shootingBottomBar');
+
   if (waitCtrl) waitCtrl.classList.remove('hidden');
   if (shootLayer) shootLayer.classList.add('hidden');
   if (bottomBar) bottomBar.classList.add('hidden');
@@ -213,11 +233,9 @@ function startSession(format) {
   startCameraStream();
 }
 
-// 전역 별칭 매핑
+window.startSession = startSession;
 window.enterWaitingRoom = startSession;
 window.requestSessionWithFormat = startSession;
-window.startSessionWithFormat = startSession;
-window.startSession = startSession;
 
 async function startCameraStream(preserveState = false) {
   const video = document.getElementById('liveWebcamVideo');
@@ -229,7 +247,7 @@ async function startCameraStream(preserveState = false) {
   }
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("브라우저의 카메라 권한이 차단되었거나 HTTPS 환경이 아닙니다.\n앨범 사진 선택 모드로 이동합니다.");
+    alert("카메라 권한이 없거나 HTTPS 보안 연결이 아닙니다. 앨범 선택 모드로 이동합니다.");
     triggerGalleryUpload();
     return;
   }
@@ -258,7 +276,7 @@ async function startCameraStream(preserveState = false) {
   }
 
   if (!stream) {
-    alert("카메라 장치를 켤 수 없습니다. 앨범에서 사진을 선택해 주세요!");
+    alert("카메라 장치 연결에 실패했습니다.");
     triggerGalleryUpload();
     return;
   }
@@ -302,6 +320,9 @@ function setViewfinderRatio(ratio, btn) {
   }
 }
 
+// ========================================================
+// 3. 🌟 [수정1] 촬영 대기실에서 '촬영 시작' 버튼 클릭 시
+// ========================================================
 function startActualCountdownSession() {
   playBeep(900);
   triggerHaptic('medium');
@@ -472,6 +493,9 @@ function stopCameraAndAudio() {
   if (audioCtx && audioCtx.state !== 'closed') { try { audioCtx.suspend(); } catch (e) {} } 
 }
 
+// ========================================================
+// 4. 🌟 [수정2] 사진 선택 화면 (슬롯 대형화 & 심플 컬러칩)
+// ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
   appState.selectedIndices = [null, null, null, null]; 
@@ -479,7 +503,6 @@ function renderPickScreen() {
   currentCarouselIdx = 0;
 
   buildPickMiniPreviewStructure();
-  switchThemeCategory(appState.themeCategory || 'basic');
   renderPickColorChips();
   setupCarouselViewer();
   setupSlotDragAndDrop();
@@ -492,30 +515,40 @@ function buildPickMiniPreviewStructure() {
   const isGrid = (appState.selectedFormat === 'grid');
   
   if (isGrid) {
-    container.className = "w-48 sm:w-52 aspect-[2/3] bg-black p-2.5 shadow-2xl flex flex-col justify-between border border-slate-300 rounded-md transition-all";
+    // 🌟 2x2 엽서형 슬롯 대폭 대형화 (w-64 sm:w-72)
+    container.className = "w-64 sm:w-72 aspect-[2/3] bg-black p-3.5 shadow-2xl flex flex-col justify-between border-2 border-slate-300 rounded-2xl transition-all";
+    container.style.backgroundColor = appState.frameColor;
     container.innerHTML = `
-      <div id="pickPreviewHeader" class="text-center text-white text-[10px] font-black font-serif py-0.5">추억네컷</div>
-      <div class="grid grid-cols-2 gap-1.5 flex-1 my-1">
-        <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded">1번 슬롯</div>
-        <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded">2번 슬롯</div>
-        <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded">3번 슬롯</div>
-        <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded">4번 슬롯</div>
+      <div id="pickPreviewHeader" class="text-center text-white text-xs font-black font-serif py-1">추억네컷</div>
+      <div class="grid grid-cols-2 gap-2 flex-1 my-1">
+        <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">1번 슬롯</div>
+        <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">2번 슬롯</div>
+        <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">3번 슬롯</div>
+        <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">4번 슬롯</div>
       </div>
-      <div id="pickPreviewMiddleBanner" class="hidden text-center text-white text-[9px] font-black py-0.5 bg-white/10 rounded my-0.5">추억네컷</div>
-      <div id="pickPreviewFooter" class="hidden text-center text-white text-[10px] font-black font-serif pt-1 border-t border-white/20">추억네컷</div>
+      <div id="pickPreviewFooter" class="text-center text-white text-[11px] font-mono py-1 border-t border-white/20">MEMORIES</div>
     `;
   } else {
-    container.className = "w-40 sm:w-44 bg-black p-2 shadow-2xl flex flex-col space-y-1 border border-slate-300 rounded-md transition-all";
+    // 🌟 1x4 스트립 슬롯 대폭 대형화 (w-52 sm:w-60)
+    container.className = "w-52 sm:w-60 bg-black p-3 shadow-2xl flex flex-col space-y-1.5 border-2 border-slate-300 rounded-2xl transition-all";
+    container.style.backgroundColor = appState.frameColor;
     container.innerHTML = `
-      <div id="pickPreviewHeader" class="text-center text-white text-[10px] font-black font-serif py-0.5 border-b border-white/20">추억네컷</div>
-      <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded">1번 슬롯</div>
-      <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded">2번 슬롯</div>
-      <div id="pickPreviewMiddleBanner" class="hidden text-center text-white text-[9px] font-black py-0.5 bg-white/10 rounded">추억네컷</div>
-      <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded">3번 슬롯</div>
-      <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded">4번 슬롯</div>
-      <div id="pickPreviewFooter" class="hidden text-center text-white text-[10px] font-black font-serif pt-1 border-t border-white/20">추억네컷</div>
+      <div id="pickPreviewHeader" class="text-center text-white text-xs font-black font-serif py-0.5 border-b border-white/20">추억네컷</div>
+      <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-lg shadow-inner">1번 슬롯</div>
+      <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-lg shadow-inner">2번 슬롯</div>
+      <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-lg shadow-inner">3번 슬롯</div>
+      <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-lg shadow-inner">4번 슬롯</div>
+      <div id="pickPreviewFooter" class="text-center text-white text-[11px] font-mono py-0.5 border-t border-white/20">MEMORIES</div>
     `;
   }
+}
+
+function renderPickColorChips() {
+  const container = document.getElementById('pickColorChipBar');
+  if (!container) return;
+  container.innerHTML = PALETTE_COLORS.slice(0, 8).map(c => `
+    <button onclick="changeFrameColor('${c}', null)" class="w-6 h-6 rounded-full border-2 ${appState.frameColor === c ? 'border-theme scale-110 shadow-md' : 'border-white'} shrink-0 shadow-2xs transition" style="background-color:${c};"></button>
+  `).join('');
 }
 
 function setupSlotDragAndDrop() {
@@ -680,18 +713,29 @@ function updatePreviewSlots() {
 function refreshPickUI() {
   const chosenCount = appState.selectedIndices.filter(idx => idx !== null).length;
   const btn = document.getElementById('btnConfirmPick');
-  if (btn) btn.textContent = chosenCount === 4 ? "스튜디오 꾸미기 (완료!)" : `스튜디오 꾸미기 (${chosenCount}/4)`;
+  if (btn) btn.textContent = chosenCount === 4 ? "스튜디오 꾸미기 ➔" : `스튜디오 꾸미기 (${chosenCount}/4)`;
 }
 
+// ========================================================
+// 5. 🌟 [수정3] '스튜디오 꾸미기' 즉각 전환 완벽 보장
+// ========================================================
 function confirmSelectedFour() {
   const missing = appState.selectedIndices.filter(idx => idx === null).length;
   if (missing > 0) { 
     alert(`4장의 사진을 모두 채워주세요!\n(아직 ${missing}개 슬롯이 비어 있습니다)`); 
     return; 
   }
+
+  playBeep(1000);
+  triggerHaptic('medium');
+
   appState.selectedImages = appState.selectedIndices.map(idx => appState.shotImages[idx]);
-  resetEditorToDefault(); 
-  showScreen('screenEdit'); 
+
+  // 안전한 에디터 초기화
+  resetEditorToDefault();
+
+  // 화면 전환 즉시 실행
+  showScreen('screenEdit');
   renderStrip();
 
   const layoutRow = document.getElementById('layoutSelectionRow');
@@ -703,76 +747,981 @@ function confirmSelectedFour() {
   saveSessionStateToStorage();
 }
 
-function switchThemeCategory(category) {
-  appState.themeCategory = category;
-  
-  ['Basic', 'Simple', 'Premium'].forEach(cat => {
-    const tab = document.getElementById('tabTheme' + cat);
-    const panel = document.getElementById('themeSubPanel' + cat);
-    const isTarget = (cat.toLowerCase() === category);
-    if (tab) {
-      if (isTarget) tab.className = "flex-1 py-1.5 rounded-lg bg-white text-theme shadow-2xs font-black";
-      else tab.className = "flex-1 py-1.5 rounded-lg text-slate-500 font-bold";
+function resetEditorToDefault() {
+  appState.stickers = []; 
+  appState.selectedStickerIdx = -1; 
+  appState.layout = appState.selectedFormat || 'strip'; 
+  appState.frameThickness = 60; 
+  appState.activeFilter = 'normal';
+  appState.filters = { bright: 100, contrast: 100, saturate: 100 };
+  appState.typography.fontFamily = 'Pretendard';
+  appState.typography.fontColor = (appState.frameColor === '#FFFFFF' || appState.frameColor === '#E2E8F0') ? '#1E293B' : '#FFFFFF';
+  appState.typography.fontSize = 60;
+
+  const sigInput = document.getElementById('frameSignatureInput'); 
+  if (sigInput) sigInput.value = "추억네컷";
+
+  const slThick = document.getElementById('sliderThickness'); if (slThick) slThick.value = 40;
+  const fineTune = document.getElementById('filterFineTunePanel'); if (fineTune) fineTune.classList.add('hidden');
+  const stBar = document.getElementById('stickerControlBar'); if (stBar) stBar.classList.add('hidden');
+  resetCanvasZoom();
+  historyStack = []; 
+  redoStack = [];
+}
+
+// ========================================================
+// 6. 에디터 캔버스 UHD 샌드위치 렌더링 & 돋보기
+// ========================================================
+function renderStrip(isFinalExport = false) {
+  const canvas = document.getElementById('photoCanvas'); 
+  if (!canvas) return; 
+  const ctx = canvas.getContext('2d');
+  if (!appState.selectedImages || appState.selectedImages.length < 4) return;
+  const layout = appState.layout || 'strip'; 
+  const sigInp = document.getElementById('frameSignatureInput'); 
+  const customTitle = sigInp ? sigInp.value : '추억네컷';
+  const pad = appState.frameThickness || 60; 
+  const gap = Math.round(pad * 0.5);
+  const fStyle = appState.frameStyle;
+
+  if (layout === 'strip') {
+    canvas.width = 1200; canvas.height = 3600;
+  } else if (layout === 'grid' || layout === 'twin') {
+    canvas.width = 1800; canvas.height = 2700;
+  }
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  // [1: 배경 레이어]
+  if (fStyle === 'photoism') ctx.fillStyle = '#0A0A0A';
+  else if (fStyle === 'classicmono') ctx.fillStyle = '#27272A';
+  else if (fStyle === 'y2k') ctx.fillStyle = '#18181B';
+  else ctx.fillStyle = appState.frameColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // [2: 사진 4장 슬롯 레이어]
+  if (layout === 'strip') {
+    if (fStyle === 'middle') {
+      const bannerH = 240; 
+      const imgW = canvas.width - (pad * 2); 
+      const imgH = (canvas.height - (pad * 2) - bannerH - (gap * 3)) / 4;
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, pad, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad, pad + imgH + gap, imgW, imgH); 
+      const bannerY = pad + (imgH * 2) + (gap * 2); 
+      drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle); 
+      const lowerStartY = bannerY + bannerH + gap; 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerStartY, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad, lowerStartY + imgH + gap, imgW, imgH); 
+    } else {
+      const isBottom = (fStyle === 'bottom'); 
+      const topHeaderH = (fStyle === 'simple') ? 180 : 70; 
+      const bottomFooterH = isBottom ? 330 : 70; 
+      const imgW = canvas.width - (pad * 2); 
+      const imgH = (canvas.height - topHeaderH - bottomFooterH - (gap * 3)) / 4;
+
+      renderHeaderOrDecor(ctx, 0, 0, canvas.width, canvas.height, customTitle, topHeaderH, isBottom); 
+      for (let i = 0; i < 4; i++) { 
+        const y = topHeaderH + (i * (imgH + gap)); 
+        drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, y, imgW, imgH); 
+      }
+      if (isBottom || ['photoism', 'classicmono', 'y2k', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) {
+        const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
+        drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle);
+      }
     }
-    if (panel) {
-      if (isTarget) panel.classList.remove('hidden');
-      else panel.classList.add('hidden');
+  } 
+  else if (layout === 'grid') {
+    const isBottom = (fStyle === 'bottom'); 
+    const bannerH = (fStyle === 'middle') ? 210 : 0;
+    const topHeaderH = (fStyle === 'simple' || ['photoism', 'y2k', 'classicmono', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) ? 210 : 70;
+    const bottomFooterH = (isBottom || ['photoism', 'y2k', 'classicmono', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) ? 285 : 75;
+
+    const imgW = (canvas.width - (pad * 2) - gap) / 2; 
+    const imgH = Math.round(imgW * 1.25);
+
+    if (fStyle === 'middle') {
+      const totalContentH = (imgH * 2) + gap + bannerH;
+      const startY = Math.max(pad, (canvas.height - totalContentH) / 2);
+
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, startY, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, startY, imgW, imgH); 
+
+      const bannerY = startY + imgH + gap; 
+      drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle, 52); 
+
+      const lowerY = bannerY + bannerH + gap; 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerY, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + imgW + gap, lowerY, imgW, imgH); 
+    } else {
+      renderHeaderOrDecor(ctx, 0, 0, canvas.width, canvas.height, customTitle, topHeaderH, isBottom); 
+      const coords = [
+        { x: pad, y: topHeaderH }, 
+        { x: pad + imgW + gap, y: topHeaderH }, 
+        { x: pad, y: topHeaderH + imgH + gap }, 
+        { x: pad + imgW + gap, y: topHeaderH + imgH + gap }
+      ];
+      for (let i = 0; i < 4; i++) { 
+        drawFilteredSlotPhoto(ctx, appState.selectedImages[i], coords[i].x, coords[i].y, imgW, imgH); 
+      }
+      if (isBottom || ['photoism', 'y2k', 'classicmono', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) {
+        const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
+        drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle, 48);
+      }
     }
+  }
+  else if (layout === 'twin') {
+    const stripW = (canvas.width / 2) - 30; 
+    const padX = pad * 0.65; 
+    const imgW = stripW - (padX * 2);
+
+    if (fStyle === 'middle') {
+      const bannerH = 180; 
+      const imgH = (canvas.height - (pad * 2) - bannerH - (gap * 3)) / 4;
+      
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], 15 + padX, pad, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], 15 + padX, pad + imgH + gap, imgW, imgH); 
+      drawMiddleBanner(ctx, stripW / 2, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 38); 
+      const lowerY = pad + (imgH * 2) + (gap * 2) + bannerH + gap; 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], 15 + padX, lowerY, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], 15 + padX, lowerY + imgH + gap, imgW, imgH); 
+      
+      const rx = canvas.width / 2 + 15; 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], rx + padX, pad, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], rx + padX, pad + imgH + gap, imgW, imgH); 
+      drawMiddleBanner(ctx, rx + (stripW / 2) - 15, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 38); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], rx + padX, lowerY, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], rx + padX, lowerY + imgH + gap, imgW, imgH); 
+    } else {
+      const isBottom = (fStyle === 'bottom'); 
+      const topHeaderH = isBottom ? 55 : 145; 
+      const bottomFooterH = isBottom ? 240 : 55; 
+      const imgH = (canvas.height - topHeaderH - bottomFooterH - 30 - (gap * 3)) / 4;
+
+      renderHeaderOrDecor(ctx, 15, 15, stripW - 30, canvas.height - 30, customTitle, topHeaderH, isBottom, true); 
+      for (let i = 0; i < 4; i++) { 
+        drawFilteredSlotPhoto(ctx, appState.selectedImages[i], 15 + padX, 15 + topHeaderH + (i * (imgH + gap)), imgW, imgH); 
+      }
+      if (isBottom || ['photoism', 'classicmono', 'y2k', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) {
+        drawBottomStyleFooter(ctx, stripW / 2, (canvas.height - bottomFooterH) + (bottomFooterH / 2), customTitle, 38);
+      }
+
+      const rx = canvas.width / 2 + 15; 
+      renderHeaderOrDecor(ctx, rx, 15, stripW - 30, canvas.height - 30, customTitle, topHeaderH, isBottom, true); 
+      for (let i = 0; i < 4; i++) { 
+        drawFilteredSlotPhoto(ctx, appState.selectedImages[i], rx + padX, 15 + topHeaderH + (i * (imgH + gap)), imgW, imgH); 
+      }
+      if (isBottom || ['photoism', 'classicmono', 'y2k', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) {
+        drawBottomStyleFooter(ctx, rx + (stripW / 2) - 15, (canvas.height - bottomFooterH) + (bottomFooterH / 2), customTitle, 38);
+      }
+    }
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 12]);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 30);
+    ctx.lineTo(canvas.width / 2, canvas.height - 30);
+    ctx.stroke();
+    ctx.font = '32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✂️', canvas.width / 2, 90);
+    ctx.fillText('✂️', canvas.width / 2, canvas.height / 2);
+    ctx.fillText('✂️', canvas.width / 2, canvas.height - 90);
+    ctx.restore();
+  }
+
+  // [3: 투명 PNG 프레임 오버레이]
+  if (appState.customPngOverlayImage) {
+    ctx.drawImage(appState.customPngOverlayImage, 0, 0, canvas.width, canvas.height);
+  }
+
+  // [4: 스티커 및 텍스트]
+  appState.stickers.forEach((st, idx) => {
+    ctx.save();
+    ctx.translate(st.x, st.y);
+    ctx.rotate(((st.rotation || 0) * Math.PI) / 180);
+    if (st.type === 'text') {
+      const fontName = st.fontFamily || 'Pretendard'; 
+      ctx.font = `900 ${st.size}px '${fontName}', sans-serif`; 
+      ctx.fillStyle = st.color || '#FFFFFF'; 
+      ctx.shadowColor = 'rgba(0,0,0,0.85)'; 
+      ctx.shadowBlur = 12; 
+      ctx.textAlign = 'center'; 
+      ctx.textBaseline = 'middle'; 
+      ctx.fillText(st.text, 0, 0);
+    } else {
+      ctx.font = `${st.size}px sans-serif`; 
+      ctx.textAlign = 'center'; 
+      ctx.textBaseline = 'middle'; 
+      ctx.fillText(st.text, 0, 0);
+    }
+    if (!isFinalExport && idx === appState.selectedStickerIdx) {
+      ctx.strokeStyle = '#F43F5E'; ctx.lineWidth = 4; ctx.setLineDash([8, 8]); const radius = (st.type === 'text') ? st.size * 1.1 : st.size * 0.65; ctx.strokeRect(-radius, -st.size * 0.6, radius * 2, st.size * 1.2);
+    }
+    ctx.restore();
   });
-
-  if (category === 'basic') setBasicTextPosition('middle');
-  else if (category === 'simple') setSimpleSubTheme('classicmono');
-  else if (category === 'premium') setPremiumSubTheme('photoism');
 }
 
-function setBasicTextPosition(pos) {
-  appState.customPngOverlayImage = null;
-  appState.frameStyle = pos;
-  updatePreviewHeaderFooter(pos);
-  renderStrip();
+function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin = false) {
+  const fStyle = appState.frameStyle;
+  ctx.save();
+
+  if (fStyle === 'photoism') {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 ${isTwin ? 36 : 56}px 'Playfair Display', serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("photoism", bx + bw - (isTwin ? 30 : 50), by + (topH / 2) + 8);
+    ctx.font = `bold ${isTwin ? 16 : 22}px monospace`;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'left';
+    ctx.fillText('▶ 5', bx + (isTwin ? 25 : 40), by + (topH / 2) + 8);
+  } else if (!isBottom && fStyle === 'simple') {
+    const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827'); 
+    const textColor = isDark ? '#FFFFFF' : '#1E293B'; 
+    ctx.fillStyle = textColor; 
+    ctx.font = `900 ${isTwin ? 38 : 58}px '${appState.typography.fontFamily}', serif`; 
+    ctx.textAlign = 'right'; 
+    ctx.textBaseline = 'middle'; 
+    ctx.fillText(title, bx + bw - (isTwin ? 30 : 50), by + (topH / 2) + 8);
+  }
+  ctx.restore();
 }
 
-function setSimpleSubTheme(styleKey) {
-  appState.customPngOverlayImage = null;
-  appState.frameStyle = styleKey;
-  updatePreviewHeaderFooter(styleKey);
-  renderStrip();
+function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
+  const size = customSize || appState.typography.fontSize || 60; 
+  const weight = appState.typography.isBold ? '900' : 'bold';
+  const showDate = appState.showDate;
+  const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
+  const textColor = appState.typography.fontColor || (isDark ? '#FFFFFF' : '#1E293B');
+  const dateSize = Math.max(18, Math.round(size * 0.45));
+  const gap = Math.max(14, Math.round(size * 0.25));
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = textColor;
+
+  if (showDate) {
+    const totalHeight = size + gap + dateSize;
+    const titleY = centerY - (totalHeight / 2) + (size / 2);
+    const dateY = centerY + (totalHeight / 2) - (dateSize / 2);
+
+    ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title, x, titleY);
+
+    ctx.font = `normal ${dateSize}px '${appState.typography.fontFamily}', sans-serif`;
+    ctx.globalAlpha = 0.75;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(appState.typography.date, x, dateY);
+  } else {
+    ctx.font = `${weight} ${size}px '${appState.typography.fontFamily}', sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title, x, centerY);
+  }
+  ctx.restore();
 }
 
-function setPremiumSubTheme(styleKey) {
-  appState.customPngOverlayImage = null;
-  appState.frameStyle = styleKey;
-  updatePreviewHeaderFooter(styleKey);
-  renderStrip();
+function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
+  const size = customSize || appState.typography.fontSize || 60; 
+  const showDate = appState.showDate;
+  const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
+  const textColor = appState.typography.fontColor || (isDark ? '#FFFFFF' : '#1E293B');
+  const dateSize = Math.max(20, Math.round(size * 0.45));
+  const gap = Math.max(16, Math.round(size * 0.3));
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = textColor;
+
+  if (showDate) {
+    const totalHeight = size + gap + dateSize;
+    const titleY = centerY - (totalHeight / 2) + (size / 2);
+    const dateY = centerY + (totalHeight / 2) - (dateSize / 2);
+
+    ctx.font = `900 ${size}px '${appState.typography.fontFamily}', sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title, x, titleY);
+
+    ctx.font = `normal ${dateSize}px '${appState.typography.fontFamily}', sans-serif`;
+    ctx.globalAlpha = 0.75;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(appState.typography.date, x, dateY);
+  } else {
+    ctx.font = `900 ${size}px '${appState.typography.fontFamily}', sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title, x, centerY);
+  }
+  ctx.restore();
 }
 
-function updatePreviewHeaderFooter(styleKey) {
-  const miniFrame = document.getElementById('pickMiniFramePreview');
-  const headerEl = document.getElementById('pickPreviewHeader');
-  const midEl = document.getElementById('pickPreviewMiddleBanner');
-  const footerEl = document.getElementById('pickPreviewFooter');
+function drawFilteredSlotPhoto(ctx, img, targetX, targetY, targetW, targetH) {
+  if (!img) return;
+  ctx.save(); 
+  ctx.beginPath(); 
+  ctx.rect(targetX, targetY, targetW, targetH); 
+  ctx.clip();
 
-  if (miniFrame) miniFrame.style.backgroundColor = appState.frameColor;
-  if (headerEl) headerEl.classList.add('hidden');
-  if (midEl) midEl.classList.add('hidden');
-  if (footerEl) footerEl.classList.add('hidden');
+  const srcRatio = (img.width || 1920) / (img.height || 1080); 
+  const targetRatio = targetW / targetH; 
+  let renderW, renderH;
 
-  if (styleKey === 'middle') {
-    if (midEl) { midEl.classList.remove('hidden'); midEl.textContent = "추억네컷"; }
-  } else if (styleKey === 'top' || styleKey === 'simple') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "추억네컷"; }
-  } else if (styleKey === 'bottom' || styleKey === 'classicmono') {
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "추억네컷"; }
-  } else if (styleKey === 'photoism') {
-    if (miniFrame) miniFrame.style.backgroundColor = '#0A0A0A';
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "photoism"; }
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "52 PHOTOISM"; }
-  } else if (styleKey === 'y2k') {
-    if (miniFrame) miniFrame.style.backgroundColor = '#18181B';
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "🛸 Y2K VIBE"; }
+  if (srcRatio > targetRatio) { renderH = targetH; renderW = targetH * srcRatio; } 
+  else { renderW = targetW; renderH = targetW / srcRatio; }
+
+  const drawX = targetX + (targetW - renderW) / 2; 
+  const drawY = targetY + (targetH - renderH) / 2;
+  const isNormal = appState.activeFilter === 'normal' && appState.filters.bright === 100 && appState.filters.contrast === 100 && appState.filters.saturate === 100;
+
+  if (isNormal) { 
+    ctx.drawImage(img, drawX, drawY, renderW, renderH); 
+  } else {
+    try {
+      const off = document.createElement('canvas'); 
+      const cw = Math.max(1, Math.round(renderW)); 
+      const ch = Math.max(1, Math.round(renderH)); 
+      off.width = cw; off.height = ch;
+      const offCtx = off.getContext('2d'); 
+      offCtx.imageSmoothingEnabled = true;
+      offCtx.imageSmoothingQuality = 'high';
+      offCtx.drawImage(img, 0, 0, cw, ch); 
+      const imgData = offCtx.getImageData(0, 0, cw, ch); 
+      applyPixelFilterMath(imgData, appState.activeFilter, appState.filters); 
+      offCtx.putImageData(imgData, 0, 0); 
+      ctx.drawImage(off, drawX, drawY, renderW, renderH); 
+    } catch (err) { 
+      ctx.drawImage(img, drawX, drawY, renderW, renderH); 
+    }
+  }
+  ctx.restore();
+}
+
+function applyPixelFilterMath(imageData, filterKey, customAdjust) {
+  const d = imageData.data; 
+  const len = d.length; 
+  const bMul = customAdjust.bright / 100; 
+  const cFactor = ((customAdjust.contrast - 100) * 2.55) / 255 + 1; 
+  const sMul = customAdjust.saturate / 100;
+
+  for (let i = 0; i < len; i += 4) {
+    let r = d[i], g = d[i+1], b = d[i+2];
+
+    if (filterKey === 'harublue') {
+      r = r * 0.94; g = g * 1.05 + 6; b = b * 1.20 + 16;
+    } else if (filterKey === 'deepmono') {
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      r = g = b = gray;
+    } else if (filterKey === 'y2kcyber') {
+      r = r * 0.90; g = g * 1.08 + 10; b = b * 1.02 + 5;
+    } else if (filterKey === 'peachglow') {
+      r = r * 1.15 + 14; g = g * 1.04 + 6; b = b * 0.92;
+    } else if (filterKey === 'naturalgloss') {
+      r = r * 1.12 + 10; g = g * 1.10 + 8; b = b * 1.12 + 10;
+    } else if (filterKey === 'bright') { r = r*1.1+10; g = g*1.08+8; b = b*1.05+6; }
+    else if (filterKey === 'radiant') { r = r*1.12+15; g = g*1.1+12; b = b*1.15+15; }
+    else if (filterKey === 'warm') { r = r*1.12+12; g = g*1.05+6; b = b*0.92; }
+    else if (filterKey === 'cool') { r = r*0.92; g = g*1.02+4; b = b*1.15+12; }
+    else if (filterKey === 'mood') { r = r*1.06+8; g = g*0.98; b = b*0.92+5; }
+    else if (filterKey === 'retro') { r = r*1.08+15; g = g*0.95+8; b = b*0.82+12; }
+    else if (filterKey === 'mono') { const gray = 0.299*r + 0.587*g + 0.114*b; r = g = b = gray; }
+    else if (filterKey === 'sunset') { r = r*1.18+15; g = g*1.02+5; b = b*0.85; }
+    else if (filterKey === 'pink') { r = r*1.15+12; g = g*0.95; b = b*1.1+10; }
+
+    r *= bMul; g *= bMul; b *= bMul; 
+    r = ((r / 255 - 0.5) * cFactor + 0.5) * 255; 
+    g = ((g / 255 - 0.5) * cFactor + 0.5) * 255; 
+    b = ((b / 255 - 0.5) * cFactor + 0.5) * 255;
+
+    if (sMul !== 1 && filterKey !== 'mono' && filterKey !== 'deepmono') { 
+      const lum = 0.299*r + 0.587*g + 0.114*b; 
+      r = lum + (r - lum)*sMul; g = lum + (g - lum)*sMul; b = lum + (b - lum)*sMul; 
+    }
+    d[i] = Math.min(255, Math.max(0, r)); 
+    d[i+1] = Math.min(255, Math.max(0, g)); 
+    d[i+2] = Math.min(255, Math.max(0, b));
   }
 }
 
+// ========================================================
+// 7. 4컷 비디오, 구글 드라이브 직결 QR & PDF/공유
+// ========================================================
+async function generateFourCutVideo() {
+  const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
+  if (!hasValidVideo) {
+    alert("촬영 영상 데이터가 부족합니다.\n동영상 합성은 부스에서 4컷을 연속 촬영했을 때 가능합니다.");
+    return;
+  }
+
+  const btn = document.getElementById('btnAutoVideo'); 
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>합성 중...</span>`;
+  }
+  if (window.lucide) lucide.createIcons();
+
+  try {
+    const videoElements = await Promise.all(appState.selectedIndices.map(shotIdx => {
+      return new Promise((resolve) => {
+        const blob = appState.shotVideoBlobs[shotIdx]; 
+        const v = document.createElement('video'); 
+        v.src = URL.createObjectURL(blob); 
+        v.muted = true; v.loop = true; v.setAttribute('playsinline', ''); 
+        v.onloadedmetadata = () => { v.play().then(() => resolve(v)).catch(() => resolve(v)); };
+      });
+    }));
+
+    const vCanvas = document.createElement('canvas'); 
+    vCanvas.width = 1080; vCanvas.height = 3240;
+    const vCtx = vCanvas.getContext('2d');
+    vCtx.imageSmoothingEnabled = true;
+    vCtx.imageSmoothingQuality = 'high';
+
+    let mimeType = 'video/mp4'; 
+    if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported('video/mp4')) { 
+      mimeType = (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) ? 'video/webm;codecs=vp8' : 'video/webm'; 
+    }
+
+    const stream = vCanvas.captureStream(60); 
+    const recorder = new MediaRecorder(stream, { 
+      mimeType,
+      videoBitsPerSecond: 10000000
+    }); 
+    const chunks = []; 
+    recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+    recorder.onstop = async () => {
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'; 
+      const blob = new Blob(chunks, { type: mimeType }); 
+      currentGeneratedVideoBlob = blob;
+      currentGeneratedVideoFileName = `[추억네컷]_Video_${Date.now()}.${ext}`;
+
+      openVideoResultModal(blob);
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>4컷 비디오</span>`;
+      }
+      if (window.lucide) lucide.createIcons();
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const pureBase64 = extractPureBase64(reader.result);
+        uploadMediaToGoogleDrive(pureBase64, 'video', currentGeneratedVideoFileName, mimeType).catch(() => {});
+      };
+      reader.readAsDataURL(blob);
+    };
+    recorder.start();
+
+    const topH = 160; 
+    const bottomH = 280; 
+    const pad = 50; const gap = 24; 
+    const slotW = vCanvas.width - (pad * 2); 
+    const slotH = (vCanvas.height - topH - bottomH - (gap * 3)) / 4; 
+    const customTitle = (document.getElementById('frameSignatureInput') && document.getElementById('frameSignatureInput').value) || '추억네컷';
+    const startTime = performance.now(); 
+    const totalDuration = 6000;
+
+    function renderVideoLoop(time) {
+      const elapsed = time - startTime; 
+      vCtx.fillStyle = appState.frameColor; 
+      vCtx.fillRect(0, 0, vCanvas.width, vCanvas.height); 
+
+      for (let i = 0; i < 4; i++) {
+        const vy = topH + (i * (slotH + gap)); 
+        vCtx.save(); vCtx.beginPath(); vCtx.rect(pad, vy, slotW, slotH); vCtx.clip(); 
+        const v = videoElements[i]; 
+        const vW = v.videoWidth || 1280; const vH = v.videoHeight || 720; 
+        const vRatio = vW / vH; const targetRatio = slotW / slotH; 
+        let rw, rh;
+        if (vRatio > targetRatio) { rh = slotH; rw = slotH * vRatio; } 
+        else { rw = slotW; rh = slotW / vRatio; }
+        vCtx.drawImage(v, pad + (slotW - rw) / 2, vy + (slotH - rh) / 2, rw, rh); 
+        vCtx.restore();
+      }
+
+      if (appState.customPngOverlayImage) {
+        vCtx.drawImage(appState.customPngOverlayImage, 0, 0, vCanvas.width, vCanvas.height);
+      } else {
+        renderHeaderOrDecor(vCtx, 0, 0, vCanvas.width, vCanvas.height, customTitle, topH, false);
+        drawBottomStyleFooter(vCtx, vCanvas.width / 2, (vCanvas.height - bottomH) + (bottomH / 2), customTitle, 46);
+      }
+
+      if (elapsed < totalDuration) requestAnimationFrame(renderVideoLoop); 
+      else recorder.stop();
+    }
+    requestAnimationFrame(renderVideoLoop);
+  } catch (err) { 
+    alert("비디오 생성 실패: " + err.message); 
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="video" class="w-4 h-4"></i><span>4컷 비디오</span>`; 
+    }
+    if (window.lucide) lucide.createIcons(); 
+  }
+}
+
+function openVideoResultModal(blob) {
+  const modal = document.getElementById('videoResultModal');
+  const player = document.getElementById('videoResultPlayer');
+  if (!modal || !player) return;
+
+  player.src = URL.createObjectURL(blob);
+  modal.classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeVideoResultModal() {
+  const modal = document.getElementById('videoResultModal');
+  const player = document.getElementById('videoResultPlayer');
+  if (player) player.pause();
+  if (modal) modal.classList.add('hidden');
+}
+
+function downloadCurrentVideoFile() {
+  if (!currentGeneratedVideoBlob) return;
+  const url = URL.createObjectURL(currentGeneratedVideoBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentGeneratedVideoFileName || `[추억네컷]_Video_${Date.now()}.mp4`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+async function shareCurrentVideoFile() {
+  if (!currentGeneratedVideoBlob) return;
+  const ext = currentGeneratedVideoFileName.endsWith('.mp4') ? 'mp4' : 'webm';
+  const file = new File([currentGeneratedVideoBlob], currentGeneratedVideoFileName, { type: `video/${ext}` });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: '추억의 네컷 비디오',
+        text: '추억의 네컷 4컷 움직이는 비디오입니다! 🎬'
+      });
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  downloadCurrentVideoFile();
+}
+
+async function generateImageQRCode() {
+  const btn = document.getElementById('btnSaveQR'); 
+  if (btn) { 
+    btn.disabled = true; 
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>클라우드 저장 중</span>`; 
+  }
+  if (window.lucide) lucide.createIcons();
+
+  renderStrip(true); 
+  const canvas = document.getElementById('photoCanvas'); 
+  if (!canvas) return;
+
+  const base64Img = canvas.toDataURL('image/png');
+  const fileName = `[추억네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
+
+  try {
+    const res = await uploadMediaToGoogleDrive(extractPureBase64(base64Img), 'image', fileName, 'image/png');
+
+    if (btn) { 
+      btn.disabled = false; 
+      btn.innerHTML = `<i data-lucide="qr-code" class="w-4 h-4"></i><span>QR 다운로드</span>`; 
+    }
+    if (window.lucide) lucide.createIcons();
+
+    if (res && res.success && res.fileId) {
+      const driveDirectUrl = `https://drive.google.com/file/d/${res.fileId}/view?usp=sharing`;
+      displayResultWithQR(driveDirectUrl);
+    } else {
+      alert("구글 드라이브 업로드 지연 중입니다. 로컬 공유하기로 다운로드해주세요!");
+    }
+  } catch (err) {
+    if (btn) { 
+      btn.disabled = false; 
+      btn.innerHTML = `<i data-lucide="qr-code" class="w-4 h-4"></i><span>QR 다운로드</span>`; 
+    }
+    if (window.lucide) lucide.createIcons();
+    alert("구글 드라이브 통신 중 오류가 발생했습니다: " + err.message);
+  }
+}
+
+async function uploadMediaToGoogleDrive(base64Data, fileType, fileName, mimeType) {
+  try {
+    const res = await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'UPLOAD_MEDIA',
+        base64Data: base64Data,
+        fileType: fileType,
+        fileName: fileName,
+        mimeType: mimeType
+      })
+    });
+    return await res.json();
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function autoSavePDF() {
+  renderStrip(true); 
+  const canvas = document.getElementById('photoCanvas'); 
+  if (!canvas) return; 
+  const imgData = canvas.toDataURL('image/jpeg', 0.98); 
+  const { jsPDF } = window.jspdf; 
+
+  const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait'; 
+  const pdf = new jsPDF({ orientation, unit: 'mm', format: [102, 152] }); 
+
+  const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight(); 
+  const margin = 2; 
+  const maxW = pdfW - (margin * 2), maxH = pdfH - (margin * 2); 
+  const imgRatio = canvas.width / canvas.height; 
+  let printW = maxW, printH = printW / imgRatio; 
+  if (printH > maxH) { printH = maxH; printW = printH * imgRatio; }
+  pdf.addImage(imgData, 'JPEG', (pdfW - printW) / 2, (pdfH - printH) / 2, printW, printH); 
+  pdf.save(`[추억네컷]_Print_${appState.selectedFormat}_${Date.now()}.pdf`);
+}
+
+function sharePhotoDirectly() {
+  renderStrip(true); 
+  const canvas = document.getElementById('photoCanvas'); 
+  if (!canvas) return;
+  canvas.toBlob(async (blob) => {
+    if (!blob) return; 
+    const file = new File([blob], `[추억네컷]_Photo_${Date.now()}.png`, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { 
+      try { await navigator.share({ files: [file], title: '추억의 네컷', text: '추억의 네컷 사진입니다!' }); } catch (err) {} 
+    } else { 
+      const url = URL.createObjectURL(blob); 
+      const a = document.createElement('a'); a.href = url; a.download = file.name; 
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); 
+    }
+  }, 'image/png');
+}
+
+function displayResultWithQR(url) {
+  const qrBox = document.getElementById('qrcodeArea'); 
+  if (!qrBox) return; 
+  qrBox.innerHTML = ''; 
+  new QRCode(qrBox, { text: url, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });
+  showScreen('screenResult'); 
+  startAutoReset();
+}
+
+function returnToEditor() { 
+  if (appState.resetInterval) { clearInterval(appState.resetInterval); appState.resetInterval = null; } 
+  showScreen('screenEdit'); 
+  renderStrip(); 
+}
+
+// ========================================================
+// 8. 돋보기 뷰어 & 캔버스 제스처
+// ========================================================
+function zoomCanvas(amount) {
+  canvasZoom = Math.max(0.4, Math.min(3.0, canvasZoom + amount));
+  applyZoomTransform();
+}
+
+function resetCanvasZoom() {
+  canvasZoom = 1.0;
+  canvasPanX = 0;
+  canvasPanY = 0;
+  applyZoomTransform();
+}
+
+function applyZoomTransform() {
+  const wrapper = document.getElementById('canvasScaleWrapper');
+  if (wrapper) {
+    wrapper.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom})`;
+  }
+  const label = document.getElementById('canvasZoomLabel');
+  if (label) label.textContent = Math.round(canvasZoom * 100) + '%';
+}
+
+function setupCanvasPinchZoom() {
+  const viewport = document.getElementById('canvasViewport');
+  if (!viewport) return;
+
+  let initialPinchDist = 0;
+  let initialZoom = 1.0;
+  let initialPanX = 0;
+  let initialPanY = 0;
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2 && appState.selectedStickerIdx === -1) {
+      e.preventDefault();
+      initialPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialZoom = canvasZoom;
+      initialPanX = canvasPanX;
+      initialPanY = canvasPanY;
+    }
+  }, { passive: false });
+
+  viewport.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && appState.selectedStickerIdx === -1 && initialPinchDist > 0) {
+      e.preventDefault();
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = currentDist / initialPinchDist;
+      canvasZoom = Math.max(0.4, Math.min(3.0, initialZoom * factor));
+      applyZoomTransform();
+    }
+  }, { passive: false });
+
+  viewport.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) initialPinchDist = 0;
+  });
+}
+
+function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY) {
+  const loupe = document.getElementById('floatingLoupe');
+  const lCanvas = document.getElementById('loupeCanvas');
+  const mainCanvas = document.getElementById('photoCanvas');
+  if (!loupe || !lCanvas || !mainCanvas) return;
+
+  loupe.style.left = `${touchX}px`;
+  loupe.style.top = `${touchY}px`;
+  loupe.classList.remove('hidden');
+
+  lCanvas.width = 120;
+  lCanvas.height = 120;
+  const lCtx = lCanvas.getContext('2d');
+  lCtx.imageSmoothingEnabled = true;
+  lCtx.imageSmoothingQuality = 'high';
+  lCtx.clearRect(0, 0, 120, 120);
+
+  const cropSize = 70;
+  lCtx.drawImage(
+    mainCanvas,
+    canvasCoordX - cropSize / 2,
+    canvasCoordY - cropSize / 2,
+    cropSize,
+    cropSize,
+    0,
+    0,
+    120,
+    120
+  );
+
+  lCtx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
+  lCtx.lineWidth = 1.5;
+  lCtx.beginPath();
+  lCtx.moveTo(60, 45); lCtx.lineTo(60, 75);
+  lCtx.moveTo(45, 60); lCtx.lineTo(75, 60);
+  lCtx.stroke();
+}
+
+function hideFloatingLoupe() {
+  const loupe = document.getElementById('floatingLoupe');
+  if (loupe) loupe.classList.add('hidden');
+}
+
+function initCanvasInteractions() {
+  const canvas = document.getElementById('photoCanvas');
+  const viewport = document.getElementById('canvasViewport');
+  if (!canvas || !viewport) return;
+
+  let initialStickerDist = 0;
+  let initialStickerAngle = 0;
+  let baseStickerSize = 65;
+  let baseStickerRotation = 0;
+
+  function getCoords(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      clientX, clientY,
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  function handleStart(e) {
+    if (e.touches && e.touches.length === 2 && appState.selectedStickerIdx !== -1) {
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      initialStickerDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      initialStickerAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * 180 / Math.PI;
+      const st = appState.stickers[appState.selectedStickerIdx];
+      baseStickerSize = st.size;
+      baseStickerRotation = st.rotation || 0;
+      return;
+    }
+
+    const touch = e.touches ? e.touches[0] : e;
+    const c = getCoords(touch.clientX, touch.clientY);
+    let hitSticker = false;
+
+    for (let i = appState.stickers.length - 1; i >= 0; i--) {
+      const st = appState.stickers[i];
+      const dist = Math.hypot(c.x - st.x, c.y - st.y);
+      if (dist <= Math.max(105, st.size * 1.3)) {
+        appState.selectedStickerIdx = i;
+        appState.dragTarget = i;
+        appState.dragStartPos = { x: c.x - st.x, y: c.y - st.y };
+        showStickerControls(st);
+        renderStrip();
+        hitSticker = true;
+        updateFloatingLoupe(touch.clientX, touch.clientY, c.x, c.y);
+        break;
+      }
+    }
+
+    if (!hitSticker) {
+      isPanning = true;
+      panStartX = touch.clientX - canvasPanX;
+      panStartY = touch.clientY - canvasPanY;
+      appState.selectedStickerIdx = -1;
+      appState.dragTarget = null;
+      hideFloatingLoupe();
+      const bar = document.getElementById('stickerControlBar'); 
+      if (bar) bar.classList.add('hidden');
+      renderStrip();
+    }
+  }
+
+  function handleMove(e) {
+    if (e.touches && e.touches.length === 2 && appState.selectedStickerIdx !== -1 && initialStickerDist > 0) {
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const curDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      const curAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * 180 / Math.PI;
+
+      const scaleFactor = curDist / initialStickerDist;
+      const angleDiff = curAngle - initialStickerAngle;
+      const st = appState.stickers[appState.selectedStickerIdx];
+      st.size = Math.max(25, Math.min(320, Math.round(baseStickerSize * scaleFactor)));
+      st.rotation = Math.round((baseStickerRotation + angleDiff + 360) % 360);
+      
+      showStickerControls(st);
+      renderStrip();
+      return;
+    }
+
+    const touch = e.touches ? e.touches[0] : e;
+    const c = getCoords(touch.clientX, touch.clientY);
+
+    if (appState.dragTarget !== null) {
+      if (e.cancelable) e.preventDefault();
+      const st = appState.stickers[appState.dragTarget];
+      st.x = c.x - appState.dragStartPos.x;
+      st.y = c.y - appState.dragStartPos.y;
+      renderStrip();
+      updateFloatingLoupe(touch.clientX, touch.clientY, st.x, st.y);
+    } else if (isPanning) {
+      if (e.cancelable) e.preventDefault();
+      canvasPanX = touch.clientX - panStartX;
+      canvasPanY = touch.clientY - panStartY;
+      applyZoomTransform();
+    }
+  }
+
+  function handleEnd() { 
+    if (appState.dragTarget !== null) saveStateForUndo(); 
+    appState.dragTarget = null; 
+    isPanning = false;
+    initialStickerDist = 0;
+    hideFloatingLoupe();
+  }
+
+  viewport.addEventListener('mousedown', handleStart); 
+  window.addEventListener('mousemove', handleMove); 
+  window.addEventListener('mouseup', handleEnd);
+  viewport.addEventListener('touchstart', handleStart, { passive: false }); 
+  window.addEventListener('touchmove', handleMove, { passive: false }); 
+  window.addEventListener('touchend', handleEnd);
+}
+
+function showStickerControls(st) {
+  const bar = document.getElementById('stickerControlBar'); 
+  if (!bar) return;
+  bar.classList.remove('hidden');
+  const sizeS = document.getElementById('stickerSizeSlider'); if (sizeS) sizeS.value = Math.round(st.size / 1.5);
+  const rotS = document.getElementById('stickerRotateSlider'); if (rotS) rotS.value = st.rotation || 0;
+  const customRow = document.getElementById('stickerTextCustomRow');
+  if (st.type === 'text') { 
+    if (customRow) customRow.classList.remove('hidden'); 
+    const cp = document.getElementById('stickerColorPicker'); if (cp) cp.value = st.color || '#FFFFFF'; 
+    const fs = document.getElementById('stickerFontSelect'); if (fs) fs.value = st.fontFamily || 'Pretendard'; 
+  } else { 
+    if (customRow) customRow.classList.add('hidden'); 
+  }
+}
+
+function onSelectedStickerResize(size) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].size = Math.round(parseInt(size) * 1.5); renderStrip(); } }
+function onSelectedStickerRotate(deg) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].rotation = parseInt(deg); renderStrip(); } }
+function onSelectedStickerColorChange(color) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].color = color; renderStrip(); } }
+function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].fontFamily = fontName; renderStrip(); } }
+function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; hideFloatingLoupe(); const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
+
+function addDirectTextSticker() {
+  const input = document.getElementById('directTextInput');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) { alert("추가할 문구를 입력해주세요!"); return; }
+  addTextSticker(val);
+  input.value = '';
+}
+
+function addTextSticker(text) {
+  saveStateForUndo(); 
+  pushRecentSticker('text', text); 
+  const canvas = document.getElementById('photoCanvas');
+  const newSticker = { 
+    id: Date.now(), type: 'text', text, 
+    x: canvas.width / 2 + (Math.random() * 60 - 30), 
+    y: canvas.height / 2 + (Math.random() * 60 - 30), 
+    size: 80, rotation: 0, color: '#FFFFFF', 
+    fontFamily: appState.typography.fontFamily || 'Pretendard' 
+  };
+  appState.stickers.push(newSticker); 
+  appState.selectedStickerIdx = appState.stickers.length - 1;
+  showStickerControls(newSticker); 
+  renderStrip();
+}
+
+function addEmojiSticker(emoji) {
+  saveStateForUndo(); 
+  pushRecentSticker('emoji', emoji); 
+  const canvas = document.getElementById('photoCanvas');
+  const newSticker = { 
+    id: Date.now(), type: 'emoji', text: emoji, 
+    x: canvas.width / 2 + (Math.random() * 60 - 30), 
+    y: canvas.height / 2 + (Math.random() * 60 - 30), 
+    size: 95, rotation: 0 
+  };
+  appState.stickers.push(newSticker); 
+  appState.selectedStickerIdx = appState.stickers.length - 1;
+  showStickerControls(newSticker); 
+  renderStrip();
+}
+
+function clearAllStickers() { 
+  saveStateForUndo(); 
+  appState.stickers = []; 
+  appState.selectedStickerIdx = -1; 
+  hideFloatingLoupe();
+  const bar = document.getElementById('stickerControlBar'); 
+  if (bar) bar.classList.add('hidden'); 
+  renderStrip(); 
+}
+
+// ========================================================
+// 9. 투명 PNG 프레임 업로더 & 앨범 수집
+// ========================================================
 function triggerCustomFrameUpload() {
   const input = document.getElementById('customFrameInput');
   if (input) { input.value = ''; input.click(); }
@@ -858,7 +1807,68 @@ function updateGalleryCollectModal() {
 
 function cancelGalleryCollect() { galleryAccumulator = []; const m = document.getElementById('galleryCollectModal'); if (m) m.classList.add('hidden'); }
 
-// 🌟 화면 전환 관리 및 강제 display 속성 보정
+// ========================================================
+// 10. 세션 복구 및 화면 전환
+// ========================================================
+function saveSessionStateToStorage() {
+  try {
+    const backupData = {
+      format: appState.selectedFormat,
+      layout: appState.layout,
+      frameStyle: appState.frameStyle,
+      frameColor: appState.frameColor,
+      frameThickness: appState.frameThickness,
+      activeFilter: appState.activeFilter,
+      filters: appState.filters,
+      typography: appState.typography,
+      stickers: appState.stickers,
+      images: appState.selectedImages.map(img => img.src)
+    };
+    sessionStorage.setItem('chueok_active_session', JSON.stringify(backupData));
+    checkPreviousSession();
+  } catch (e) {}
+}
+
+function checkPreviousSession() {
+  const banner = document.getElementById('sessionRestoreBanner');
+  if (!banner) return;
+  const saved = sessionStorage.getItem('chueok_active_session');
+  if (saved) banner.classList.remove('hidden');
+  else banner.classList.add('hidden');
+}
+
+function restorePreviousSession() {
+  const saved = sessionStorage.getItem('chueok_active_session');
+  if (!saved) return;
+  try {
+    const data = JSON.parse(saved);
+    appState.selectedFormat = data.format;
+    appState.layout = data.layout;
+    appState.frameStyle = data.frameStyle;
+    appState.frameColor = data.frameColor;
+    appState.frameThickness = data.frameThickness;
+    appState.activeFilter = data.activeFilter;
+    appState.filters = data.filters;
+    appState.typography = data.typography;
+    appState.stickers = data.stickers || [];
+
+    const imgPromises = data.images.map(src => new Promise(res => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.src = src;
+    }));
+
+    Promise.all(imgPromises).then(imgs => {
+      appState.selectedImages = imgs;
+      showScreen('screenEdit');
+      renderStrip();
+    });
+  } catch (e) {
+    sessionStorage.removeItem('chueok_active_session');
+    checkPreviousSession();
+  }
+}
+
 function showScreen(id) {
   const screenIds = ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'];
   screenIds.forEach(s => {
@@ -877,6 +1887,7 @@ function showScreen(id) {
 }
 
 function cancelSession() { stopCameraAndAudio(); resetApp(); }
+
 function resetApp() {
   if (appState.resetInterval) clearInterval(appState.resetInterval); 
   stopCameraAndAudio();
@@ -890,11 +1901,531 @@ function resetApp() {
   showScreen('screenHome');
 }
 
+function startAutoReset() {
+  if (appState.resetInterval) clearInterval(appState.resetInterval);
+  let sec = 120; 
+  const rText = document.getElementById('resetTimerText'); 
+  if (rText) rText.textContent = `${sec}초`;
+  appState.resetInterval = setInterval(() => { 
+    sec--; 
+    if (rText) rText.textContent = `${sec}초`; 
+    if (sec <= 0) { clearInterval(appState.resetInterval); resetApp(); } 
+  }, 1000);
+}
+
 // ========================================================
-// 초기 구동 엔트리포인트
+// 11. 에디터 레이아웃 & 옵션 제어
+// ========================================================
+function changeLayout(mode, btn) {
+  saveStateForUndo(); 
+  appState.layout = mode;
+  document.querySelectorAll('.layout-btn').forEach(b => { 
+    b.className = "layout-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs"; 
+  });
+  if (btn) btn.className = "layout-btn bg-theme text-white font-bold py-2 rounded-xl text-xs";
+  renderStrip();
+}
+
+function onThicknessChange(val) {
+  appState.frameThickness = Math.round(parseInt(val) * 1.5);
+  renderStrip();
+}
+
+function changeFrameColor(color, btn) {
+  saveStateForUndo(); 
+  appState.frameColor = color;
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.replace('border-theme', 'border-transparent'));
+  if (btn) btn.classList.replace('border-transparent', 'border-theme');
+  if (['#FFFFFF','#E2E8F0','#FECDD3','#BAE6FD','#FAF7EE','#FDFBF7'].includes(color.toUpperCase())) {
+    appState.typography.fontColor = '#1E293B'; 
+  } else {
+    appState.typography.fontColor = '#FFFFFF';
+  }
+  const picker = document.getElementById('fontColorPicker'); 
+  if (picker) picker.value = appState.typography.fontColor;
+  
+  renderPickColorChips();
+  renderStrip();
+}
+
+function handleFilterClick(filterKey, btn) {
+  const isAlreadyActive = (appState.activeFilter === filterKey);
+  if (!isAlreadyActive) {
+    saveStateForUndo(); 
+    appState.activeFilter = filterKey; 
+    const p = FILTER_PRESETS[filterKey] || FILTER_PRESETS.normal; 
+    appState.filters = { ...p };
+    document.querySelectorAll('.filter-btn').forEach(b => { b.className = "filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-lg border border-transparent"; });
+    btn.className = "filter-btn bg-slate-900 text-white font-bold py-1.5 rounded-lg border border-theme";
+    const badge = document.getElementById('filterStateBadge'); if (badge) badge.textContent = p.name;
+    const sb = document.getElementById('sliderBright'); if (sb) sb.value = p.bright;
+    const sc = document.getElementById('sliderContrast'); if (sc) sc.value = p.contrast;
+    const ss = document.getElementById('sliderSaturate'); if (ss) ss.value = p.saturate;
+    renderStrip();
+  } else {
+    const panel = document.getElementById('filterFineTunePanel'); 
+    if (panel) panel.classList.toggle('hidden');
+  }
+}
+
+function onFineTuneSliderChange() {
+  const sb = document.getElementById('sliderBright'); 
+  const sc = document.getElementById('sliderContrast'); 
+  const ss = document.getElementById('sliderSaturate');
+  if (sb) appState.filters.bright = parseInt(sb.value); 
+  if (sc) appState.filters.contrast = parseInt(sc.value); 
+  if (ss) appState.filters.saturate = parseInt(ss.value);
+  renderStrip();
+}
+
+function setFontFamily(fontName, btn) {
+  saveStateForUndo(); 
+  appState.typography.fontFamily = fontName;
+  document.querySelectorAll('.font-btn').forEach(b => { b.classList.replace('border-theme', 'border-slate-200'); b.classList.replace('text-slate-900', 'text-slate-600'); });
+  if (btn) { btn.classList.replace('border-slate-200', 'border-theme'); btn.classList.replace('text-slate-600', 'text-slate-900'); }
+  renderStrip();
+}
+
+function toggleFontBold() {
+  saveStateForUndo(); 
+  appState.typography.isBold = !appState.typography.isBold;
+  const btn = document.getElementById('btnFontBold');
+  if (btn) {
+    if (appState.typography.isBold) btn.className = "px-2 py-0.5 rounded text-[10px] font-black border border-theme bg-theme text-white";
+    else btn.className = "px-2 py-0.5 rounded text-[10px] font-normal border border-slate-300 bg-white text-slate-700";
+  }
+  renderStrip();
+}
+
+function onFontColorChange(color) { appState.typography.fontColor = color; renderStrip(); }
+function onFontSizeChange(size) { appState.typography.fontSize = Math.round(parseInt(size) * 1.5); renderStrip(); }
+function toggleShowDate(checked) { saveStateForUndo(); appState.showDate = checked; renderStrip(); }
+
+function applyEditorThemePreset(styleKey) {
+  appState.customPngOverlayImage = null;
+  appState.frameStyle = styleKey;
+  const sigInput = document.getElementById('frameSignatureInput');
+  if (styleKey === 'middle' && sigInput) sigInput.value = "추억네컷";
+  else if (styleKey === 'simple' && sigInput) sigInput.value = "sangsangPhoto";
+  else if (styleKey === 'bottom' && sigInput) sigInput.value = "인생4컷";
+  else if (styleKey === 'photoism' && sigInput) sigInput.value = "photoism";
+  renderStrip();
+}
+
+// ========================================================
+// 12. 실행취소 & 다시실행
+// ========================================================
+function saveStateForUndo() {
+  const snapshot = JSON.stringify({
+    stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
+    frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
+    filters: appState.filters, showDate: appState.showDate, typography: appState.typography,
+    customTitle: document.getElementById('frameSignatureInput') ? document.getElementById('frameSignatureInput').value : ''
+  });
+  historyStack.push(snapshot); 
+  if (historyStack.length > 25) historyStack.shift(); 
+  redoStack = [];
+}
+
+function undo() {
+  if (historyStack.length === 0) return;
+  const currentSnap = JSON.stringify({
+    stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
+    frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
+    filters: appState.filters, showDate: appState.showDate, typography: appState.typography,
+    customTitle: document.getElementById('frameSignatureInput').value
+  });
+  redoStack.push(currentSnap);
+  applySnapshot(JSON.parse(historyStack.pop()));
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  const currentSnap = JSON.stringify({
+    stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
+    frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
+    filters: appState.filters, showDate: appState.showDate, typography: appState.typography,
+    customTitle: document.getElementById('frameSignatureInput').value
+  });
+  historyStack.push(currentSnap);
+  applySnapshot(JSON.parse(redoStack.pop()));
+}
+
+function applySnapshot(snap) {
+  appState.stickers = snap.stickers || []; 
+  appState.layout = snap.layout; 
+  appState.frameStyle = snap.frameStyle;
+  appState.frameThickness = snap.frameThickness; 
+  appState.frameColor = snap.frameColor; 
+  appState.activeFilter = snap.activeFilter;
+  appState.filters = snap.filters; 
+  appState.showDate = snap.showDate; 
+  appState.typography = snap.typography;
+  if (document.getElementById('frameSignatureInput')) { 
+    document.getElementById('frameSignatureInput').value = snap.customTitle || ''; 
+  }
+  renderStrip();
+}
+
+// ========================================================
+// 13. 관리자 대시보드 & 공지사항
+// ========================================================
+function promptAdminMode() {
+  const pw = prompt("관리자 비밀번호를 입력하세요");
+  if (pw === "0724" || pw === "1234") {
+    appState.isAdmin = true;
+    openAdminDashboard();
+  } else if (pw !== null) {
+    alert("비밀번호가 올바르지 않습니다.");
+  }
+}
+
+let hourlyChartInstance = null;
+let deviceChartInstance = null;
+
+function openAdminDashboard() {
+  document.getElementById('adminDashboardModal').classList.remove('hidden');
+  updateAdminDashboardStats();
+  renderAdminNoticeManageList();
+  renderAdminReviewManageList();
+  renderAdminLocationStats();
+  switchAdminTab('stats');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeAdminDashboard() {
+  document.getElementById('adminDashboardModal').classList.add('hidden');
+}
+
+function switchAdminTab(tabName) {
+  ['stats', 'theme', 'notices', 'reviews'].forEach(t => {
+    const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+    const content = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (t === tabName) {
+      if (btn) btn.className = "flex-1 py-3 border-b-2 border-theme text-theme font-black";
+      if (content) content.classList.remove('hidden');
+    } else {
+      if (btn) btn.className = "flex-1 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-700";
+      if (content) content.classList.add('hidden');
+    }
+  });
+  if (tabName === 'stats') setTimeout(renderCharts, 100);
+}
+
+function updateAdminDashboardStats() {
+  const todayStr = getFormattedTodayDate();
+  const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
+  const todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '1', 10);
+  const totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '2180', 10);
+  const now = new Date();
+  const weekAgo = new Date(); weekAgo.setDate(now.getDate() - 7);
+  const monthAgo = new Date(); monthAgo.setDate(now.getDate() - 30);
+  let weekVisits = 0, monthVisits = 0;
+
+  logs.forEach(l => {
+    const logDate = new Date(l.date.replace(/\./g, '-'));
+    if (logDate >= weekAgo) weekVisits++;
+    if (logDate >= monthAgo) monthVisits++;
+  });
+
+  const elToday = document.getElementById('dashToday');
+  const elWeek = document.getElementById('dashWeek');
+  const elMonth = document.getElementById('dashMonth');
+  const elTotal = document.getElementById('dashTotal');
+  if (elToday) elToday.textContent = todayVisits;
+  if (elWeek) elWeek.textContent = Math.max(todayVisits, weekVisits);
+  if (elMonth) elMonth.textContent = Math.max(todayVisits, monthVisits);
+  if (elTotal) elTotal.textContent = totalVisits.toLocaleString();
+}
+
+function renderCharts() {
+  if (typeof Chart === 'undefined') return;
+  const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
+
+  const hourlyCounts = Array(24).fill(0);
+  logs.forEach(l => { if (typeof l.hour === 'number' && l.hour >= 0 && l.hour <= 23) hourlyCounts[l.hour]++; });
+
+  const ctxHourly = document.getElementById('chartHourly');
+  if (ctxHourly) {
+    if (hourlyChartInstance) hourlyChartInstance.destroy();
+    hourlyChartInstance = new Chart(ctxHourly.getContext('2d'), {
+      type: 'bar',
+      data: { labels: Array.from({length: 24}, (_, i) => i + '시'), datasets: [{ label: '방문자수', data: hourlyCounts, backgroundColor: 'rgba(244, 63, 94, 0.75)', borderRadius: 6 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  }
+
+  const deviceCounts = JSON.parse(localStorage.getItem('chueok_device_stats') || '{}');
+  const deviceLabels = ["아이폰", "안드로이드폰", "아이패드", "안드로이드패드", "PC", "기타"];
+  const deviceData = deviceLabels.map(k => deviceCounts[k] || 0);
+
+  const ctxDev = document.getElementById('chartDevice');
+  if (ctxDev) {
+    if (deviceChartInstance) deviceChartInstance.destroy();
+    deviceChartInstance = new Chart(ctxDev.getContext('2d'), {
+      type: 'doughnut',
+      data: { 
+        labels: deviceLabels, 
+        datasets: [{ 
+          data: deviceData.some(v => v > 0) ? deviceData : [1, 0, 0, 0, 0, 0], 
+          backgroundColor: ['#f43f5e', '#10b981', '#0284c7', '#8b5cf6', '#f59e0b', '#64748b'] 
+        }] 
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+}
+
+function renderAdminLocationStats() {
+  const container = document.getElementById('adminLocationStatsList');
+  if (!container) return;
+  const locMap = JSON.parse(localStorage.getItem('chueok_location_stats') || '{}');
+  const entries = Object.entries(locMap);
+
+  if (entries.length === 0) {
+    container.innerHTML = `<p class="text-slate-400 text-center py-4">수집된 지역 통계가 없습니다.</p>`;
+    return;
+  }
+
+  entries.sort((a, b) => b[1] - a[1]);
+  container.innerHTML = entries.map(([loc, count]) => `
+    <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+      <span class="font-bold text-slate-700 flex items-center"><i data-lucide="map-pin" class="w-3 h-3 text-rose-500 mr-1"></i>${loc}</span>
+      <span class="font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">${count}회</span>
+    </div>
+  `).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderAdminNoticeManageList() {
+  const listEl = document.getElementById('adminNoticeManageList');
+  if (!listEl) return;
+  const notices = getStoredNotices();
+  listEl.innerHTML = notices.map(n => `
+    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+      <div>
+        <span class="font-black text-theme text-[10px] mr-1">[${n.version || '공지'}]</span>
+        <span class="font-bold text-slate-800">${n.content}</span>
+        <p class="text-[9px] text-slate-400 mt-0.5">${n.date}</p>
+      </div>
+      <button onclick="deleteNotice('${n.id}')" class="text-[10px] text-rose-600 underline font-bold ml-2 shrink-0">삭제</button>
+    </div>
+  `).join('');
+}
+
+function renderAdminReviewManageList() {
+  const listEl = document.getElementById('adminReviewManageList');
+  if (!listEl) return;
+  const posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
+  if (posts.length === 0) { 
+    listEl.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">등록된 후기가 없습니다.</p>`; 
+    return; 
+  }
+  listEl.innerHTML = posts.map(p => `
+    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-slate-800">${escapeHtml(p.nickname)} <b class="text-amber-500 ml-1">★ ${p.rating || 5.0}</b></span>
+        <button onclick="deleteReviewPost(${p.id})" class="text-[10px] bg-rose-50 text-rose-600 border border-rose-200 px-2 py-0.5 rounded font-black">삭제</button>
+      </div>
+      <p class="text-[11px] text-slate-600 break-words">${escapeHtml(p.content)}</p>
+    </div>
+  `).join('');
+}
+
+async function writeAdminNotice() {
+  const content = prompt("새 공지사항 내용을 입력하세요:");
+  if (!content || !content.trim()) return;
+
+  const newNotice = { 
+    id: Date.now().toString(), 
+    date: getFormattedTodayDate(), 
+    version: 'v16.0', 
+    content: content.trim() 
+  };
+  let list = getStoredNotices();
+  list.unshift(newNotice);
+  localStorage.setItem('vibe_notices', JSON.stringify(list));
+  renderMainNotices(); 
+  renderAdminNoticeManageList();
+
+  try {
+    await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'ADD_NOTICE',
+        content: newNotice.content,
+        version: newNotice.version
+      })
+    });
+  } catch (e) {}
+}
+
+async function deleteNotice(id) {
+  if (!confirm("이 공지를 영구 삭제하시겠습니까?")) return;
+  let list = getStoredNotices().filter(n => String(n.id) !== String(id));
+  localStorage.setItem('vibe_notices', JSON.stringify(list));
+  renderMainNotices(); 
+  renderAdminNoticeManageList();
+
+  try {
+    await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'DELETE_NOTICE', id: id })
+    });
+  } catch (e) {}
+}
+
+function getStoredNotices() {
+  const stored = localStorage.getItem('vibe_notices');
+  let list = [];
+  if (stored) { 
+    try { list = JSON.parse(stored); } catch(e) { list = []; } 
+  }
+  if (!list || list.length === 0) {
+    list = [{ 
+      id: 'v16_0', 
+      date: getFormattedTodayDate(), 
+      version: 'v16.0', 
+      content: '구도 대기실, 투명 PNG 커스텀 프레임 & 구글 드라이브 직결 QR 업데이트 완료!' 
+    }];
+  }
+  return list;
+}
+
+function renderMainNotices() {
+  const container = document.getElementById('noticeListContainer');
+  const area = document.getElementById('mainNoticeArea');
+  if (!container || !area) return;
+  area.classList.remove('hidden');
+  container.innerHTML = `
+    <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-left">
+      <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0">v16.0</span>
+      <p class="text-[11px] font-bold text-slate-800 truncate ml-2">구도 대기실 & 스튜디오 에디터 안정화 완료!</p>
+    </div>
+  `;
+}
+
+function loadSavedTheme() {
+  const saved = localStorage.getItem('chueok_ui_theme') || 'rose';
+  const t = APP_THEMES[saved] || APP_THEMES.rose;
+  document.documentElement.style.setProperty('--theme-color', t.color);
+  document.documentElement.style.setProperty('--theme-primary', t.color);
+  document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
+  document.documentElement.style.setProperty('--theme-color-hover', t.hover);
+  document.documentElement.style.setProperty('--theme-color-light', t.light);
+}
+
+function applyAppTheme(themeKey) {
+  const t = APP_THEMES[themeKey] || APP_THEMES.rose;
+  document.documentElement.style.setProperty('--theme-color', t.color);
+  document.documentElement.style.setProperty('--theme-primary', t.color);
+  document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
+  document.documentElement.style.setProperty('--theme-color-hover', t.hover);
+  document.documentElement.style.setProperty('--theme-color-light', t.light);
+  localStorage.setItem('chueok_ui_theme', themeKey);
+}
+
+function setTimerSec(sec, btn) { 
+  appState.timerSec = sec; 
+  document.querySelectorAll('.timer-chip').forEach(b => { 
+    b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded text-[10px]"; 
+  }); 
+  if (btn) btn.className = "timer-chip bg-theme text-white font-bold px-1.5 py-0.5 rounded text-[10px] shadow-xs"; 
+}
+
+function pushRecentSticker(type, text) {
+  appState.recentStickers = appState.recentStickers.filter(item => item.text !== text);
+  appState.recentStickers.unshift({ type, text });
+  if (appState.recentStickers.length > 5) appState.recentStickers.pop();
+  renderRecentStickers();
+}
+
+function renderRecentStickers() {
+  const listEl = document.getElementById('recentStickersList');
+  if (!listEl) return;
+  listEl.innerHTML = `<span class="text-[10px] text-slate-300 italic">없음</span>`;
+}
+
+function initDynamicUI() {
+  const fonts = [
+    { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
+    { name: 'Pretendard', label: '프리텐다드', css: 'font-family:"Pretendard"; font-weight:700;' },
+    { name: 'Do Hyeon', label: '도현체', css: 'font-family:"Do Hyeon";' },
+    { name: 'Jua', label: '주아체', css: 'font-family:"Jua";' },
+    { name: 'Gowun Batang', label: '고운바탕', css: 'font-family:"Gowun Batang"; font-weight:700;' },
+    { name: 'Gaegu', label: '개구쟁이', css: 'font-family:"Gaegu"; font-weight:700;' },
+    { name: 'Noto Sans KR', label: '본고딕', css: 'font-family:"Noto Sans KR"; font-weight:700;' },
+    { name: 'Dongle', label: '동글체', css: 'font-family:"Dongle"; font-weight:700; font-size: 1.2em;' },
+    { name: 'Nanum Pen Script', label: '나눔손글씨', css: 'font-family:"Nanum Pen Script"; font-size: 1.2em;' },
+    { name: 'Black Han Sans', label: '검은고딕', css: 'font-family:"Black Han Sans";' }
+  ];
+  const fontGrid = document.getElementById('fontGrid');
+  if (fontGrid) {
+    fontGrid.innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1 rounded text-[9px] truncate" style="${f.css}">${f.label}</button>`).join('');
+  }
+
+  const emojis = [
+    '😀','😁','😂','😃','😄','😅','😆','😇','😈','😉','😊','😋','😌','😍','😎',
+    '😏','😐','😑','😒','😓','😔','😕','😖','😗','😘','😙','😚','😛','😜','😝',
+    '😞','😟','😠','😡','😢','😣','😤','😥','😨','😩','😪','😫','😭','😮','🥹',
+    '✌️','💖','🎀','🐱','🐶','🐰','✨','🎂','🌸','🍀','🥳','🧸','🔥','💯','🍿'
+  ];
+  const emojiGrid = document.getElementById('emojiGrid');
+  if (emojiGrid) {
+    emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded cursor-pointer active:scale-90 transition">${e}</button>`).join('');
+  }
+
+  const texts = [
+    '추억네컷', 'BEST', 'LOVE', 'YOUTH', 'HAPPY', 'VIBE', 'OUR DAY', 'CHILL', 'SMILE', 'FOREVER',
+    '인생네컷', '오늘의 우리', '완벽한 하루', '행복만땅', '심쿵주의', '찐친바이브', '영원한 청춘', 'LUCKY DAY', 'MEMORIES', 'SO CUTE'
+  ];
+  const textStickerGrid = document.getElementById('textStickerGrid');
+  if (textStickerGrid) {
+    textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer active:scale-95 transition">${t}</button>`).join('');
+  }
+
+  const frameColorGrid = document.getElementById('frameColorGrid');
+  if (frameColorGrid) {
+    frameColorGrid.innerHTML = PALETTE_COLORS.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') +
+      `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
+  }
+
+  renderPickColorChips();
+  renderRecentStickers();
+
+  setTimeout(() => {
+    const firstColor = document.querySelector('.color-btn');
+    if (firstColor) changeFrameColor('#000000', firstColor);
+    const firstFont = document.querySelector('.font-btn');
+    if (firstFont) setFontFamily('Pretendard', firstFont);
+    if (window.lucide) lucide.createIcons();
+  }, 40);
+}
+
+function shareWebAppUrl() {
+  const shareUrl = window.location.href.split('?')[0];
+  if (navigator.share && navigator.canShare && navigator.canShare({ url: shareUrl })) {
+    navigator.share({ title: '추억의 네컷', url: shareUrl }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(shareUrl).then(() => alert("링크가 복사되었습니다! 📋")).catch(() => {});
+  }
+}
+
+function openCustomerBotModal() {
+  document.getElementById('customerBotModal').classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeCustomerBotModal() {
+  document.getElementById('customerBotModal').classList.add('hidden');
+}
+
+// ========================================================
+// 14. 엔트리포인트 (초기 로드)
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
-  // 모달 및 서브 화면 인라인 숨김 보장
   ['screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult', 'videoResultModal', 'galleryCollectModal', 'adminDashboardModal'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.setProperty('display', 'none', 'important');
@@ -912,61 +2443,3 @@ window.addEventListener('DOMContentLoaded', () => {
 
   try { if (window.lucide) lucide.createIcons(); } catch (e) {}
 });
-
-function loadSavedTheme() {
-  const saved = localStorage.getItem('chueok_ui_theme') || 'rose';
-  const t = APP_THEMES[saved] || APP_THEMES.rose;
-  document.documentElement.style.setProperty('--theme-color', t.color);
-  document.documentElement.style.setProperty('--theme-primary', t.color);
-  document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
-  document.documentElement.style.setProperty('--theme-color-hover', t.hover);
-  document.documentElement.style.setProperty('--theme-color-light', t.light);
-}
-
-function initDynamicUI() {
-  renderPickColorChips();
-  renderRecentStickers();
-}
-
-function renderPickColorChips() {
-  const container = document.getElementById('pickColorChipBar');
-  if (!container) return;
-  container.innerHTML = PALETTE_COLORS.slice(0, 8).map(c => `
-    <button onclick="changeFrameColor('${c}', null)" class="w-5 h-5 rounded-full border-2 ${appState.frameColor === c ? 'border-theme scale-110 shadow' : 'border-white'} shrink-0 shadow-2xs" style="background-color:${c};"></button>
-  `).join('');
-}
-
-function renderRecentStickers() {
-  const listEl = document.getElementById('recentStickersList');
-  if (!listEl) return;
-  listEl.innerHTML = `<span class="text-[10px] text-slate-300 italic">없음</span>`;
-}
-
-function setTimerSec(sec, btn) { 
-  appState.timerSec = sec; 
-  document.querySelectorAll('.timer-chip').forEach(b => { 
-    b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded text-[10px]"; 
-  }); 
-  if (btn) btn.className = "timer-chip bg-theme text-white font-bold px-1.5 py-0.5 rounded text-[10px] shadow-xs"; 
-}
-
-function checkPreviousSession() {
-  const banner = document.getElementById('sessionRestoreBanner');
-  if (!banner) return;
-  const saved = sessionStorage.getItem('chueok_active_session');
-  if (saved) banner.classList.remove('hidden');
-  else banner.classList.add('hidden');
-}
-
-function renderMainNotices() {
-  const container = document.getElementById('noticeListContainer');
-  const area = document.getElementById('mainNoticeArea');
-  if (!container || !area) return;
-  area.classList.remove('hidden');
-  container.innerHTML = `
-    <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-left">
-      <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0">v16.0</span>
-      <p class="text-[11px] font-bold text-slate-800 truncate ml-2">구도 대기실, 투명 PNG 프레임 & 구글 드라이브 직결 QR 적용 완료!</p>
-    </div>
-  `;
-}
