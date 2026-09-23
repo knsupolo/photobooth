@@ -14,7 +14,7 @@
  * 10. 스튜디오 에디터 전환 및 앨범 4장 업로드 수집기
  */
 
-const GOOGLE_DB_URL = "https://script.google.com/macros/library/d/1zRIH_i-lHoggXh2y5_ttW7qG3AzyR5IzDKmmOeMqKzQPqLmLQOUn2jJn/3";
+const GOOGLE_DB_URL = "https://script.google.com/macros/library/d/1oul5_FaWLpQFEGRw_rT2yeMSwqbraKiOwsASE_K_dMpCxXXETbqun1LL/9";
 const APP_VERSION = "v17.0 Pro";
 const MAX_GALLERY_SLOTS = 10;
 
@@ -1355,6 +1355,7 @@ function updateGalleryCollectModal() {
 
 function cancelGalleryCollect() { galleryAccumulator = []; const m = document.getElementById('galleryCollectModal'); if (m) m.classList.add('hidden'); }
 
+// [1편 끝 - 2편(후반부) 코드를 바로 아래에 이어서 붙여넣어 주세요]
 // ========================================================
 // 8. 🌟 3대 테마 분류 컨트롤러 (비회원 제한 & 테마별 Safe Zone)
 // ========================================================
