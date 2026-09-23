@@ -1,14 +1,11 @@
 /**
- * 추억의 네컷 Studio Pro v15.5
+ * 추억의 네컷 Studio Pro v15.6 UHD [1편 / 총 2편]
  * 
- * [v15.5 핵심 수정 및 기능 보강]
- * 1. 카메라 검정 화면 오류 완벽 해결: 비디오 스트림 렌더링 보장 및 풀 화면 100% 무손실 캡처
- * 2. 사진 선택 화면 시각적 피드백 강화: 선택된 슬롯 펄스 링(Ring) 강조 및 음향 피드백
- * 3. 사진 선택 단계 프레임 색상 선택칩(pickColorChipBar) 연동
- * 4. 1×4 모드 전용 2줄 인쇄용(Twin 4×6) 레이아웃 복원
- * 5. 기본 문구 '추억네컷' 지정 및 스페셜 프레임 테마 9종(레트로, 클래식 필름, 청춘 우정 추가) 확장
- * 6. 4컷 비디오 대형 모달 ('파일의 저장' | '공유') & 불필요 문구 제거
- * 7. QR코드 직접 다운로드 링크(tmpfiles.org/dl/...) 복원
+ * [1편 포함 영역]
+ * - 전역 설정, 테마 팔레트, 오디오 엔진
+ * - UHD 카메라 스트림 획득 & 풀 화면 촬영
+ * - 사진 선택 대형 캐러셀 & 미선택 사진 자동 스와이프
+ * - 앨범 사진 4장 수집 엔진
  */
 
 // 🌟 구글 앱스 스크립트 웹앱 배포 URL
@@ -72,13 +69,13 @@ const PALETTE_COLORS = [
 
 let appState = {
   isAdmin: false, stream: null, facingMode: 'user', timerSec: 6, currentCount: 6, countdownTimer: null,
-  selectedFormat: 'strip', // 'strip' | 'grid'
+  selectedFormat: 'strip',
   isOrientationMatched: true,
   shotImages: [], selectedImages: [], selectedIndices: [null, null, null, null], activeSlotIndex: 0,
   stickers: [], recentStickers: [], selectedStickerIdx: -1, dragTarget: null, dragStartPos: { x: 0, y: 0 },
-  layout: 'strip', frameStyle: 'middle', frameThickness: 40, frameColor: '#000000',
+  layout: 'strip', frameStyle: 'middle', frameThickness: 60, frameColor: '#000000',
   activeFilter: 'normal', filters: { bright: 100, contrast: 100, saturate: 100 },
-  showDate: true, typography: { fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() },
+  showDate: true, typography: { fontFamily: 'Playfair Display', fontSize: 60, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() },
   shotVideoBlobs: [], currentMediaRecorder: null, currentShotVideoChunks: [], resetInterval: null
 };
 
@@ -107,6 +104,7 @@ function initAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }
+
 function playBeep(freq = 700) {
   try {
     initAudio();
@@ -121,6 +119,7 @@ function playBeep(freq = 700) {
     osc.stop(audioCtx.currentTime + 0.1);
   } catch (e) {}
 }
+
 function playRealisticShutter() {
   try {
     initAudio();
@@ -152,7 +151,7 @@ function playRealisticShutter() {
 }
 
 // ========================================================
-// 2. UI 테마 바인딩
+// 2. UI 테마 설정
 // ========================================================
 function applyAppTheme(themeKey) {
   const t = APP_THEMES[themeKey] || APP_THEMES.rose;
@@ -187,7 +186,7 @@ function loadSavedTheme() {
 }
 
 // ========================================================
-// 3. UI 동적 바인딩 & 프리셋 초기화
+// 3. UI 동적 바인딩 & 컬러칩 바
 // ========================================================
 function initDynamicUI() {
   const fonts = [
@@ -227,14 +226,12 @@ function initDynamicUI() {
     textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer active:scale-95 transition">${t}</button>`).join('');
   }
 
-  // 에디터 프레임 컬러 팔레트
   const frameColorGrid = document.getElementById('frameColorGrid');
   if (frameColorGrid) {
     frameColorGrid.innerHTML = PALETTE_COLORS.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') +
       `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
   }
 
-  // 🌟 사진 선택 화면 전용 프레임 컬러칩 렌더링
   renderPickColorChips();
   renderRecentStickers();
 
@@ -294,7 +291,7 @@ function requestSessionWithFormat(format) {
   appState.layout = format;
 
   const liveBadge = document.getElementById('liveFormatBadge');
-  if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 가로 풀화면" : "2×2 세로 풀화면";
+  if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 가로 풀화면 (UHD)" : "2×2 세로 풀화면 (UHD)";
   
   const editBadge = document.getElementById('editorFormatBadge');
   if (editBadge) editBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
@@ -316,7 +313,7 @@ function checkOrientationState() {
   if (!isMobileOrTablet) {
     appState.isOrientationMatched = true;
     if (overlay) overlay.classList.add('hidden');
-    if (ratioBadge) ratioBadge.textContent = (appState.selectedFormat === 'strip') ? "가로 풀 화면 촬영" : "세로 풀 화면 촬영";
+    if (ratioBadge) ratioBadge.textContent = (appState.selectedFormat === 'strip') ? "가로 풀 화면 (UHD)" : "세로 풀 화면 (UHD)";
     return;
   }
 
@@ -333,7 +330,7 @@ function checkOrientationState() {
     } else {
       appState.isOrientationMatched = true;
       if (overlay) overlay.classList.add('hidden');
-      if (ratioBadge) ratioBadge.textContent = "가로 풀 화면 촬영";
+      if (ratioBadge) ratioBadge.textContent = "가로 풀 화면 (UHD)";
     }
   } else {
     if (isLandscape) {
@@ -346,13 +343,13 @@ function checkOrientationState() {
     } else {
       appState.isOrientationMatched = true;
       if (overlay) overlay.classList.add('hidden');
-      if (ratioBadge) ratioBadge.textContent = "세로 풀 화면 촬영";
+      if (ratioBadge) ratioBadge.textContent = "세로 풀 화면 (UHD)";
     }
   }
 }
 
 // ========================================================
-// 5. 🌟 카메라 촬영 (검은 화면 차단 및 풀 화면 노출)
+// 5. 카메라 촬영 (UHD 네이티브 해상도 수신)
 // ========================================================
 async function startPhotoSession() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
@@ -379,6 +376,7 @@ async function startPhotoSession() {
   }
 
   const videoConstraints = [
+    { video: { facingMode: appState.facingMode, width: { ideal: 3840, min: 1920 }, height: { ideal: 2160, min: 1080 } }, audio: false },
     { video: { facingMode: appState.facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
     { video: { facingMode: appState.facingMode }, audio: false },
     { video: true, audio: false }
@@ -406,7 +404,7 @@ async function startPhotoSession() {
     try { 
       await video.play(); 
     } catch (playErr) {
-      console.warn("비디오 자동 재생 대기 중:", playErr);
+      console.warn("비디오 재생 대기 중:", playErr);
     }
   }
 
@@ -427,8 +425,11 @@ function startSingleCutVideoRecording() {
     try { 
       appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/mp4' }); 
     } catch (e2) { 
-      try { appState.currentMediaRecorder = new MediaRecorder(appState.stream); } 
-      catch (e3) { appState.currentMediaRecorder = null; } 
+      try { 
+        appState.currentMediaRecorder = new MediaRecorder(appState.stream); 
+      } catch (e3) { 
+        appState.currentMediaRecorder = null; 
+      } 
     } 
   }
   if (appState.currentMediaRecorder) { 
@@ -502,7 +503,6 @@ function triggerInstantOneSec() {
   }, 1000);
 }
 
-// 🌟 풀 화면 100% 캡처 (영상 준비 완료 상태 안전 검증)
 function captureWebcamFrame(shotIndex, onDone) {
   playRealisticShutter(); 
   flashScreen();
@@ -510,11 +510,13 @@ function captureWebcamFrame(shotIndex, onDone) {
   const canvas = document.getElementById('hiddenSnapCanvas');
   if (!video || !canvas) return;
 
-  const vw = video.videoWidth || 1280;
-  const vh = video.videoHeight || 720;
+  const vw = video.videoWidth || 1920;
+  const vh = video.videoHeight || 1080;
   canvas.width = vw;
   canvas.height = vh;
   const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
   ctx.save();
   if (appState.facingMode === 'user') {
@@ -534,7 +536,7 @@ function captureWebcamFrame(shotIndex, onDone) {
     }
     if (onDone) onDone();
   };
-  img.src = canvas.toDataURL('image/jpeg', 0.92);
+  img.src = canvas.toDataURL('image/jpeg', 0.99);
 }
 
 function flashScreen() { 
@@ -550,7 +552,7 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 6. 🌟 사진 선택 (피드백 강화 & 대형 뷰어 & 미선택 자동 넘김)
+// 6. 사진 선택 (대형 캐러셀 & 미선택 사진 자동 스와이프)
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
@@ -668,7 +670,6 @@ function assignCurrentCarouselPhoto() {
   assignPhotoToCurrentSlot(currentCarouselIdx);
 }
 
-// 🌟 슬롯 선택 피드백 강화
 function selectSlotForAssignment(slotIdx) {
   playBeep(800);
   appState.activeSlotIndex = slotIdx;
@@ -700,7 +701,6 @@ function assignPhotoToCurrentSlot(shotIdx) {
     selectSlotForAssignment((appState.activeSlotIndex + 1) % 4);
   }
 
-  // 🌟 아직 슬롯에 들어가지 않은 다음 사진으로 자동 전환
   const nextUnselectedIdx = appState.shotImages.findIndex((_, idx) => !appState.selectedIndices.includes(idx));
   if (nextUnselectedIdx !== -1) {
     currentCarouselIdx = nextUnselectedIdx;
@@ -743,19 +743,17 @@ function confirmSelectedFour() {
   showScreen('screenEdit'); 
   renderStrip();
 
-  // 🌟 1x4 스트립일 때만 2줄 인쇄용(Twin 4x6) 버튼 행 노출
   const layoutRow = document.getElementById('layoutSelectionRow');
   if (layoutRow) {
     if (appState.selectedFormat === 'strip') layoutRow.classList.remove('hidden');
     else layoutRow.classList.add('hidden');
   }
 
-  // 구글 드라이브(추억의네컷_저장소) 백그라운드 자동 백업
   setTimeout(() => {
     const canvas = document.getElementById('photoCanvas');
     if (canvas) {
       const pureBase64 = extractPureBase64(canvas.toDataURL('image/png'));
-      const fileName = `[추억의네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
+      const fileName = `[추억네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
       uploadMediaToGoogleDrive(pureBase64, 'image', fileName, 'image/png').catch(() => {});
     }
   }, 800);
@@ -765,13 +763,12 @@ function resetEditorToDefault() {
   appState.stickers = []; 
   appState.selectedStickerIdx = -1; 
   appState.layout = appState.selectedFormat || 'strip'; 
-  appState.frameThickness = 40; 
+  appState.frameThickness = 60; 
   appState.activeFilter = 'normal'; 
   appState.filters = { bright: 100, contrast: 100, saturate: 100 }; 
   appState.showDate = true; 
-  appState.typography = { fontFamily: 'Playfair Display', fontSize: 40, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() };
+  appState.typography = { fontFamily: 'Playfair Display', fontSize: 60, fontColor: '#FFFFFF', isBold: true, date: getFormattedTodayDate() };
 
-  // 🌟 기본 문구: '추억네컷' 지정
   const sigInput = document.getElementById('frameSignatureInput'); 
   if (sigInput) sigInput.value = "추억네컷";
 
@@ -783,7 +780,7 @@ function resetEditorToDefault() {
 }
 
 // ========================================================
-// 7. 앨범 업로드 & 에디터 캔버스 줌/팬 제어
+// 7. 앨범 업로드 & 캔버스 줌/팬
 // ========================================================
 function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
 
@@ -793,10 +790,21 @@ function compressAndLoadImage(file) {
     reader.onload = (ev) => {
       const img = new Image();
       img.onload = () => {
-        const maxDim = 1280; let w = img.width, h = img.height;
-        if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; } }
-        const c = document.createElement('canvas'); c.width = w; c.height = h; const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
-        const downscaledImg = new Image(); downscaledImg.onload = () => resolve(downscaledImg); downscaledImg.src = c.toDataURL('image/jpeg', 0.9);
+        const maxDim = 2560;
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) { 
+          if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
+          else { w = Math.round((w * maxDim) / h); h = maxDim; } 
+        }
+        const c = document.createElement('canvas'); 
+        c.width = w; c.height = h; 
+        const ctx = c.getContext('2d'); 
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, h);
+        const downscaledImg = new Image(); 
+        downscaledImg.onload = () => resolve(downscaledImg); 
+        downscaledImg.src = c.toDataURL('image/jpeg', 0.99);
       };
       img.src = ev.target.result;
     };
@@ -912,7 +920,6 @@ function setupCanvasPinchZoom() {
   });
 }
 
-// 🌟 1x4 2줄 인쇄용 트윈(Twin) 레이아웃 전환 복원
 function changeLayout(mode, btn) {
   saveStateForUndo(); 
   appState.layout = mode;
@@ -924,7 +931,7 @@ function changeLayout(mode, btn) {
 }
 
 function onThicknessChange(val) {
-  appState.frameThickness = parseInt(val);
+  appState.frameThickness = Math.round(parseInt(val) * 1.5);
   renderStrip();
 }
 
@@ -995,7 +1002,7 @@ function toggleFontBold() {
 }
 
 function onFontColorChange(color) { appState.typography.fontColor = color; renderStrip(); }
-function onFontSizeChange(size) { appState.typography.fontSize = parseInt(size); renderStrip(); }
+function onFontSizeChange(size) { appState.typography.fontSize = Math.round(parseInt(size) * 1.5); renderStrip(); }
 function toggleShowDate(checked) { saveStateForUndo(); appState.showDate = checked; renderStrip(); }
 
 function addDirectTextSticker() {
@@ -1015,7 +1022,7 @@ function addTextSticker(text) {
     id: Date.now(), type: 'text', text, 
     x: canvas.width / 2 + (Math.random() * 60 - 30), 
     y: canvas.height / 2 + (Math.random() * 60 - 30), 
-    size: 55, rotation: 0, color: '#FFFFFF', 
+    size: 80, rotation: 0, color: '#FFFFFF', 
     fontFamily: appState.typography.fontFamily || 'Pretendard' 
   };
   appState.stickers.push(newSticker); 
@@ -1032,7 +1039,7 @@ function addEmojiSticker(emoji) {
     id: Date.now(), type: 'emoji', text: emoji, 
     x: canvas.width / 2 + (Math.random() * 60 - 30), 
     y: canvas.height / 2 + (Math.random() * 60 - 30), 
-    size: 65, rotation: 0 
+    size: 95, rotation: 0 
   };
   appState.stickers.push(newSticker); 
   appState.selectedStickerIdx = appState.stickers.length - 1;
@@ -1053,7 +1060,7 @@ function showStickerControls(st) {
   const bar = document.getElementById('stickerControlBar'); 
   if (!bar) return;
   bar.classList.remove('hidden');
-  const sizeS = document.getElementById('stickerSizeSlider'); if (sizeS) sizeS.value = st.size;
+  const sizeS = document.getElementById('stickerSizeSlider'); if (sizeS) sizeS.value = Math.round(st.size / 1.5);
   const rotS = document.getElementById('stickerRotateSlider'); if (rotS) rotS.value = st.rotation || 0;
   const customRow = document.getElementById('stickerTextCustomRow');
   if (st.type === 'text') { 
@@ -1065,13 +1072,12 @@ function showStickerControls(st) {
   }
 }
 
-function onSelectedStickerResize(size) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].size = parseInt(size); renderStrip(); } }
+function onSelectedStickerResize(size) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].size = Math.round(parseInt(size) * 1.5); renderStrip(); } }
 function onSelectedStickerRotate(deg) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].rotation = parseInt(deg); renderStrip(); } }
 function onSelectedStickerColorChange(color) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].color = color; renderStrip(); } }
 function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].fontFamily = fontName; renderStrip(); } }
 function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
 
-// 🌟 스페셜 9종 테마 선택 함수
 function setFrameStyle(styleKey, btn) {
   saveStateForUndo(); 
   appState.frameStyle = styleKey;
@@ -1096,150 +1102,8 @@ function setFrameStyle(styleKey, btn) {
   renderStrip();
 }
 
-function setPickPreviewTheme(themeKey, btn) {
-  appState.frameStyle = themeKey;
-  document.querySelectorAll('.pick-theme-btn').forEach(b => {
-    b.className = "pick-theme-btn py-1.5 text-slate-500 rounded-lg font-bold text-center truncate";
-  });
-  if (btn) {
-    btn.className = "pick-theme-btn py-1.5 bg-white text-theme rounded-lg shadow-2xs font-black text-center truncate";
-  }
-
-  const miniFrame = document.getElementById('pickMiniFramePreview');
-  const headerEl = document.getElementById('pickPreviewHeader');
-  const midEl = document.getElementById('pickPreviewMiddleBanner');
-  const footerEl = document.getElementById('pickPreviewFooter');
-
-  if (miniFrame) {
-    if (themeKey === 'photoism') miniFrame.style.backgroundColor = '#0A0A0A';
-    else if (themeKey === 'baseball') miniFrame.style.backgroundColor = '#FAF7EE';
-    else if (themeKey === 'birthday') miniFrame.style.backgroundColor = '#FDFBF7';
-    else if (themeKey === 'retro90s') miniFrame.style.backgroundColor = '#18181B';
-    else if (themeKey === 'classicmono') miniFrame.style.backgroundColor = '#27272A';
-    else if (themeKey === 'graduation') miniFrame.style.backgroundColor = '#EFF6FF';
-    else miniFrame.style.backgroundColor = appState.frameColor;
-  }
-
-  if (themeKey === 'middle') {
-    if (headerEl) headerEl.classList.add('hidden');
-    if (midEl) { midEl.classList.remove('hidden'); midEl.textContent = "추억네컷"; midEl.style.color = "#FFFFFF"; }
-    if (footerEl) footerEl.classList.add('hidden');
-  } else if (themeKey === 'simple') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "sangsangPhoto"; headerEl.style.color = "#FFFFFF"; }
-    if (midEl) midEl.classList.add('hidden');
-    if (footerEl) footerEl.classList.add('hidden');
-  } else if (themeKey === 'bottom') {
-    if (headerEl) headerEl.classList.add('hidden');
-    if (midEl) midEl.classList.add('hidden');
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "인생4컷"; footerEl.style.color = "#FFFFFF"; }
-  } else if (themeKey === 'photoism') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "photoism"; headerEl.style.color = "#FFFFFF"; }
-    if (midEl) midEl.classList.add('hidden');
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "KEEP YOURSELF ALIVE"; footerEl.style.color = "#888888"; }
-  } else if (themeKey === 'baseball') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "⚾ Play Baseball"; headerEl.style.color = "#1D4ED8"; }
-    if (midEl) midEl.classList.add('hidden');
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "Baseball makes life better :)"; footerEl.style.color = "#DC2626"; }
-  } else if (themeKey === 'birthday') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "🎂 Happy Birthday"; headerEl.style.color = "#E11D48"; }
-    if (midEl) midEl.classList.add('hidden');
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "More Happy, More Love ♥"; footerEl.style.color = "#E11D48"; }
-  } else if (themeKey === 'retro90s') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "🛸 Y2K VIBE"; headerEl.style.color = "#A855F7"; }
-    if (midEl) midEl.classList.add('hidden');
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "CYBER MEMORY 1999"; footerEl.style.color = "#38BDF8"; }
-  } else if (themeKey === 'classicmono') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "🎞️ ISO 400"; headerEl.style.color = "#E4E4E7"; }
-    if (midEl) midEl.classList.add('hidden');
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "CLASSIC ANALOGUE FILM"; footerEl.style.color = "#A1A1AA"; }
-  } else if (themeKey === 'graduation') {
-    if (headerEl) { headerEl.classList.remove('hidden'); headerEl.textContent = "🎓 OUR YOUTH"; headerEl.style.color = "#2563EB"; }
-    if (midEl) midEl.classList.add('hidden');
-    if (footerEl) { footerEl.classList.remove('hidden'); footerEl.textContent = "영원히 기억될 오늘의 우리"; footerEl.style.color = "#1E40AF"; }
-  }
-}
-
-function initCanvasInteractions() {
-  const canvas = document.getElementById('photoCanvas');
-  const viewport = document.getElementById('canvasViewport');
-  if (!canvas || !viewport) return;
-
-  function getCoords(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      clientX, clientY,
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height)
-    };
-  }
-
-  function handleStart(e) {
-    if (e.touches && e.touches.length > 1) return;
-    const c = getCoords(e);
-    let hitSticker = false;
-
-    for (let i = appState.stickers.length - 1; i >= 0; i--) {
-      const st = appState.stickers[i];
-      const dist = Math.hypot(c.x - st.x, c.y - st.y);
-      if (dist <= Math.max(70, st.size * 1.4)) {
-        appState.selectedStickerIdx = i;
-        appState.dragTarget = i;
-        appState.dragStartPos = { x: c.x - st.x, y: c.y - st.y };
-        showStickerControls(st);
-        renderStrip();
-        hitSticker = true;
-        break;
-      }
-    }
-
-    if (!hitSticker) {
-      isPanning = true;
-      panStartX = c.clientX - canvasPanX;
-      panStartY = c.clientY - canvasPanY;
-      appState.selectedStickerIdx = -1;
-      appState.dragTarget = null;
-      const bar = document.getElementById('stickerControlBar'); 
-      if (bar) bar.classList.add('hidden');
-      renderStrip();
-    }
-  }
-
-  function handleMove(e) {
-    if (e.touches && e.touches.length > 1) return;
-    const c = getCoords(e);
-
-    if (appState.dragTarget !== null) {
-      if (e.cancelable) e.preventDefault();
-      const st = appState.stickers[appState.dragTarget];
-      st.x = c.x - appState.dragStartPos.x;
-      st.y = c.y - appState.dragStartPos.y;
-      renderStrip();
-    } else if (isPanning) {
-      if (e.cancelable) e.preventDefault();
-      canvasPanX = c.clientX - panStartX;
-      canvasPanY = c.clientY - panStartY;
-      applyZoomTransform();
-    }
-  }
-
-  function handleEnd() { 
-    if (appState.dragTarget !== null) saveStateForUndo(); 
-    appState.dragTarget = null; 
-    isPanning = false;
-  }
-
-  viewport.addEventListener('mousedown', handleStart); 
-  window.addEventListener('mousemove', handleMove); 
-  window.addEventListener('mouseup', handleEnd);
-  viewport.addEventListener('touchstart', handleStart, { passive: false }); 
-  window.addEventListener('touchmove', handleMove, { passive: false }); 
-  window.addEventListener('touchend', handleEnd);
-}
-
 // ========================================================
-// 8. 🌟 메인 캔버스 렌더링 (1x4 스트립, 2x2 엽서형, Twin 2줄 인쇄 복원)
+// 8. 메인 캔버스 UHD 초고화질 렌더링 엔진 (1200×3600 / 1800×2700)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
@@ -1249,20 +1113,21 @@ function renderStrip(isFinalExport = false) {
   const layout = appState.layout || 'strip'; 
   const sigInp = document.getElementById('frameSignatureInput'); 
   const customTitle = sigInp ? sigInp.value : '추억네컷';
-  const pad = appState.frameThickness; 
+  const pad = appState.frameThickness || 60; 
   const gap = Math.round(pad * 0.5);
   const fStyle = appState.frameStyle;
 
   if (layout === 'strip') {
-    canvas.width = 800; canvas.height = 2400;
+    canvas.width = 1200; canvas.height = 3600;
   } else if (layout === 'grid') {
-    canvas.width = 1200; canvas.height = 1800;
+    canvas.width = 1800; canvas.height = 2700;
   } else if (layout === 'twin') {
-    // 🌟 1x4 2줄 인쇄용 (Twin 4x6인치 1200x1800)
-    canvas.width = 1200; canvas.height = 1800;
+    canvas.width = 1800; canvas.height = 2700;
   }
 
-  // 테마별 배경색 지정
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
   if (fStyle === 'photoism') ctx.fillStyle = '#0A0A0A';
   else if (fStyle === 'baseball') ctx.fillStyle = '#FAF7EE';
   else if (fStyle === 'birthday') ctx.fillStyle = '#FDFBF7';
@@ -1272,10 +1137,9 @@ function renderStrip(isFinalExport = false) {
   else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 1. 1×4 스트립 렌더링
   if (layout === 'strip') {
     if (fStyle === 'middle') {
-      const bannerH = 160; 
+      const bannerH = 240; 
       const imgW = canvas.width - (pad * 2); 
       const imgH = (canvas.height - (pad * 2) - bannerH - (gap * 3)) / 4;
       drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, pad, imgW, imgH); 
@@ -1287,8 +1151,8 @@ function renderStrip(isFinalExport = false) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad, lowerStartY + imgH + gap, imgW, imgH); 
     } else {
       const isBottom = (fStyle === 'bottom'); 
-      const topHeaderH = isBottom ? 45 : 120; 
-      const bottomFooterH = isBottom ? 220 : 45; 
+      const topHeaderH = isBottom ? 70 : 180; 
+      const bottomFooterH = isBottom ? 330 : 70; 
       const imgW = canvas.width - (pad * 2); 
       const imgH = (canvas.height - topHeaderH - bottomFooterH - (gap * 3)) / 4;
 
@@ -1303,12 +1167,11 @@ function renderStrip(isFinalExport = false) {
       }
     }
   } 
-  // 2. 2×2 엽서형 렌더링
   else if (layout === 'grid') {
     const isBottom = (fStyle === 'bottom'); 
-    const bannerH = (fStyle === 'middle') ? 140 : 0;
-    const topHeaderH = (fStyle === 'simple' || ['photoism', 'baseball', 'birthday', 'retro90s', 'classicmono', 'graduation'].includes(fStyle)) ? 140 : (isBottom ? 45 : pad + 20);
-    const bottomFooterH = (isBottom || ['photoism', 'baseball', 'birthday', 'retro90s', 'classicmono', 'graduation'].includes(fStyle)) ? 190 : (fStyle === 'simple' ? 50 : pad + 20);
+    const bannerH = (fStyle === 'middle') ? 210 : 0;
+    const topHeaderH = (fStyle === 'simple' || ['photoism', 'baseball', 'birthday', 'retro90s', 'classicmono', 'graduation'].includes(fStyle)) ? 210 : (isBottom ? 70 : pad + 30);
+    const bottomFooterH = (isBottom || ['photoism', 'baseball', 'birthday', 'retro90s', 'classicmono', 'graduation'].includes(fStyle)) ? 285 : (fStyle === 'simple' ? 75 : pad + 30);
 
     const imgW = (canvas.width - (pad * 2) - gap) / 2; 
     const imgH = Math.round(imgW * 1.25);
@@ -1321,7 +1184,7 @@ function renderStrip(isFinalExport = false) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, startY, imgW, imgH); 
 
       const bannerY = startY + imgH + gap; 
-      drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle, 34); 
+      drawMiddleBanner(ctx, canvas.width / 2, bannerY + (bannerH / 2), customTitle, 52); 
 
       const lowerY = bannerY + bannerH + gap; 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerY, imgW, imgH); 
@@ -1339,79 +1202,72 @@ function renderStrip(isFinalExport = false) {
       }
       if (isBottom || ['photoism', 'baseball', 'birthday', 'retro90s', 'classicmono', 'graduation'].includes(fStyle)) {
         const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
-        drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle, 32);
+        drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle, 48);
       }
     }
   }
-  // 3. 🌟 1x4 2줄 인쇄용 (Twin 4x6) 렌더링 복원
   else if (layout === 'twin') {
-    const stripW = (canvas.width / 2) - 20; 
+    const stripW = (canvas.width / 2) - 30; 
     const padX = pad * 0.65; 
     const imgW = stripW - (padX * 2);
 
     if (fStyle === 'middle') {
-      const bannerH = 120; 
+      const bannerH = 180; 
       const imgH = (canvas.height - (pad * 2) - bannerH - (gap * 3)) / 4;
       
-      // 좌측 1열
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], 10 + padX, pad, imgW, imgH); 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], 10 + padX, pad + imgH + gap, imgW, imgH); 
-      drawMiddleBanner(ctx, stripW / 2, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 26); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[0], 15 + padX, pad, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[1], 15 + padX, pad + imgH + gap, imgW, imgH); 
+      drawMiddleBanner(ctx, stripW / 2, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 38); 
       const lowerY = pad + (imgH * 2) + (gap * 2) + bannerH + gap; 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], 10 + padX, lowerY, imgW, imgH); 
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], 10 + padX, lowerY + imgH + gap, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[2], 15 + padX, lowerY, imgW, imgH); 
+      drawFilteredSlotPhoto(ctx, appState.selectedImages[3], 15 + padX, lowerY + imgH + gap, imgW, imgH); 
       
-      // 우측 2열
-      const rx = canvas.width / 2 + 10; 
+      const rx = canvas.width / 2 + 15; 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[0], rx + padX, pad, imgW, imgH); 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[1], rx + padX, pad + imgH + gap, imgW, imgH); 
-      drawMiddleBanner(ctx, rx + (stripW / 2) - 10, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 26); 
+      drawMiddleBanner(ctx, rx + (stripW / 2) - 15, pad + (imgH * 2) + (gap * 2) + (bannerH / 2), customTitle, 38); 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[2], rx + padX, lowerY, imgW, imgH); 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[3], rx + padX, lowerY + imgH + gap, imgW, imgH); 
     } else {
       const isBottom = (fStyle === 'bottom'); 
-      const topHeaderH = isBottom ? 35 : 95; 
-      const bottomFooterH = isBottom ? 160 : 35; 
-      const imgH = (canvas.height - topHeaderH - bottomFooterH - 20 - (gap * 3)) / 4;
+      const topHeaderH = isBottom ? 55 : 145; 
+      const bottomFooterH = isBottom ? 240 : 55; 
+      const imgH = (canvas.height - topHeaderH - bottomFooterH - 30 - (gap * 3)) / 4;
 
-      // 좌측 1열
-      renderHeaderOrDecor(ctx, 10, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottom, true); 
+      renderHeaderOrDecor(ctx, 15, 15, stripW - 30, canvas.height - 30, customTitle, topHeaderH, isBottom, true); 
       for (let i = 0; i < 4; i++) { 
-        drawFilteredSlotPhoto(ctx, appState.selectedImages[i], 10 + padX, 10 + topHeaderH + (i * (imgH + gap)), imgW, imgH); 
+        drawFilteredSlotPhoto(ctx, appState.selectedImages[i], 15 + padX, 15 + topHeaderH + (i * (imgH + gap)), imgW, imgH); 
       }
       if (isBottom || ['photoism', 'baseball', 'birthday', 'retro90s', 'classicmono', 'graduation'].includes(fStyle)) {
-        drawBottomStyleFooter(ctx, stripW / 2, (canvas.height - bottomFooterH) + (bottomFooterH / 2), customTitle, 26);
+        drawBottomStyleFooter(ctx, stripW / 2, (canvas.height - bottomFooterH) + (bottomFooterH / 2), customTitle, 38);
       }
 
-      // 우측 2열
-      const rx = canvas.width / 2 + 10; 
-      renderHeaderOrDecor(ctx, rx, 10, stripW - 20, canvas.height - 20, customTitle, topHeaderH, isBottom, true); 
+      const rx = canvas.width / 2 + 15; 
+      renderHeaderOrDecor(ctx, rx, 15, stripW - 30, canvas.height - 30, customTitle, topHeaderH, isBottom, true); 
       for (let i = 0; i < 4; i++) { 
-        drawFilteredSlotPhoto(ctx, appState.selectedImages[i], rx + padX, 10 + topHeaderH + (i * (imgH + gap)), imgW, imgH); 
+        drawFilteredSlotPhoto(ctx, appState.selectedImages[i], rx + padX, 15 + topHeaderH + (i * (imgH + gap)), imgW, imgH); 
       }
       if (isBottom || ['photoism', 'baseball', 'birthday', 'retro90s', 'classicmono', 'graduation'].includes(fStyle)) {
-        drawBottomStyleFooter(ctx, rx + (stripW / 2) - 10, (canvas.height - bottomFooterH) + (bottomFooterH / 2), customTitle, 26);
+        drawBottomStyleFooter(ctx, rx + (stripW / 2) - 15, (canvas.height - bottomFooterH) + (bottomFooterH / 2), customTitle, 38);
       }
     }
 
-    // 중앙 절취 점선 렌더링
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 8]);
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 12]);
     ctx.beginPath();
-    ctx.moveTo(canvas.width / 2, 20);
-    ctx.lineTo(canvas.width / 2, canvas.height - 20);
+    ctx.moveTo(canvas.width / 2, 30);
+    ctx.lineTo(canvas.width / 2, canvas.height - 30);
     ctx.stroke();
-    ctx.font = '22px sans-serif';
+    ctx.font = '32px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('✂️', canvas.width / 2, 60);
+    ctx.fillText('✂️', canvas.width / 2, 90);
     ctx.fillText('✂️', canvas.width / 2, canvas.height / 2);
-    ctx.fillText('✂️', canvas.width / 2, canvas.height - 60);
+    ctx.fillText('✂️', canvas.width / 2, canvas.height - 90);
     ctx.restore();
   }
 
-  // 스티커 렌더링
   appState.stickers.forEach((st, idx) => {
     ctx.save();
     ctx.translate(st.x, st.y);
@@ -1421,7 +1277,7 @@ function renderStrip(isFinalExport = false) {
       ctx.font = `900 ${st.size}px '${fontName}', sans-serif`; 
       ctx.fillStyle = st.color || '#FFFFFF'; 
       ctx.shadowColor = 'rgba(0,0,0,0.85)'; 
-      ctx.shadowBlur = 8; 
+      ctx.shadowBlur = 12; 
       ctx.textAlign = 'center'; 
       ctx.textBaseline = 'middle'; 
       ctx.fillText(st.text, 0, 0);
@@ -1432,83 +1288,82 @@ function renderStrip(isFinalExport = false) {
       ctx.fillText(st.text, 0, 0);
     }
     if (!isFinalExport && idx === appState.selectedStickerIdx) {
-      ctx.strokeStyle = '#F43F5E'; ctx.lineWidth = 3; ctx.setLineDash([6, 6]); const radius = (st.type === 'text') ? st.size * 1.1 : st.size * 0.65; ctx.strokeRect(-radius, -st.size * 0.6, radius * 2, st.size * 1.2);
+      ctx.strokeStyle = '#F43F5E'; ctx.lineWidth = 4; ctx.setLineDash([8, 8]); const radius = (st.type === 'text') ? st.size * 1.1 : st.size * 0.65; ctx.strokeRect(-radius, -st.size * 0.6, radius * 2, st.size * 1.2);
     }
     ctx.restore();
   });
 }
 
-// 🌟 스페셜 9종 테마별 헤더 그래픽
 function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin = false) {
   const fStyle = appState.frameStyle;
   ctx.save();
 
   if (fStyle === 'photoism') {
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `700 ${isTwin ? 24 : 38}px 'Playfair Display', serif`;
+    ctx.font = `700 ${isTwin ? 36 : 56}px 'Playfair Display', serif`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText("photoism", bx + bw - (isTwin ? 20 : 35), by + (topH / 2) + 5);
+    ctx.fillText("photoism", bx + bw - (isTwin ? 30 : 50), by + (topH / 2) + 8);
 
-    ctx.font = `bold ${isTwin ? 11 : 14}px monospace`;
+    ctx.font = `bold ${isTwin ? 16 : 22}px monospace`;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.textAlign = 'left';
-    ctx.fillText('▶ 5', bx + (isTwin ? 15 : 25), by + (topH / 2) + 5);
+    ctx.fillText('▶ 5', bx + (isTwin ? 25 : 40), by + (topH / 2) + 8);
   }
   else if (fStyle === 'baseball') {
     ctx.fillStyle = '#1E3A8A';
-    ctx.font = `900 ${isTwin ? 24 : 38}px 'Black Han Sans', sans-serif`;
+    ctx.font = `900 ${isTwin ? 36 : 56}px 'Black Han Sans', sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText("⚾ Play Baseball", bx + (isTwin ? 15 : 25), by + (topH / 2) - 6);
+    ctx.fillText("⚾ Play Baseball", bx + (isTwin ? 25 : 40), by + (topH / 2) - 8);
 
     ctx.fillStyle = '#DC2626';
-    ctx.font = `bold ${isTwin ? 11 : 14}px 'Pretendard', sans-serif`;
-    ctx.fillText("오늘도, 우리는 야구를 한다!", bx + (isTwin ? 15 : 25), by + (topH / 2) + 20);
+    ctx.font = `bold 16px 'Pretendard', sans-serif`;
+    ctx.fillText("오늘도, 우리는 야구를 한다!", bx + (isTwin ? 25 : 40), by + (topH / 2) + 28);
   }
   else if (fStyle === 'birthday') {
     ctx.fillStyle = '#E11D48';
-    ctx.font = `900 ${isTwin ? 24 : 38}px 'Playfair Display', serif`;
+    ctx.font = `900 ${isTwin ? 36 : 56}px 'Playfair Display', serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText("🎂 Happy Birthday", bx + (isTwin ? 15 : 25), by + (topH / 2) - 6);
+    ctx.fillText("🎂 Happy Birthday", bx + (isTwin ? 25 : 40), by + (topH / 2) - 8);
 
     ctx.fillStyle = '#9F1239';
-    ctx.font = `bold ${isTwin ? 11 : 14}px 'Pretendard', sans-serif`;
-    ctx.fillText("오늘은 너라는 기적이 태어난 날! ♡", bx + (isTwin ? 15 : 25), by + (topH / 2) + 20);
+    ctx.font = `bold 16px 'Pretendard', sans-serif`;
+    ctx.fillText("오늘은 너라는 기적이 태어난 날! ♡", bx + (isTwin ? 25 : 40), by + (topH / 2) + 28);
   }
   else if (fStyle === 'retro90s') {
     ctx.fillStyle = '#A855F7';
-    ctx.font = `900 ${isTwin ? 22 : 36}px 'Black Han Sans', sans-serif`;
+    ctx.font = `900 ${isTwin ? 34 : 54}px 'Black Han Sans', sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText("🛸 Y2K VIBE 1999", bx + (isTwin ? 15 : 25), by + (topH / 2) - 5);
+    ctx.fillText("🛸 Y2K VIBE 1999", bx + (isTwin ? 25 : 40), by + (topH / 2) - 8);
 
     ctx.fillStyle = '#38BDF8';
-    ctx.font = `bold ${isTwin ? 10 : 13}px monospace`;
-    ctx.fillText("NOSTALGIC RETRO MEMORY", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
+    ctx.font = `bold 15px monospace`;
+    ctx.fillText("NOSTALGIC RETRO MEMORY", bx + (isTwin ? 25 : 40), by + (topH / 2) + 26);
   }
   else if (fStyle === 'classicmono') {
     ctx.fillStyle = '#E4E4E7';
-    ctx.font = `700 ${isTwin ? 22 : 34}px monospace`;
+    ctx.font = `700 ${isTwin ? 34 : 52}px monospace`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText("🎞️ FILM ROLL 400", bx + (isTwin ? 15 : 25), by + (topH / 2) - 5);
+    ctx.fillText("🎞️ FILM ROLL 400", bx + (isTwin ? 25 : 40), by + (topH / 2) - 8);
 
     ctx.fillStyle = '#A1A1AA';
-    ctx.font = `bold ${isTwin ? 10 : 13}px monospace`;
-    ctx.fillText("B&W ANALOGUE ARCHIVE", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
+    ctx.font = `bold 15px monospace`;
+    ctx.fillText("B&W ANALOGUE ARCHIVE", bx + (isTwin ? 25 : 40), by + (topH / 2) + 26);
   }
   else if (fStyle === 'graduation') {
     ctx.fillStyle = '#1D4ED8';
-    ctx.font = `900 ${isTwin ? 22 : 36}px 'Gowun Batang', serif`;
+    ctx.font = `900 ${isTwin ? 34 : 54}px 'Gowun Batang', serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText("🎓 우리의 눈부신 청춘", bx + (isTwin ? 15 : 25), by + (topH / 2) - 5);
+    ctx.fillText("🎓 우리의 눈부신 청춘", bx + (isTwin ? 25 : 40), by + (topH / 2) - 8);
 
     ctx.fillStyle = '#2563EB';
-    ctx.font = `bold ${isTwin ? 10 : 13}px 'Pretendard', sans-serif`;
-    ctx.fillText("영원히 기억될 찬란한 순간", bx + (isTwin ? 15 : 25), by + (topH / 2) + 18);
+    ctx.font = `bold 15px 'Pretendard', sans-serif`;
+    ctx.fillText("영원히 기억될 찬란한 순간", bx + (isTwin ? 25 : 40), by + (topH / 2) + 26);
   }
   else if (!isBottom && fStyle === 'simple') {
     const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827'); 
@@ -1516,29 +1371,25 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
     const weight = appState.typography.isBold ? '900' : 'bold';
 
     ctx.fillStyle = textColor; 
-    ctx.font = `${weight} ${isTwin ? 26 : 38}px '${appState.typography.fontFamily}', serif`; 
+    ctx.font = `${weight} ${isTwin ? 38 : 58}px '${appState.typography.fontFamily}', serif`; 
     ctx.textAlign = 'right'; 
     ctx.textBaseline = 'middle'; 
-    ctx.fillText(title, bx + bw - (isTwin ? 20 : 35), by + (topH / 2) + 5);
-    ctx.font = `bold ${isTwin ? 10 : 13}px monospace`; 
+    ctx.fillText(title, bx + bw - (isTwin ? 30 : 50), by + (topH / 2) + 8);
+    ctx.font = `bold 20px monospace`; 
     ctx.textAlign = 'left'; 
-    ctx.fillText('◀◀ A beautiful memory is a picture ▶▶', bx + (isTwin ? 15 : 25), by + (topH / 2) + 5);
-    ctx.font = `bold ${isTwin ? 11 : 14}px monospace`; 
-    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)'; 
-    ctx.fillText('▶ 4', bx + 14, by + (bh * 0.28)); 
-    ctx.fillText('▶ 5', bx + 14, by + (bh * 0.72));
+    ctx.fillText('◀◀ A beautiful memory is a picture ▶▶', bx + (isTwin ? 25 : 40), by + (topH / 2) + 8);
   }
   ctx.restore();
 }
 
 function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
-  const size = customSize || appState.typography.fontSize; 
+  const size = customSize || appState.typography.fontSize || 60; 
   const weight = appState.typography.isBold ? '900' : 'bold';
   const showDate = appState.showDate;
   const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
   const textColor = appState.typography.fontColor || (isDark ? '#FFFFFF' : '#1E293B');
-  const dateSize = Math.max(13, Math.round(size * 0.45));
-  const gap = Math.max(10, Math.round(size * 0.25));
+  const dateSize = Math.max(18, Math.round(size * 0.45));
+  const gap = Math.max(14, Math.round(size * 0.25));
 
   ctx.save();
   ctx.textAlign = 'center';
@@ -1567,47 +1418,47 @@ function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
 
 function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
   const fStyle = appState.frameStyle;
-  const size = customSize || appState.typography.fontSize; 
+  const size = customSize || appState.typography.fontSize || 60; 
   const showDate = appState.showDate;
   ctx.save();
 
   if (fStyle === 'photoism') {
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = `700 ${Math.max(13, Math.round(size * 0.5))}px monospace`;
+    ctx.font = `700 ${Math.max(18, Math.round(size * 0.5))}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText("52    PHOTOISM    KEEP YOURSELF ALIVE", x, centerY);
   }
   else if (fStyle === 'baseball') {
     ctx.fillStyle = '#1E3A8A';
-    ctx.font = `900 ${Math.max(14, Math.round(size * 0.6))}px 'Pretendard', sans-serif`;
+    ctx.font = `900 ${Math.max(20, Math.round(size * 0.6))}px 'Pretendard', sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText("Baseball makes life better :)", x, centerY - (showDate ? 10 : 0));
+    ctx.fillText("Baseball makes life better :)", x, centerY - (showDate ? 14 : 0));
     if (showDate) {
       ctx.fillStyle = '#DC2626';
-      ctx.font = `bold 13px monospace`;
-      ctx.fillText(appState.typography.date, x, centerY + 16);
+      ctx.font = `bold 18px monospace`;
+      ctx.fillText(appState.typography.date, x, centerY + 22);
     }
   }
   else if (fStyle === 'birthday') {
     ctx.fillStyle = '#E11D48';
-    ctx.font = `900 ${Math.max(14, Math.round(size * 0.6))}px 'Playfair Display', serif`;
+    ctx.font = `900 ${Math.max(20, Math.round(size * 0.6))}px 'Playfair Display', serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText("More Happy, More Love ♥", x, centerY - (showDate ? 10 : 0));
+    ctx.fillText("More Happy, More Love ♥", x, centerY - (showDate ? 14 : 0));
     if (showDate) {
       ctx.fillStyle = '#9F1239';
-      ctx.font = `bold 13px monospace`;
-      ctx.fillText(appState.typography.date, x, centerY + 16);
+      ctx.font = `bold 18px monospace`;
+      ctx.fillText(appState.typography.date, x, centerY + 22);
     }
   }
   else if (fStyle === 'retro90s') {
     ctx.fillStyle = '#38BDF8';
-    ctx.font = `900 ${Math.max(13, Math.round(size * 0.55))}px monospace`;
+    ctx.font = `900 ${Math.max(18, Math.round(size * 0.55))}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText("★ CYBER MEMORY 1999 ★", x, centerY - (showDate ? 10 : 0));
+    ctx.fillText("★ CYBER MEMORY 1999 ★", x, centerY - (showDate ? 14 : 0));
     if (showDate) {
       ctx.fillStyle = '#A855F7';
       ctx.font = `bold 12px monospace`;
@@ -1616,10 +1467,10 @@ function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
   }
   else if (fStyle === 'classicmono') {
     ctx.fillStyle = '#E4E4E7';
-    ctx.font = `700 ${Math.max(13, Math.round(size * 0.55))}px monospace`;
+    ctx.font = `700 ${Math.max(18, Math.round(size * 0.55))}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText("FRAME 24A    EXPOSURE 36", x, centerY - (showDate ? 10 : 0));
+    ctx.fillText("FRAME 24A    EXPOSURE 36", x, centerY - (showDate ? 14 : 0));
     if (showDate) {
       ctx.fillStyle = '#A1A1AA';
       ctx.font = `bold 12px monospace`;
@@ -1628,22 +1479,22 @@ function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
   }
   else if (fStyle === 'graduation') {
     ctx.fillStyle = '#1D4ED8';
-    ctx.font = `900 ${Math.max(14, Math.round(size * 0.6))}px 'Gowun Batang', serif`;
+    ctx.font = `900 ${Math.max(20, Math.round(size * 0.6))}px 'Gowun Batang', serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText("함께여서 눈부셨던 날들", x, centerY - (showDate ? 10 : 0));
+    ctx.fillText("함께여서 눈부셨던 날들", x, centerY - (showDate ? 14 : 0));
     if (showDate) {
       ctx.fillStyle = '#2563EB';
       ctx.font = `bold 13px monospace`;
-      ctx.fillText(appState.typography.date, x, centerY + 16);
+      ctx.fillText(appState.typography.date, x, centerY + 22);
     }
   }
   else {
     const weight = appState.typography.isBold ? '900' : 'bold';
     const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
     const textColor = appState.typography.fontColor || (isDark ? '#FFFFFF' : '#1E293B');
-    const dateSize = Math.max(14, Math.round(size * 0.45));
-    const gap = Math.max(12, Math.round(size * 0.3));
+    const dateSize = Math.max(20, Math.round(size * 0.45));
+    const gap = Math.max(16, Math.round(size * 0.3));
 
     ctx.textAlign = 'center';
     ctx.fillStyle = textColor;
@@ -1677,7 +1528,7 @@ function drawFilteredSlotPhoto(ctx, img, targetX, targetY, targetW, targetH) {
   ctx.rect(targetX, targetY, targetW, targetH); 
   ctx.clip();
 
-  const srcRatio = (img.width || 720) / (img.height || 480); 
+  const srcRatio = (img.width || 1920) / (img.height || 1080); 
   const targetRatio = targetW / targetH; 
   let renderW, renderH;
 
@@ -1697,6 +1548,8 @@ function drawFilteredSlotPhoto(ctx, img, targetX, targetY, targetW, targetH) {
       const ch = Math.max(1, Math.round(renderH)); 
       off.width = cw; off.height = ch;
       const offCtx = off.getContext('2d'); 
+      offCtx.imageSmoothingEnabled = true;
+      offCtx.imageSmoothingQuality = 'high';
       offCtx.drawImage(img, 0, 0, cw, ch); 
       const imgData = offCtx.getImageData(0, 0, cw, ch); 
       applyPixelFilterMath(imgData, appState.activeFilter, appState.filters); 
@@ -1746,7 +1599,7 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 }
 
 // ========================================================
-// 9. 🌟 4컷 비디오 생성 & 대형 모달 (파일의 저장 | 공유)
+// 9. 4컷 비디오 생성 & 대형 모달 (파일의 저장 | 공유)
 // ========================================================
 async function generateFourCutVideo() {
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
@@ -1874,7 +1727,6 @@ function closeVideoResultModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-// 🌟 [파일의 저장]
 function downloadCurrentVideoFile() {
   if (!currentGeneratedVideoBlob) return;
   const url = URL.createObjectURL(currentGeneratedVideoBlob);
@@ -1886,7 +1738,6 @@ function downloadCurrentVideoFile() {
   document.body.removeChild(a);
 }
 
-// 🌟 [공유]
 async function shareCurrentVideoFile() {
   if (!currentGeneratedVideoBlob) return;
   const ext = currentGeneratedVideoFileName.endsWith('.mp4') ? 'mp4' : 'webm';
@@ -1908,7 +1759,7 @@ async function shareCurrentVideoFile() {
 }
 
 // ========================================================
-// 10. 🌟 QR코드 생성 (이미지 직접 다운로드 직링크 복구 tmpfiles.org/dl/)
+// 10. QR코드 생성 (이미지 다운로드 직링크 tmpfiles.org/dl/)
 // ========================================================
 async function generateImageQRCode() {
   const btn = document.getElementById('btnSaveQR'); 
@@ -1925,10 +1776,8 @@ async function generateImageQRCode() {
   const base64Img = canvas.toDataURL('image/png');
   const fileName = `[추억네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
 
-  // 구글 드라이브(추억의네컷_저장소) 백그라운드 자동 백업
   uploadMediaToGoogleDrive(extractPureBase64(base64Img), 'image', fileName, 'image/png').catch(() => {});
 
-  // 🌟 스캔 즉시 사진 파일이 직접 다운로드되는 직링크(tmpfiles.org/dl/...) 복원
   canvas.toBlob(async (blob) => {
     try {
       const formData = new FormData();
@@ -1985,7 +1834,7 @@ function autoSavePDF() {
   renderStrip(true); 
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return; 
-  const imgData = canvas.toDataURL('image/jpeg', 0.95); 
+  const imgData = canvas.toDataURL('image/jpeg', 0.98); 
   const { jsPDF } = window.jspdf; 
 
   const orientation = (canvas.width > canvas.height) ? 'landscape' : 'portrait'; 
@@ -2480,10 +2329,10 @@ function getStoredNotices() {
   }
   if (!list || list.length === 0) {
     list = [{ 
-      id: 'v15_5', 
+      id: 'v15_6', 
       date: getFormattedTodayDate(), 
-      version: 'v15.5', 
-      content: '1x4 가로 풀화면 / 2x2 세로 풀화면 촬영 & 9종 스페셜 테마 업데이트 완료!' 
+      version: 'v15.6', 
+      content: 'UHD 초고화질 엔진, 1x4/2x2 풀화면 & 9종 스페셜 테마 업데이트 완료!' 
     }];
   }
   return list;
@@ -2542,7 +2391,7 @@ async function writeAdminNotice() {
   const newNotice = { 
     id: Date.now().toString(), 
     date: getFormattedTodayDate(), 
-    version: 'v15.5', 
+    version: 'v15.6', 
     content: content.trim() 
   };
   let list = getStoredNotices();
@@ -2581,7 +2430,6 @@ async function deleteNotice(id) {
   } catch (e) {}
 }
 
-// 🌟 중앙 DB로부터 방문자, 기기통계, 후기, 공지사항을 일괄 동기화
 async function trackVisitorAccess() {
   const todayStr = getFormattedTodayDate();
   let todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '1', 10);
@@ -2798,7 +2646,7 @@ function applySnapshot(snap) {
 }
 
 // ========================================================
-// 14. 엔트리포인트 (초기 구동 & 회전 리스너)
+// 14. 초기 엔트리포인트 & 이벤트 리스너
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
