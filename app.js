@@ -10,7 +10,7 @@
  * 7. 정회원 10장 FIFO 롤링 클라우드 보관함 & 30일 자동 로그인
  */
 
-const GOOGLE_DB_URL = "https://script.google.com/macros/library/d/1oul5_FaWLpQFEGRw_rT2yeMSwqbraKiOwsASE_K_dMpCxXXETbqun1LL/9";
+const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbw1fjoUYoKQOHNNatPY_8q8X-1ogUV7iaFsIMpYioStlVX1SZK9hYiY32P-bGv7GUVoBw/exec";
 const APP_VERSION = "v17.0 Pro";
 const MAX_GALLERY_SLOTS = 10;
 
