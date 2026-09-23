@@ -63,7 +63,7 @@ body {
 .text-theme { color: var(--theme-color) !important; }
 .border-theme { border-color: var(--theme-color) !important; }
 
-/* 🌟 스티커 주변 배경 투영 플로팅 돋보기(Loupe) */
+/* 🌟 스티커 주변 배경 투영 2단계 플로팅 돋보기(Loupe) */
 #floatingLoupe {
   pointer-events: none;
   transform: translate(-50%, -125%);
@@ -110,6 +110,29 @@ body {
 
 #canvasScaleWrapper:active {
   cursor: grabbing;
+}
+
+/* 간편 PIN 키패드 버튼 스타일 */
+.pin-key {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.1s;
+}
+
+.pin-key:active {
+  background-color: #e2e8f0;
+  transform: scale(0.95);
+}
+
+.pin-dot.filled {
+  background-color: var(--theme-color) !important;
+  border-color: var(--theme-color) !important;
 }
 
 /* 챗봇 말풍선 */
