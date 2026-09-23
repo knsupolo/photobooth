@@ -1,6 +1,13 @@
 /**
  * 추억의 네컷 Studio Pro v16.0
- * [버그 완벽 수정: 첫화면 사진 로드, 대형 슬롯 뷰, 스튜디오 꾸미기 무조건 즉시 전환 보장]
+ * [최종 통합 엔진]
+ * - 구도 확인 대기실 & 24종 포즈 가이드
+ * - 대형화된 슬롯 선택기 & 검은 화면 방지 즉각 로딩
+ * - 스튜디오 꾸미기(에디터) 100% 즉시 전환
+ * - 3대 테마 분류 (기본 / 심플 / 프리미엄) & 텍스트 안전 여백(Safe Zone)
+ * - 투명 PNG 커스텀 프레임 오버레이 샌드위치 렌더링
+ * - 선택 점선 박스 없는 2핑거 핀치 확대/축소 & 회전 스티커 엔진
+ * - 플로팅 돋보기(Loupe) 뷰어 & 10Mbps 60fps 비디오 & 구글 드라이브 직결 QR
  */
 
 const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
@@ -21,6 +28,7 @@ function extractPureBase64(dataUrl) {
   return commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
 }
 
+// 🌟 24종 포즈 가이드
 const POSE_SUGGESTIONS_24 = [
   { emoji: "🫂", text: "어깨동무하고 다정하게 찰칵!" },
   { emoji: "✌️", text: "다같이 볼 옆에 브이~" },
@@ -48,6 +56,7 @@ const POSE_SUGGESTIONS_24 = [
   { emoji: "🎉", text: "마지막 컷! 가장 행복한 표정으로!" }
 ];
 
+// 🌟 15종 감성 필터 프리셋
 const FILTER_PRESETS = {
   normal:       { bright: 100, contrast: 100, saturate: 100, name: '원본' },
   harublue:     { bright: 110, contrast: 105, saturate: 105, name: '하루블루' },
@@ -71,6 +80,8 @@ const PALETTE_COLORS = [
   '#FFEDD5', '#FEF9C3', '#D1FAE5', '#BAE6FD', '#EDE9FE', 
   '#881337', '#1E1B4B', '#064E3B'
 ];
+
+const SIMPLE_PALETTE = ['#000000', '#18181B', '#FFFFFF', '#F4F4F5', '#E4E4E7', '#FEF3C7', '#E0F2FE'];
 
 const APP_THEMES = {
   rose:   { color: '#f43f5e', hover: '#e11d48', light: '#fff1f2', name: '로즈 핑크' },
@@ -107,7 +118,9 @@ let appState = {
   currentMediaRecorder: null,
   currentShotVideoChunks: [],
 
-  frameStyle: 'middle',
+  // 테마 시스템
+  themeCategory: 'basic', // 'basic' | 'simple' | 'premium'
+  frameStyle: 'middle',   // basic: 'top','middle','bottom','none' / simple: 'classicmono','antique','timestamp','slogan' / premium: 'birthday','baseball','comic','photoism','custom_png'
   frameColor: '#000000',
   frameThickness: 60,
   layout: 'strip',
@@ -146,6 +159,9 @@ let panStartX = 0;
 let panStartY = 0;
 let currentRatingValue = 5.0;
 
+// ========================================================
+// 1. 오디오 및 햅틱 엔진
+// ========================================================
 let audioCtx = null;
 function initAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -195,7 +211,7 @@ function triggerHaptic(type = 'light') {
 }
 
 // ========================================================
-// 세션 시작 & 카메라 구동
+// 2. 세션 시작 & 구도 확인 대기실
 // ========================================================
 function startSession(format) {
   appState.selectedFormat = format || 'strip';
@@ -208,6 +224,8 @@ function startSession(format) {
 
   const liveBadge = document.getElementById('liveFormatBadge');
   if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
+  const editBadge = document.getElementById('editorFormatBadge');
+  if (editBadge) editBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
   const progressBadge = document.getElementById('liveProgressBadge');
   if (progressBadge) progressBadge.textContent = "구도 대기실";
 
@@ -482,7 +500,7 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 🌟 [수정1, 2] 사진 선택 화면 (첫 사진 강제 표시 & 초대형 슬롯 프리뷰)
+// 3. 사진 선택 화면 (초대형 슬롯 & 1번 사진 기본 노출)
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
@@ -490,7 +508,7 @@ function renderPickScreen() {
   appState.activeSlotIndex = 0; 
   currentCarouselIdx = 0;
 
-  // 🌟 [수정1] 첫 번째 촬영 사진을 캐러셀 뷰어에 즉시 주입 (검은 화면 방지)
+  // 1번 사진 즉시 노출
   const imgEl = document.getElementById('carouselCurrentImg');
   if (imgEl && appState.shotImages.length > 0) {
     imgEl.src = appState.shotImages[0].src;
@@ -508,7 +526,6 @@ function buildPickMiniPreviewStructure() {
   const isGrid = (appState.selectedFormat === 'grid');
   
   if (isGrid) {
-    // 🌟 [수정2] 화면을 가득 채우는 2x2 대형 슬롯 박스
     container.className = "w-72 sm:w-80 aspect-[2/3] bg-black p-4 shadow-2xl flex flex-col justify-between border-2 border-slate-300 rounded-2xl transition-all";
     container.style.backgroundColor = appState.frameColor;
     container.innerHTML = `
@@ -522,7 +539,6 @@ function buildPickMiniPreviewStructure() {
       <div id="pickPreviewFooter" class="text-center text-white text-xs font-mono py-1 border-t border-white/20">MEMORIES</div>
     `;
   } else {
-    // 🌟 [수정2] 화면을 가득 채우는 1x4 대형 스트립 슬롯 박스
     container.className = "w-56 sm:w-64 bg-black p-3.5 shadow-2xl flex flex-col space-y-2 border-2 border-slate-300 rounded-2xl transition-all";
     container.style.backgroundColor = appState.frameColor;
     container.innerHTML = `
@@ -704,7 +720,7 @@ function refreshPickUI() {
 }
 
 // ========================================================
-// 🌟 [수정3] '스튜디오 꾸미기' 즉시 화면 전환
+// 4. 스튜디오 꾸미기 즉시 화면 전환
 // ========================================================
 function confirmSelectedFour() {
   const missing = appState.selectedIndices.filter(idx => idx === null).length;
@@ -716,13 +732,9 @@ function confirmSelectedFour() {
   playBeep(1000);
   triggerHaptic('medium');
 
-  // 사진 배열 확정
   appState.selectedImages = appState.selectedIndices.map(idx => appState.shotImages[idx]);
-
-  // 에디터 상태 리셋
   resetEditorToDefault();
 
-  // 🌟 화면 전환 즉각 강제 실행
   showScreen('screenEdit');
   renderStrip();
 
@@ -758,7 +770,97 @@ function resetEditorToDefault() {
 }
 
 // ========================================================
-// 에디터 캔버스 UHD 렌더링 & 돋보기 뷰어
+// 5. 3대 테마 분류 컨트롤러
+// ========================================================
+function switchThemeCategory(category) {
+  appState.themeCategory = category;
+  
+  ['Basic', 'Simple', 'Premium'].forEach(cat => {
+    const tab = document.getElementById('tabTheme' + cat);
+    const panel = document.getElementById('themeSubPanel' + cat);
+    const isTarget = (cat.toLowerCase() === category);
+    if (tab) {
+      if (isTarget) {
+        tab.className = "px-2.5 py-1 rounded-md bg-white text-theme shadow-2xs font-black";
+      } else {
+        tab.className = "px-2.5 py-1 rounded-md text-slate-500 font-bold";
+      }
+    }
+    if (panel) {
+      if (isTarget) panel.classList.remove('hidden');
+      else panel.classList.add('hidden');
+    }
+  });
+
+  if (category === 'basic') {
+    setBasicTextPosition('middle', null);
+  } else if (category === 'simple') {
+    setSimpleSubTheme('classicmono', null);
+  } else if (category === 'premium') {
+    setPremiumSubTheme('birthday', null);
+  }
+}
+
+function setBasicTextPosition(pos, btn) {
+  appState.customPngOverlayImage = null;
+  appState.frameStyle = pos; // 'top' | 'middle' | 'bottom' | 'none'
+  document.querySelectorAll('.basic-pos-btn').forEach(b => {
+    b.className = "basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold";
+  });
+  if (btn) btn.className = "basic-pos-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black shadow-2xs text-[10px]";
+  renderStrip();
+}
+
+function setSimpleSubTheme(key, btn) {
+  appState.customPngOverlayImage = null;
+  appState.frameStyle = key; // 'classicmono' | 'antique' | 'timestamp' | 'slogan'
+  document.querySelectorAll('.simple-theme-btn').forEach(b => {
+    b.className = "simple-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold truncate";
+  });
+  if (btn) btn.className = "simple-theme-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black shadow-2xs text-[10px] truncate";
+  renderStrip();
+}
+
+function setPremiumSubTheme(key, btn) {
+  appState.customPngOverlayImage = null;
+  appState.frameStyle = key; // 'birthday' | 'baseball' | 'comic' | 'photoism'
+  document.querySelectorAll('.premium-theme-btn').forEach(b => {
+    b.className = "premium-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold truncate";
+  });
+  if (btn) btn.className = "premium-theme-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black shadow-2xs text-[10px] truncate";
+  renderStrip();
+}
+
+function triggerCustomFrameUpload() {
+  const input = document.getElementById('customFrameInput');
+  if (input) { input.value = ''; input.click(); }
+}
+
+function handleCustomFrameUpload(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.includes('png')) {
+    alert("사진 구멍이 투명하게 뚫린 'PNG' 파일만 프레임으로 적용 가능합니다!");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      appState.customPngOverlayImage = img;
+      appState.frameStyle = 'custom_png';
+      alert("나만의 투명 PNG 프레임이 적용되었습니다! ✨");
+      renderStrip();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ========================================================
+// 6. 메인 캔버스 UHD 샌드위치 렌더링 & Safe Zone
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
@@ -781,14 +883,14 @@ function renderStrip(isFinalExport = false) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  // [1: 배경 레이어]
+  // [레이어 1: 바닥 배경색]
   if (fStyle === 'photoism') ctx.fillStyle = '#0A0A0A';
   else if (fStyle === 'classicmono') ctx.fillStyle = '#27272A';
-  else if (fStyle === 'y2k') ctx.fillStyle = '#18181B';
+  else if (fStyle === 'comic') ctx.fillStyle = '#FFFFFF';
   else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // [2: 사진 4장 슬롯 레이어]
+  // [레이어 2: 사진 4장 슬롯 (Safe Zone 배타적 확보)]
   if (layout === 'strip') {
     if (fStyle === 'middle') {
       const bannerH = 240; 
@@ -802,9 +904,9 @@ function renderStrip(isFinalExport = false) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerStartY, imgW, imgH); 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad, lowerStartY + imgH + gap, imgW, imgH); 
     } else {
-      const isBottom = (fStyle === 'bottom'); 
-      const topHeaderH = (fStyle === 'simple') ? 180 : 70; 
-      const bottomFooterH = isBottom ? 330 : 70; 
+      const isBottom = (fStyle === 'bottom' || fStyle === 'timestamp'); 
+      const topHeaderH = (fStyle === 'top' || fStyle === 'slogan' || fStyle === 'classicmono' || fStyle === 'photoism' || fStyle === 'birthday' || fStyle === 'baseball' || fStyle === 'comic') ? 180 : 70; 
+      const bottomFooterH = (isBottom || fStyle === 'photoism' || fStyle === 'baseball' || fStyle === 'birthday' || fStyle === 'comic') ? 330 : 70; 
       const imgW = canvas.width - (pad * 2); 
       const imgH = (canvas.height - topHeaderH - bottomFooterH - (gap * 3)) / 4;
 
@@ -813,17 +915,17 @@ function renderStrip(isFinalExport = false) {
         const y = topHeaderH + (i * (imgH + gap)); 
         drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, y, imgW, imgH); 
       }
-      if (isBottom || ['photoism', 'classicmono', 'y2k', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) {
+      if (isBottom || ['photoism', 'classicmono', 'baseball', 'birthday', 'comic'].includes(fStyle)) {
         const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
         drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle);
       }
     }
   } 
   else if (layout === 'grid') {
-    const isBottom = (fStyle === 'bottom'); 
+    const isBottom = (fStyle === 'bottom' || fStyle === 'timestamp'); 
     const bannerH = (fStyle === 'middle') ? 210 : 0;
-    const topHeaderH = (fStyle === 'simple' || ['photoism', 'y2k', 'classicmono', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) ? 210 : 70;
-    const bottomFooterH = (isBottom || ['photoism', 'y2k', 'classicmono', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) ? 285 : 75;
+    const topHeaderH = (fStyle === 'top' || fStyle === 'slogan' || ['photoism', 'classicmono', 'baseball', 'birthday', 'comic'].includes(fStyle)) ? 210 : 70;
+    const bottomFooterH = (isBottom || ['photoism', 'classicmono', 'baseball', 'birthday', 'comic'].includes(fStyle)) ? 285 : 75;
 
     const imgW = (canvas.width - (pad * 2) - gap) / 2; 
     const imgH = Math.round(imgW * 1.25);
@@ -852,7 +954,7 @@ function renderStrip(isFinalExport = false) {
       for (let i = 0; i < 4; i++) { 
         drawFilteredSlotPhoto(ctx, appState.selectedImages[i], coords[i].x, coords[i].y, imgW, imgH); 
       }
-      if (isBottom || ['photoism', 'y2k', 'classicmono', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) {
+      if (isBottom || ['photoism', 'classicmono', 'baseball', 'birthday', 'comic'].includes(fStyle)) {
         const footerCenterY = (canvas.height - bottomFooterH) + (bottomFooterH / 2);
         drawBottomStyleFooter(ctx, canvas.width / 2, footerCenterY, customTitle, 48);
       }
@@ -880,16 +982,16 @@ function renderStrip(isFinalExport = false) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[2], rx + padX, lowerY, imgW, imgH); 
       drawFilteredSlotPhoto(ctx, appState.selectedImages[3], rx + padX, lowerY + imgH + gap, imgW, imgH); 
     } else {
-      const isBottom = (fStyle === 'bottom'); 
-      const topHeaderH = isBottom ? 55 : 145; 
-      const bottomFooterH = isBottom ? 240 : 55; 
+      const isBottom = (fStyle === 'bottom' || fStyle === 'timestamp'); 
+      const topHeaderH = 145; 
+      const bottomFooterH = 240; 
       const imgH = (canvas.height - topHeaderH - bottomFooterH - 30 - (gap * 3)) / 4;
 
       renderHeaderOrDecor(ctx, 15, 15, stripW - 30, canvas.height - 30, customTitle, topHeaderH, isBottom, true); 
       for (let i = 0; i < 4; i++) { 
         drawFilteredSlotPhoto(ctx, appState.selectedImages[i], 15 + padX, 15 + topHeaderH + (i * (imgH + gap)), imgW, imgH); 
       }
-      if (isBottom || ['photoism', 'classicmono', 'y2k', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) {
+      if (isBottom || ['photoism', 'classicmono', 'baseball', 'birthday', 'comic'].includes(fStyle)) {
         drawBottomStyleFooter(ctx, stripW / 2, (canvas.height - bottomFooterH) + (bottomFooterH / 2), customTitle, 38);
       }
 
@@ -898,7 +1000,7 @@ function renderStrip(isFinalExport = false) {
       for (let i = 0; i < 4; i++) { 
         drawFilteredSlotPhoto(ctx, appState.selectedImages[i], rx + padX, 15 + topHeaderH + (i * (imgH + gap)), imgW, imgH); 
       }
-      if (isBottom || ['photoism', 'classicmono', 'y2k', 'baseball', 'birthday', 'romantic', 'graduation'].includes(fStyle)) {
+      if (isBottom || ['photoism', 'classicmono', 'baseball', 'birthday', 'comic'].includes(fStyle)) {
         drawBottomStyleFooter(ctx, rx + (stripW / 2) - 15, (canvas.height - bottomFooterH) + (bottomFooterH / 2), customTitle, 38);
       }
     }
@@ -919,13 +1021,20 @@ function renderStrip(isFinalExport = false) {
     ctx.restore();
   }
 
-  // [3: 투명 PNG 프레임 오버레이]
+  // [레이어 3: 앤틱 라인 및 프리미엄 벡터/투명 PNG 오버레이]
   if (appState.customPngOverlayImage) {
     ctx.drawImage(appState.customPngOverlayImage, 0, 0, canvas.width, canvas.height);
+  } else if (fStyle === 'antique') {
+    ctx.save();
+    ctx.strokeStyle = (appState.frameColor === '#FFFFFF' || appState.frameColor === '#E2E8F0') ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(pad - 14, pad - 14, canvas.width - (pad * 2) + 28, canvas.height - (pad * 2) + 28);
+    ctx.strokeRect(pad - 8, pad - 8, canvas.width - (pad * 2) + 16, canvas.height - (pad * 2) + 16);
+    ctx.restore();
   }
 
-  // [4: 스티커 및 텍스트]
-  appState.stickers.forEach((st, idx) => {
+  // [레이어 4: 스티커 렌더링 - 🌟 점선 박스/커서 일체 제거]
+  appState.stickers.forEach(st => {
     ctx.save();
     ctx.translate(st.x, st.y);
     ctx.rotate(((st.rotation || 0) * Math.PI) / 180);
@@ -944,9 +1053,6 @@ function renderStrip(isFinalExport = false) {
       ctx.textBaseline = 'middle'; 
       ctx.fillText(st.text, 0, 0);
     }
-    if (!isFinalExport && idx === appState.selectedStickerIdx) {
-      ctx.strokeStyle = '#F43F5E'; ctx.lineWidth = 4; ctx.setLineDash([8, 8]); const radius = (st.type === 'text') ? st.size * 1.1 : st.size * 0.65; ctx.strokeRect(-radius, -st.size * 0.6, radius * 2, st.size * 1.2);
-    }
     ctx.restore();
   });
 }
@@ -954,6 +1060,7 @@ function renderStrip(isFinalExport = false) {
 function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin = false) {
   const fStyle = appState.frameStyle;
   ctx.save();
+
   if (fStyle === 'photoism') {
     ctx.fillStyle = '#FFFFFF';
     ctx.font = `700 ${isTwin ? 36 : 56}px 'Playfair Display', serif`;
@@ -964,10 +1071,48 @@ function renderHeaderOrDecor(ctx, bx, by, bw, bh, title, topH, isBottom, isTwin 
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.textAlign = 'left';
     ctx.fillText('▶ 5', bx + (isTwin ? 25 : 40), by + (topH / 2) + 8);
-  } else if (!isBottom && fStyle === 'simple') {
+  } else if (fStyle === 'classicmono') {
+    ctx.fillStyle = '#E4E4E7';
+    ctx.font = `700 ${isTwin ? 34 : 52}px monospace`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("🎞️ FILM ROLL 400", bx + (isTwin ? 25 : 40), by + (topH / 2) - 8);
+    ctx.fillStyle = '#A1A1AA';
+    ctx.font = `bold 15px monospace`;
+    ctx.fillText("FRAME 24A", bx + (isTwin ? 25 : 40), by + (topH / 2) + 26);
+  } else if (fStyle === 'slogan') {
+    ctx.fillStyle = (appState.frameColor === '#FFFFFF' || appState.frameColor === '#E2E8F0') ? '#1E293B' : '#FFFFFF';
+    ctx.font = `700 ${isTwin ? 22 : 32}px 'Playfair Display', serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("◀ A beautiful memory is a picture ▶", bx + (bw / 2), by + (topH / 2));
+  } else if (fStyle === 'birthday') {
+    ctx.fillStyle = '#E11D48';
+    ctx.font = `900 ${isTwin ? 36 : 56}px 'Playfair Display', serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("🎂 Happy Birthday", bx + (isTwin ? 25 : 40), by + (topH / 2) - 8);
+    ctx.fillStyle = '#9F1239';
+    ctx.font = `bold 16px 'Pretendard', sans-serif`;
+    ctx.fillText("오늘은 너라는 기적이 태어난 날! ♡", bx + (isTwin ? 25 : 40), by + (topH / 2) + 28);
+  } else if (fStyle === 'baseball') {
+    ctx.fillStyle = '#1E3A8A';
+    ctx.font = `900 ${isTwin ? 36 : 56}px 'Black Han Sans', sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("⚾ Play Baseball", bx + (isTwin ? 25 : 40), by + (topH / 2) - 8);
+    ctx.fillStyle = '#DC2626';
+    ctx.font = `bold 16px 'Pretendard', sans-serif`;
+    ctx.fillText("오늘도, 우리는 야구를 한다!", bx + (isTwin ? 25 : 40), by + (topH / 2) + 28);
+  } else if (fStyle === 'comic') {
+    ctx.fillStyle = '#0F172A';
+    ctx.font = `900 ${isTwin ? 34 : 52}px 'Black Han Sans', sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("🪵 깡! 너네 팀 몇 등이야?", bx + (isTwin ? 25 : 40), by + (topH / 2));
+  } else if (!isBottom && fStyle === 'top') {
     const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827'); 
-    const textColor = isDark ? '#FFFFFF' : '#1E293B'; 
-    ctx.fillStyle = textColor; 
+    ctx.fillStyle = isDark ? '#FFFFFF' : '#1E293B'; 
     ctx.font = `900 ${isTwin ? 38 : 58}px '${appState.typography.fontFamily}', serif`; 
     ctx.textAlign = 'right'; 
     ctx.textBaseline = 'middle'; 
@@ -1013,34 +1158,50 @@ function drawMiddleBanner(ctx, x, centerY, title, customSize = null) {
 
 function drawBottomStyleFooter(ctx, x, centerY, title, customSize = null) {
   if (appState.frameStyle === 'none') return;
+  const fStyle = appState.frameStyle;
   const size = customSize || appState.typography.fontSize || 60; 
   const showDate = appState.showDate;
-  const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
-  const textColor = appState.typography.fontColor || (isDark ? '#FFFFFF' : '#1E293B');
-  const dateSize = Math.max(20, Math.round(size * 0.45));
-  const gap = Math.max(16, Math.round(size * 0.3));
-
   ctx.save();
-  ctx.textAlign = 'center';
-  ctx.fillStyle = textColor;
 
-  if (showDate) {
-    const totalHeight = size + gap + dateSize;
-    const titleY = centerY - (totalHeight / 2) + (size / 2);
-    const dateY = centerY + (totalHeight / 2) - (dateSize / 2);
-
-    ctx.font = `900 ${size}px '${appState.typography.fontFamily}', sans-serif`;
+  if (fStyle === 'photoism') {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = `700 ${Math.max(18, Math.round(size * 0.5))}px monospace`;
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(title, x, titleY);
-
-    ctx.font = `normal ${dateSize}px '${appState.typography.fontFamily}', sans-serif`;
-    ctx.globalAlpha = 0.75;
+    ctx.fillText("52    PHOTOISM    KEEP YOURSELF ALIVE", x, centerY);
+  } else if (fStyle === 'timestamp') {
+    ctx.fillStyle = '#F59E0B'; // 오렌지 타임스탬프 도트
+    ctx.font = `700 28px monospace`;
+    ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText(appState.typography.date, x, dateY);
+    ctx.fillText(`'${appState.typography.date.replace(/\./g, ' ')}`, x + 400, centerY);
   } else {
-    ctx.font = `900 ${size}px '${appState.typography.fontFamily}', sans-serif`;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(title, x, centerY);
+    const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827');
+    const textColor = appState.typography.fontColor || (isDark ? '#FFFFFF' : '#1E293B');
+    const dateSize = Math.max(20, Math.round(size * 0.45));
+    const gap = Math.max(16, Math.round(size * 0.3));
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = textColor;
+
+    if (showDate) {
+      const totalHeight = size + gap + dateSize;
+      const titleY = centerY - (totalHeight / 2) + (size / 2);
+      const dateY = centerY + (totalHeight / 2) - (dateSize / 2);
+
+      ctx.font = `900 ${size}px '${appState.typography.fontFamily}', sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, x, titleY);
+
+      ctx.font = `normal ${dateSize}px '${appState.typography.fontFamily}', sans-serif`;
+      ctx.globalAlpha = 0.75;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(appState.typography.date, x, dateY);
+    } else {
+      ctx.font = `900 ${size}px '${appState.typography.fontFamily}', sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, x, centerY);
+    }
   }
   ctx.restore();
 }
@@ -1133,7 +1294,303 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 }
 
 // ========================================================
-// 4컷 비디오, 구글 드라이브 직결 QR & PDF/공유
+// 7. 🌟 선택 점선 박스 없는 2핑거 핀치/회전 스티커 엔진
+// ========================================================
+function initCanvasInteractions() {
+  const canvas = document.getElementById('photoCanvas');
+  const viewport = document.getElementById('canvasViewport');
+  if (!canvas || !viewport) return;
+
+  let initialStickerDist = 0;
+  let initialStickerAngle = 0;
+  let baseStickerSize = 65;
+  let baseStickerRotation = 0;
+
+  function getCoords(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      clientX, clientY,
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  function handleStart(e) {
+    if (e.touches && e.touches.length === 2 && appState.selectedStickerIdx !== -1) {
+      // 🌟 두 손가락 핀치/회전 시작
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      initialStickerDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      initialStickerAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * 180 / Math.PI;
+      const st = appState.stickers[appState.selectedStickerIdx];
+      baseStickerSize = st.size;
+      baseStickerRotation = st.rotation || 0;
+      return;
+    }
+
+    const touch = e.touches ? e.touches[0] : e;
+    const c = getCoords(touch.clientX, touch.clientY);
+    let hitSticker = false;
+
+    for (let i = appState.stickers.length - 1; i >= 0; i--) {
+      const st = appState.stickers[i];
+      const dist = Math.hypot(c.x - st.x, c.y - st.y);
+      if (dist <= Math.max(90, st.size * 1.2)) {
+        appState.selectedStickerIdx = i;
+        appState.dragTarget = i;
+        appState.dragStartPos = { x: c.x - st.x, y: c.y - st.y };
+        showStickerControls(st);
+        renderStrip();
+        hitSticker = true;
+        updateFloatingLoupe(touch.clientX, touch.clientY, c.x, c.y);
+        break;
+      }
+    }
+
+    if (!hitSticker) {
+      isPanning = true;
+      panStartX = touch.clientX - canvasPanX;
+      panStartY = touch.clientY - canvasPanY;
+      appState.selectedStickerIdx = -1;
+      appState.dragTarget = null;
+      hideFloatingLoupe();
+      const bar = document.getElementById('stickerControlBar'); 
+      if (bar) bar.classList.add('hidden');
+      renderStrip();
+    }
+  }
+
+  function handleMove(e) {
+    if (e.touches && e.touches.length === 2 && appState.selectedStickerIdx !== -1 && initialStickerDist > 0) {
+      // 🌟 두 손가락으로 크기 조절 & 각도 회전
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const curDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      const curAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * 180 / Math.PI;
+
+      const scaleFactor = curDist / initialStickerDist;
+      const angleDiff = curAngle - initialStickerAngle;
+      const st = appState.stickers[appState.selectedStickerIdx];
+      st.size = Math.max(25, Math.min(320, Math.round(baseStickerSize * scaleFactor)));
+      st.rotation = Math.round((baseStickerRotation + angleDiff + 360) % 360);
+      
+      showStickerControls(st);
+      renderStrip();
+      return;
+    }
+
+    const touch = e.touches ? e.touches[0] : e;
+    const c = getCoords(touch.clientX, touch.clientY);
+
+    if (appState.dragTarget !== null) {
+      if (e.cancelable) e.preventDefault();
+      const st = appState.stickers[appState.dragTarget];
+      st.x = c.x - appState.dragStartPos.x;
+      st.y = c.y - appState.dragStartPos.y;
+      renderStrip();
+      updateFloatingLoupe(touch.clientX, touch.clientY, st.x, st.y);
+    } else if (isPanning) {
+      if (e.cancelable) e.preventDefault();
+      canvasPanX = touch.clientX - panStartX;
+      canvasPanY = touch.clientY - panStartY;
+      applyZoomTransform();
+    }
+  }
+
+  function handleEnd() { 
+    if (appState.dragTarget !== null) saveStateForUndo(); 
+    appState.dragTarget = null; 
+    isPanning = false;
+    initialStickerDist = 0;
+    hideFloatingLoupe();
+  }
+
+  viewport.addEventListener('mousedown', handleStart); 
+  window.addEventListener('mousemove', handleMove); 
+  window.addEventListener('mouseup', handleEnd);
+  viewport.addEventListener('touchstart', handleStart, { passive: false }); 
+  window.addEventListener('touchmove', handleMove, { passive: false }); 
+  window.addEventListener('touchend', handleEnd);
+}
+
+function showStickerControls(st) {
+  const bar = document.getElementById('stickerControlBar'); 
+  if (!bar) return;
+  bar.classList.remove('hidden');
+  const sizeS = document.getElementById('stickerSizeSlider'); if (sizeS) sizeS.value = Math.round(st.size / 1.5);
+  const rotS = document.getElementById('stickerRotateSlider'); if (rotS) rotS.value = st.rotation || 0;
+  const customRow = document.getElementById('stickerTextCustomRow');
+  if (st.type === 'text') { 
+    if (customRow) customRow.classList.remove('hidden'); 
+    const cp = document.getElementById('stickerColorPicker'); if (cp) cp.value = st.color || '#FFFFFF'; 
+    const fs = document.getElementById('stickerFontSelect'); if (fs) fs.value = st.fontFamily || 'Pretendard'; 
+  } else { 
+    if (customRow) customRow.classList.add('hidden'); 
+  }
+}
+
+function onSelectedStickerResize(size) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].size = Math.round(parseInt(size) * 1.5); renderStrip(); } }
+function onSelectedStickerRotate(deg) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].rotation = parseInt(deg); renderStrip(); } }
+function onSelectedStickerColorChange(color) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].color = color; renderStrip(); } }
+function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].fontFamily = fontName; renderStrip(); } }
+function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; hideFloatingLoupe(); const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
+
+function addDirectTextSticker() {
+  const input = document.getElementById('directTextInput');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) { alert("추가할 문구를 입력해주세요!"); return; }
+  addTextSticker(val);
+  input.value = '';
+}
+
+function addTextSticker(text) {
+  saveStateForUndo(); 
+  pushRecentSticker('text', text); 
+  const canvas = document.getElementById('photoCanvas');
+  const newSticker = { 
+    id: Date.now(), type: 'text', text, 
+    x: canvas.width / 2 + (Math.random() * 60 - 30), 
+    y: canvas.height / 2 + (Math.random() * 60 - 30), 
+    size: 80, rotation: 0, color: '#FFFFFF', 
+    fontFamily: appState.typography.fontFamily || 'Pretendard' 
+  };
+  appState.stickers.push(newSticker); 
+  appState.selectedStickerIdx = appState.stickers.length - 1;
+  showStickerControls(newSticker); 
+  renderStrip();
+}
+
+function addEmojiSticker(emoji) {
+  saveStateForUndo(); 
+  pushRecentSticker('emoji', emoji); 
+  const canvas = document.getElementById('photoCanvas');
+  const newSticker = { 
+    id: Date.now(), type: 'emoji', text: emoji, 
+    x: canvas.width / 2 + (Math.random() * 60 - 30), 
+    y: canvas.height / 2 + (Math.random() * 60 - 30), 
+    size: 95, rotation: 0 
+  };
+  appState.stickers.push(newSticker); 
+  appState.selectedStickerIdx = appState.stickers.length - 1;
+  showStickerControls(newSticker); 
+  renderStrip();
+}
+
+function clearAllStickers() { 
+  saveStateForUndo(); 
+  appState.stickers = []; 
+  appState.selectedStickerIdx = -1; 
+  hideFloatingLoupe();
+  const bar = document.getElementById('stickerControlBar'); 
+  if (bar) bar.classList.add('hidden'); 
+  renderStrip(); 
+}
+
+function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY) {
+  const loupe = document.getElementById('floatingLoupe');
+  const lCanvas = document.getElementById('loupeCanvas');
+  const mainCanvas = document.getElementById('photoCanvas');
+  if (!loupe || !lCanvas || !mainCanvas) return;
+
+  loupe.style.left = `${touchX}px`;
+  loupe.style.top = `${touchY}px`;
+  loupe.classList.remove('hidden');
+
+  lCanvas.width = 120;
+  lCanvas.height = 120;
+  const lCtx = lCanvas.getContext('2d');
+  lCtx.imageSmoothingEnabled = true;
+  lCtx.imageSmoothingQuality = 'high';
+  lCtx.clearRect(0, 0, 120, 120);
+
+  const cropSize = 70;
+  lCtx.drawImage(
+    mainCanvas,
+    canvasCoordX - cropSize / 2,
+    canvasCoordY - cropSize / 2,
+    cropSize,
+    cropSize,
+    0,
+    0,
+    120,
+    120
+  );
+
+  lCtx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
+  lCtx.lineWidth = 1.5;
+  lCtx.beginPath();
+  lCtx.moveTo(60, 45); lCtx.lineTo(60, 75);
+  lCtx.moveTo(45, 60); lCtx.lineTo(75, 60);
+  lCtx.stroke();
+}
+
+function hideFloatingLoupe() {
+  const loupe = document.getElementById('floatingLoupe');
+  if (loupe) loupe.classList.add('hidden');
+}
+
+function zoomCanvas(amount) {
+  canvasZoom = Math.max(0.4, Math.min(3.0, canvasZoom + amount));
+  applyZoomTransform();
+}
+
+function resetCanvasZoom() {
+  canvasZoom = 1.0;
+  canvasPanX = 0;
+  canvasPanY = 0;
+  applyZoomTransform();
+}
+
+function applyZoomTransform() {
+  const wrapper = document.getElementById('canvasScaleWrapper');
+  if (wrapper) {
+    wrapper.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom})`;
+  }
+  const label = document.getElementById('canvasZoomLabel');
+  if (label) label.textContent = Math.round(canvasZoom * 100) + '%';
+}
+
+function setupCanvasPinchZoom() {
+  const viewport = document.getElementById('canvasViewport');
+  if (!viewport) return;
+
+  let initialPinchDist = 0;
+  let initialZoom = 1.0;
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2 && appState.selectedStickerIdx === -1) {
+      e.preventDefault();
+      initialPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialZoom = canvasZoom;
+    }
+  }, { passive: false });
+
+  viewport.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && appState.selectedStickerIdx === -1 && initialPinchDist > 0) {
+      e.preventDefault();
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = currentDist / initialPinchDist;
+      canvasZoom = Math.max(0.4, Math.min(3.0, initialZoom * factor));
+      applyZoomTransform();
+    }
+  }, { passive: false });
+
+  viewport.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) initialPinchDist = 0;
+  });
+}
+
+// ========================================================
+// 8. 4컷 비디오, 구글 드라이브 직결 QR & PDF/공유
 // ========================================================
 async function generateFourCutVideo() {
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
@@ -1409,6 +1866,66 @@ function returnToEditor() {
   renderStrip(); 
 }
 
+// ========================================================
+// 9. 앨범 사진 수집 & 세션 복구 & 화면 관리
+// ========================================================
+function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
+
+function compressAndLoadImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 2560;
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) { 
+          if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
+          else { w = Math.round((w * maxDim) / h); h = maxDim; } 
+        }
+        const c = document.createElement('canvas'); 
+        c.width = w; c.height = h; 
+        const ctx = c.getContext('2d'); 
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, h);
+        const downscaledImg = new Image(); 
+        downscaledImg.onload = () => resolve(downscaledImg); 
+        downscaledImg.src = c.toDataURL('image/jpeg', 0.99);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleGalleryUpload(e) {
+  const files = Array.from(e.target.files); if (files.length === 0) return;
+  const loadedImages = await Promise.all(files.map(file => compressAndLoadImage(file)));
+  galleryAccumulator.push(...loadedImages);
+  if (galleryAccumulator.length >= 4) {
+    document.getElementById('galleryCollectModal').classList.add('hidden');
+    appState.shotImages = [...galleryAccumulator]; 
+    galleryAccumulator = []; 
+    renderPickScreen();
+  } else { 
+    updateGalleryCollectModal(); 
+  }
+}
+
+function updateGalleryCollectModal() {
+  const modal = document.getElementById('galleryCollectModal'); 
+  const title = document.getElementById('collectModalTitle'); 
+  const grid = document.getElementById('collectThumbGrid');
+  if (!modal || !title || !grid) return;
+  title.textContent = `사진 수집 중 ( ${galleryAccumulator.length} / 4 )`;
+  grid.innerHTML = galleryAccumulator.map(img => `<div class="w-12 h-14 rounded-lg overflow-hidden border-2 border-theme shadow-sm"><img src="${img.src}" class="w-full h-full object-cover"></div>`).join('');
+  modal.classList.remove('hidden'); 
+  if (window.lucide) lucide.createIcons();
+}
+
+function cancelGalleryCollect() { galleryAccumulator = []; const m = document.getElementById('galleryCollectModal'); if (m) m.classList.add('hidden'); }
+
 function saveSessionStateToStorage() {
   try {
     const backupData = {
@@ -1468,7 +1985,6 @@ function restorePreviousSession() {
   }
 }
 
-// 🌟 [핵심] 모든 화면을 깨끗하게 display 전환
 function showScreen(id) {
   const screenIds = ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'];
   screenIds.forEach(s => {
@@ -1477,7 +1993,7 @@ function showScreen(id) {
       if (s === id) { 
         el.classList.remove('hidden'); 
         el.style.removeProperty('display');
-        el.style.display = (s === 'screenPick' || s === 'screenEdit') ? 'flex' : 'flex';
+        el.style.display = 'flex';
       } else { 
         el.classList.add('hidden'); 
         el.style.display = 'none';
@@ -1514,6 +2030,9 @@ function startAutoReset() {
   }, 1000);
 }
 
+// ========================================================
+// 10. 에디터 설정 & 실행취소/다시실행
+// ========================================================
 function changeLayout(mode, btn) {
   saveStateForUndo(); 
   appState.layout = mode;
@@ -1597,357 +2116,6 @@ function onFontColorChange(color) { appState.typography.fontColor = color; rende
 function onFontSizeChange(size) { appState.typography.fontSize = Math.round(parseInt(size) * 1.5); renderStrip(); }
 function toggleShowDate(checked) { saveStateForUndo(); appState.showDate = checked; renderStrip(); }
 
-function applyEditorThemePreset(styleKey) {
-  appState.customPngOverlayImage = null;
-  appState.frameStyle = styleKey;
-  const sigInput = document.getElementById('frameSignatureInput');
-  if (styleKey === 'middle' && sigInput) sigInput.value = "추억네컷";
-  else if (styleKey === 'simple' && sigInput) sigInput.value = "sangsangPhoto";
-  else if (styleKey === 'bottom' && sigInput) sigInput.value = "인생4컷";
-  else if (styleKey === 'photoism' && sigInput) sigInput.value = "photoism";
-  renderStrip();
-}
-
-function zoomCanvas(amount) {
-  canvasZoom = Math.max(0.4, Math.min(3.0, canvasZoom + amount));
-  applyZoomTransform();
-}
-
-function resetCanvasZoom() {
-  canvasZoom = 1.0;
-  canvasPanX = 0;
-  canvasPanY = 0;
-  applyZoomTransform();
-}
-
-function applyZoomTransform() {
-  const wrapper = document.getElementById('canvasScaleWrapper');
-  if (wrapper) {
-    wrapper.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom})`;
-  }
-  const label = document.getElementById('canvasZoomLabel');
-  if (label) label.textContent = Math.round(canvasZoom * 100) + '%';
-}
-
-function setupCanvasPinchZoom() {
-  const viewport = document.getElementById('canvasViewport');
-  if (!viewport) return;
-
-  let initialPinchDist = 0;
-  let initialZoom = 1.0;
-
-  viewport.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 2 && appState.selectedStickerIdx === -1) {
-      e.preventDefault();
-      initialPinchDist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      initialZoom = canvasZoom;
-    }
-  }, { passive: false });
-
-  viewport.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 2 && appState.selectedStickerIdx === -1 && initialPinchDist > 0) {
-      e.preventDefault();
-      const currentDist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const factor = currentDist / initialPinchDist;
-      canvasZoom = Math.max(0.4, Math.min(3.0, initialZoom * factor));
-      applyZoomTransform();
-    }
-  }, { passive: false });
-
-  viewport.addEventListener('touchend', (e) => {
-    if (e.touches.length < 2) initialPinchDist = 0;
-  });
-}
-
-function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY) {
-  const loupe = document.getElementById('floatingLoupe');
-  const lCanvas = document.getElementById('loupeCanvas');
-  const mainCanvas = document.getElementById('photoCanvas');
-  if (!loupe || !lCanvas || !mainCanvas) return;
-
-  loupe.style.left = `${touchX}px`;
-  loupe.style.top = `${touchY}px`;
-  loupe.classList.remove('hidden');
-
-  lCanvas.width = 120;
-  lCanvas.height = 120;
-  const lCtx = lCanvas.getContext('2d');
-  lCtx.imageSmoothingEnabled = true;
-  lCtx.imageSmoothingQuality = 'high';
-  lCtx.clearRect(0, 0, 120, 120);
-
-  const cropSize = 70;
-  lCtx.drawImage(
-    mainCanvas,
-    canvasCoordX - cropSize / 2,
-    canvasCoordY - cropSize / 2,
-    cropSize,
-    cropSize,
-    0,
-    0,
-    120,
-    120
-  );
-
-  lCtx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
-  lCtx.lineWidth = 1.5;
-  lCtx.beginPath();
-  lCtx.moveTo(60, 45); lCtx.lineTo(60, 75);
-  lCtx.moveTo(45, 60); lCtx.lineTo(75, 60);
-  lCtx.stroke();
-}
-
-function hideFloatingLoupe() {
-  const loupe = document.getElementById('floatingLoupe');
-  if (loupe) loupe.classList.add('hidden');
-}
-
-function initCanvasInteractions() {
-  const canvas = document.getElementById('photoCanvas');
-  const viewport = document.getElementById('canvasViewport');
-  if (!canvas || !viewport) return;
-
-  function getCoords(clientX, clientY) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-      clientX, clientY,
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height)
-    };
-  }
-
-  function handleStart(e) {
-    const touch = e.touches ? e.touches[0] : e;
-    const c = getCoords(touch.clientX, touch.clientY);
-    let hitSticker = false;
-
-    for (let i = appState.stickers.length - 1; i >= 0; i--) {
-      const st = appState.stickers[i];
-      const dist = Math.hypot(c.x - st.x, c.y - st.y);
-      if (dist <= Math.max(105, st.size * 1.3)) {
-        appState.selectedStickerIdx = i;
-        appState.dragTarget = i;
-        appState.dragStartPos = { x: c.x - st.x, y: c.y - st.y };
-        showStickerControls(st);
-        renderStrip();
-        hitSticker = true;
-        updateFloatingLoupe(touch.clientX, touch.clientY, c.x, c.y);
-        break;
-      }
-    }
-
-    if (!hitSticker) {
-      isPanning = true;
-      panStartX = touch.clientX - canvasPanX;
-      panStartY = touch.clientY - canvasPanY;
-      appState.selectedStickerIdx = -1;
-      appState.dragTarget = null;
-      hideFloatingLoupe();
-      const bar = document.getElementById('stickerControlBar'); 
-      if (bar) bar.classList.add('hidden');
-      renderStrip();
-    }
-  }
-
-  function handleMove(e) {
-    const touch = e.touches ? e.touches[0] : e;
-    const c = getCoords(touch.clientX, touch.clientY);
-
-    if (appState.dragTarget !== null) {
-      if (e.cancelable) e.preventDefault();
-      const st = appState.stickers[appState.dragTarget];
-      st.x = c.x - appState.dragStartPos.x;
-      st.y = c.y - appState.dragStartPos.y;
-      renderStrip();
-      updateFloatingLoupe(touch.clientX, touch.clientY, st.x, st.y);
-    } else if (isPanning) {
-      if (e.cancelable) e.preventDefault();
-      canvasPanX = touch.clientX - panStartX;
-      canvasPanY = touch.clientY - panStartY;
-      applyZoomTransform();
-    }
-  }
-
-  function handleEnd() { 
-    if (appState.dragTarget !== null) saveStateForUndo(); 
-    appState.dragTarget = null; 
-    isPanning = false;
-    hideFloatingLoupe();
-  }
-
-  viewport.addEventListener('mousedown', handleStart); 
-  window.addEventListener('mousemove', handleMove); 
-  window.addEventListener('mouseup', handleEnd);
-  viewport.addEventListener('touchstart', handleStart, { passive: false }); 
-  window.addEventListener('touchmove', handleMove, { passive: false }); 
-  window.addEventListener('touchend', handleEnd);
-}
-
-function showStickerControls(st) {
-  const bar = document.getElementById('stickerControlBar'); 
-  if (!bar) return;
-  bar.classList.remove('hidden');
-  const sizeS = document.getElementById('stickerSizeSlider'); if (sizeS) sizeS.value = Math.round(st.size / 1.5);
-  const rotS = document.getElementById('stickerRotateSlider'); if (rotS) rotS.value = st.rotation || 0;
-  const customRow = document.getElementById('stickerTextCustomRow');
-  if (st.type === 'text') { 
-    if (customRow) customRow.classList.remove('hidden'); 
-    const cp = document.getElementById('stickerColorPicker'); if (cp) cp.value = st.color || '#FFFFFF'; 
-    const fs = document.getElementById('stickerFontSelect'); if (fs) fs.value = st.fontFamily || 'Pretendard'; 
-  } else { 
-    if (customRow) customRow.classList.add('hidden'); 
-  }
-}
-
-function onSelectedStickerResize(size) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].size = Math.round(parseInt(size) * 1.5); renderStrip(); } }
-function onSelectedStickerRotate(deg) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { appState.stickers[appState.selectedStickerIdx].rotation = parseInt(deg); renderStrip(); } }
-function onSelectedStickerColorChange(color) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].color = color; renderStrip(); } }
-function onSelectedStickerFontChange(fontName) { if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) { saveStateForUndo(); appState.stickers[appState.selectedStickerIdx].fontFamily = fontName; renderStrip(); } }
-function deleteSelectedSticker() { if (appState.selectedStickerIdx >= 0) { saveStateForUndo(); appState.stickers.splice(appState.selectedStickerIdx, 1); appState.selectedStickerIdx = -1; hideFloatingLoupe(); const bar = document.getElementById('stickerControlBar'); if (bar) bar.classList.add('hidden'); renderStrip(); } }
-
-function addDirectTextSticker() {
-  const input = document.getElementById('directTextInput');
-  if (!input) return;
-  const val = input.value.trim();
-  if (!val) { alert("추가할 문구를 입력해주세요!"); return; }
-  addTextSticker(val);
-  input.value = '';
-}
-
-function addTextSticker(text) {
-  saveStateForUndo(); 
-  pushRecentSticker('text', text); 
-  const canvas = document.getElementById('photoCanvas');
-  const newSticker = { 
-    id: Date.now(), type: 'text', text, 
-    x: canvas.width / 2 + (Math.random() * 60 - 30), 
-    y: canvas.height / 2 + (Math.random() * 60 - 30), 
-    size: 80, rotation: 0, color: '#FFFFFF', 
-    fontFamily: appState.typography.fontFamily || 'Pretendard' 
-  };
-  appState.stickers.push(newSticker); 
-  appState.selectedStickerIdx = appState.stickers.length - 1;
-  showStickerControls(newSticker); 
-  renderStrip();
-}
-
-function addEmojiSticker(emoji) {
-  saveStateForUndo(); 
-  pushRecentSticker('emoji', emoji); 
-  const canvas = document.getElementById('photoCanvas');
-  const newSticker = { 
-    id: Date.now(), type: 'emoji', text: emoji, 
-    x: canvas.width / 2 + (Math.random() * 60 - 30), 
-    y: canvas.height / 2 + (Math.random() * 60 - 30), 
-    size: 95, rotation: 0 
-  };
-  appState.stickers.push(newSticker); 
-  appState.selectedStickerIdx = appState.stickers.length - 1;
-  showStickerControls(newSticker); 
-  renderStrip();
-}
-
-function clearAllStickers() { 
-  saveStateForUndo(); 
-  appState.stickers = []; 
-  appState.selectedStickerIdx = -1; 
-  hideFloatingLoupe();
-  const bar = document.getElementById('stickerControlBar'); 
-  if (bar) bar.classList.add('hidden'); 
-  renderStrip(); 
-}
-
-function triggerCustomFrameUpload() {
-  const input = document.getElementById('customFrameInput');
-  if (input) { input.value = ''; input.click(); }
-}
-
-function handleCustomFrameUpload(e) {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-
-  if (!file.type.includes('png')) {
-    alert("사진 구멍이 투명하게 뚫린 'PNG' 파일만 프레임으로 적용 가능합니다!");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
-      appState.customPngOverlayImage = img;
-      appState.frameStyle = 'custom_png';
-      alert("나만의 투명 PNG 프레임이 적용되었습니다! ✨");
-      renderStrip();
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
-
-function compressAndLoadImage(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        const maxDim = 2560;
-        let w = img.width, h = img.height;
-        if (w > maxDim || h > maxDim) { 
-          if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
-          else { w = Math.round((w * maxDim) / h); h = maxDim; } 
-        }
-        const c = document.createElement('canvas'); 
-        c.width = w; c.height = h; 
-        const ctx = c.getContext('2d'); 
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, w, h);
-        const downscaledImg = new Image(); 
-        downscaledImg.onload = () => resolve(downscaledImg); 
-        downscaledImg.src = c.toDataURL('image/jpeg', 0.99);
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function handleGalleryUpload(e) {
-  const files = Array.from(e.target.files); if (files.length === 0) return;
-  const loadedImages = await Promise.all(files.map(file => compressAndLoadImage(file)));
-  galleryAccumulator.push(...loadedImages);
-  if (galleryAccumulator.length >= 4) {
-    document.getElementById('galleryCollectModal').classList.add('hidden');
-    appState.shotImages = [...galleryAccumulator]; 
-    galleryAccumulator = []; 
-    renderPickScreen();
-  } else { 
-    updateGalleryCollectModal(); 
-  }
-}
-
-function updateGalleryCollectModal() {
-  const modal = document.getElementById('galleryCollectModal'); 
-  const title = document.getElementById('collectModalTitle'); 
-  const grid = document.getElementById('collectThumbGrid');
-  if (!modal || !title || !grid) return;
-  title.textContent = `사진 수집 중 ( ${galleryAccumulator.length} / 4 )`;
-  grid.innerHTML = galleryAccumulator.map(img => `<div class="w-12 h-14 rounded-lg overflow-hidden border-2 border-theme shadow-sm"><img src="${img.src}" class="w-full h-full object-cover"></div>`).join('');
-  modal.classList.remove('hidden'); 
-  if (window.lucide) lucide.createIcons();
-}
-
-function cancelGalleryCollect() { galleryAccumulator = []; const m = document.getElementById('galleryCollectModal'); if (m) m.classList.add('hidden'); }
-
 function saveStateForUndo() {
   const snapshot = JSON.stringify({
     stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
@@ -2000,6 +2168,9 @@ function applySnapshot(snap) {
   renderStrip();
 }
 
+// ========================================================
+// 11. 관리자 센터, 후기 & 초기화
+// ========================================================
 function promptAdminMode() {
   const pw = prompt("관리자 비밀번호를 입력하세요");
   if (pw === "0724" || pw === "1234") {
@@ -2010,8 +2181,15 @@ function promptAdminMode() {
   }
 }
 
+let hourlyChartInstance = null;
+let deviceChartInstance = null;
+
 function openAdminDashboard() {
   document.getElementById('adminDashboardModal').classList.remove('hidden');
+  updateAdminDashboardStats();
+  renderAdminNoticeManageList();
+  renderAdminReviewManageList();
+  renderAdminLocationStats();
   switchAdminTab('stats');
   if (window.lucide) lucide.createIcons();
 }
@@ -2032,6 +2210,202 @@ function switchAdminTab(tabName) {
       if (content) content.classList.add('hidden');
     }
   });
+  if (tabName === 'stats') setTimeout(renderCharts, 100);
+}
+
+function updateAdminDashboardStats() {
+  const todayStr = getFormattedTodayDate();
+  const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
+  const todayVisits = parseInt(localStorage.getItem('chueok_stat_today_' + todayStr) || '1', 10);
+  const totalVisits = parseInt(localStorage.getItem('chueok_stat_total') || '2180', 10);
+  const now = new Date();
+  const weekAgo = new Date(); weekAgo.setDate(now.getDate() - 7);
+  const monthAgo = new Date(); monthAgo.setDate(now.getDate() - 30);
+  let weekVisits = 0, monthVisits = 0;
+
+  logs.forEach(l => {
+    const logDate = new Date(l.date.replace(/\./g, '-'));
+    if (logDate >= weekAgo) weekVisits++;
+    if (logDate >= monthAgo) monthVisits++;
+  });
+
+  const elToday = document.getElementById('dashToday');
+  const elWeek = document.getElementById('dashWeek');
+  const elMonth = document.getElementById('dashMonth');
+  const elTotal = document.getElementById('dashTotal');
+  if (elToday) elToday.textContent = todayVisits;
+  if (elWeek) elWeek.textContent = Math.max(todayVisits, weekVisits);
+  if (elMonth) elMonth.textContent = Math.max(todayVisits, monthVisits);
+  if (elTotal) elTotal.textContent = totalVisits.toLocaleString();
+}
+
+function renderCharts() {
+  if (typeof Chart === 'undefined') return;
+  const logs = JSON.parse(localStorage.getItem('chueok_visitor_logs') || '[]');
+
+  const hourlyCounts = Array(24).fill(0);
+  logs.forEach(l => { if (typeof l.hour === 'number' && l.hour >= 0 && l.hour <= 23) hourlyCounts[l.hour]++; });
+
+  const ctxHourly = document.getElementById('chartHourly');
+  if (ctxHourly) {
+    if (hourlyChartInstance) hourlyChartInstance.destroy();
+    hourlyChartInstance = new Chart(ctxHourly.getContext('2d'), {
+      type: 'bar',
+      data: { labels: Array.from({length: 24}, (_, i) => i + '시'), datasets: [{ label: '방문자수', data: hourlyCounts, backgroundColor: 'rgba(244, 63, 94, 0.75)', borderRadius: 6 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  }
+
+  const deviceCounts = JSON.parse(localStorage.getItem('chueok_device_stats') || '{}');
+  const deviceLabels = ["아이폰", "안드로이드폰", "아이패드", "안드로이드패드", "PC", "기타"];
+  const deviceData = deviceLabels.map(k => deviceCounts[k] || 0);
+
+  const ctxDev = document.getElementById('chartDevice');
+  if (ctxDev) {
+    if (deviceChartInstance) deviceChartInstance.destroy();
+    deviceChartInstance = new Chart(ctxDev.getContext('2d'), {
+      type: 'doughnut',
+      data: { 
+        labels: deviceLabels, 
+        datasets: [{ 
+          data: deviceData.some(v => v > 0) ? deviceData : [1, 0, 0, 0, 0, 0], 
+          backgroundColor: ['#f43f5e', '#10b981', '#0284c7', '#8b5cf6', '#f59e0b', '#64748b'] 
+        }] 
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+}
+
+function renderAdminLocationStats() {
+  const container = document.getElementById('adminLocationStatsList');
+  if (!container) return;
+  const locMap = JSON.parse(localStorage.getItem('chueok_location_stats') || '{}');
+  const entries = Object.entries(locMap);
+
+  if (entries.length === 0) {
+    container.innerHTML = `<p class="text-slate-400 text-center py-4">수집된 지역 통계가 없습니다.</p>`;
+    return;
+  }
+
+  entries.sort((a, b) => b[1] - a[1]);
+  container.innerHTML = entries.map(([loc, count]) => `
+    <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+      <span class="font-bold text-slate-700 flex items-center"><i data-lucide="map-pin" class="w-3 h-3 text-rose-500 mr-1"></i>${loc}</span>
+      <span class="font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">${count}회</span>
+    </div>
+  `).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderAdminNoticeManageList() {
+  const listEl = document.getElementById('adminNoticeManageList');
+  if (!listEl) return;
+  const notices = getStoredNotices();
+  listEl.innerHTML = notices.map(n => `
+    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+      <div>
+        <span class="font-black text-theme text-[10px] mr-1">[${n.version || '공지'}]</span>
+        <span class="font-bold text-slate-800">${n.content}</span>
+        <p class="text-[9px] text-slate-400 mt-0.5">${n.date}</p>
+      </div>
+      <button onclick="deleteNotice('${n.id}')" class="text-[10px] text-rose-600 underline font-bold ml-2 shrink-0">삭제</button>
+    </div>
+  `).join('');
+}
+
+function renderAdminReviewManageList() {
+  const listEl = document.getElementById('adminReviewManageList');
+  if (!listEl) return;
+  const posts = JSON.parse(localStorage.getItem('vibe_posts') || '[]');
+  if (posts.length === 0) { 
+    listEl.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">등록된 후기가 없습니다.</p>`; 
+    return; 
+  }
+  listEl.innerHTML = posts.map(p => `
+    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-slate-800">${escapeHtml(p.nickname)} <b class="text-amber-500 ml-1">★ ${p.rating || 5.0}</b></span>
+        <button onclick="deleteReviewPost(${p.id})" class="text-[10px] bg-rose-50 text-rose-600 border border-rose-200 px-2 py-0.5 rounded font-black">삭제</button>
+      </div>
+      <p class="text-[11px] text-slate-600 break-words">${escapeHtml(p.content)}</p>
+    </div>
+  `).join('');
+}
+
+async function writeAdminNotice() {
+  const content = prompt("새 공지사항 내용을 입력하세요:");
+  if (!content || !content.trim()) return;
+
+  const newNotice = { 
+    id: Date.now().toString(), 
+    date: getFormattedTodayDate(), 
+    version: 'v16.0', 
+    content: content.trim() 
+  };
+  let list = getStoredNotices();
+  list.unshift(newNotice);
+  localStorage.setItem('vibe_notices', JSON.stringify(list));
+  renderMainNotices(); 
+  renderAdminNoticeManageList();
+
+  try {
+    await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'ADD_NOTICE',
+        content: newNotice.content,
+        version: newNotice.version
+      })
+    });
+  } catch (e) {}
+}
+
+async function deleteNotice(id) {
+  if (!confirm("이 공지를 영구 삭제하시겠습니까?")) return;
+  let list = getStoredNotices().filter(n => String(n.id) !== String(id));
+  localStorage.setItem('vibe_notices', JSON.stringify(list));
+  renderMainNotices(); 
+  renderAdminNoticeManageList();
+
+  try {
+    await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'DELETE_NOTICE', id: id })
+    });
+  } catch (e) {}
+}
+
+function getStoredNotices() {
+  const stored = localStorage.getItem('vibe_notices');
+  let list = [];
+  if (stored) { 
+    try { list = JSON.parse(stored); } catch(e) { list = []; } 
+  }
+  if (!list || list.length === 0) {
+    list = [{ 
+      id: 'v16_0', 
+      date: getFormattedTodayDate(), 
+      version: 'v16.0', 
+      content: '구도 대기실, 3대 테마 분류 & 스튜디오 에디터 안정화 완료!' 
+    }];
+  }
+  return list;
+}
+
+function renderMainNotices() {
+  const container = document.getElementById('noticeListContainer');
+  const area = document.getElementById('mainNoticeArea');
+  if (!container || !area) return;
+  area.classList.remove('hidden');
+  container.innerHTML = `
+    <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-left">
+      <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0">v16.0</span>
+      <p class="text-[11px] font-bold text-slate-800 truncate ml-2">구도 대기실 & 3대 테마 시스템 적용 완료!</p>
+    </div>
+  `;
 }
 
 function loadSavedTheme() {
@@ -2113,10 +2487,28 @@ function initDynamicUI() {
     textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer active:scale-95 transition">${t}</button>`).join('');
   }
 
+  // 1. 기본 테마 컬러 팔레트 바인딩
+  const basicColorGrid = document.getElementById('frameColorGridBasic');
+  if (basicColorGrid) {
+    basicColorGrid.innerHTML = PALETTE_COLORS.map(c => `
+      <button onclick="changeFrameColor('${c}', this)" class="color-btn w-5 h-5 rounded-full border border-slate-200 shadow-2xs shrink-0" style="background-color:${c};"></button>
+    `).join('') + `<label class="w-5 h-5 rounded-full bg-white border border-slate-300 flex items-center justify-center cursor-pointer shadow-2xs shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3 h-3 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
+  }
+
+  // 2. 심플 테마 어반 컬러 팔레트 바인딩
+  const simpleColorGrid = document.getElementById('frameColorGridSimple');
+  if (simpleColorGrid) {
+    simpleColorGrid.innerHTML = SIMPLE_PALETTE.map(c => `
+      <button onclick="changeFrameColor('${c}', this)" class="color-btn w-5 h-5 rounded-full border border-slate-200 shadow-2xs shrink-0" style="background-color:${c};"></button>
+    `).join('');
+  }
+
+  // 3. 에디터 여백 설정 컬러칩
   const frameColorGrid = document.getElementById('frameColorGrid');
   if (frameColorGrid) {
-    frameColorGrid.innerHTML = PALETTE_COLORS.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') +
-      `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
+    frameColorGrid.innerHTML = PALETTE_COLORS.slice(0, 8).map(c => `
+      <button onclick="changeFrameColor('${c}', this)" class="color-btn w-5 h-5 rounded-full border border-slate-200 shadow-2xs shrink-0" style="background-color:${c};"></button>
+    `).join('');
   }
 
   renderRecentStickers();
@@ -2149,7 +2541,7 @@ function closeCustomerBotModal() {
 }
 
 // ========================================================
-// 초기 구동 및 이벤트 리스너
+// 12. 초기 구동 엔트리포인트
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   ['screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult', 'videoResultModal', 'galleryCollectModal', 'adminDashboardModal'].forEach(id => {
@@ -2165,6 +2557,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initCanvasInteractions();
   setupCanvasPinchZoom();
   checkPreviousSession();
+  renderMainNotices();
 
   try { if (window.lucide) lucide.createIcons(); } catch (e) {}
 });
