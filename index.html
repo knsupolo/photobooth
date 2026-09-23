@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-white text-slate-900 h-screen w-screen overflow-hidden flex flex-col antialiased select-none">
+  <!-- 파일 업로드 인풋 -->
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
   <input type="file" id="customFrameInput" accept="image/png" class="hidden" onchange="handleCustomFrameUpload(event)">
 
@@ -45,6 +46,7 @@
         </div>
       </header>
 
+      <!-- 세션 복구 배너 -->
       <div id="sessionRestoreBanner" class="hidden shrink-0 mt-2 p-2.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-2xl shadow-md flex items-center justify-between">
         <div class="flex items-center space-x-2 text-xs font-bold truncate">
           <i data-lucide="sparkles" class="w-4 h-4 shrink-0 animate-spin"></i>
@@ -55,6 +57,7 @@
         </button>
       </div>
 
+      <!-- 실시간 공지사항 -->
       <div id="mainNoticeArea" class="shrink-0 mt-2 hidden bg-theme-light border border-rose-200 rounded-2xl p-2.5 shadow-sm">
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-xs font-black text-theme flex items-center">
@@ -65,6 +68,7 @@
         <div id="noticeListContainer" class="space-y-1"></div>
       </div>
 
+      <!-- 규격 선택 카드 -->
       <section class="flex-1 flex flex-col justify-center my-auto space-y-3 w-full max-w-sm mx-auto">
         <div class="text-center space-y-0.5">
           <h3 class="text-sm font-black text-slate-900">촬영할 사진 규격을 먼저 선택해 주세요</h3>
@@ -72,6 +76,7 @@
         </div>
 
         <div class="grid grid-cols-2 gap-3 w-full">
+          <!-- 1×4 스트립 -->
           <button onclick="startSession('strip')" class="bg-gradient-to-b from-rose-50 to-white hover:from-rose-100 border-2 border-theme p-4 rounded-3xl shadow-md flex flex-col items-center justify-between text-center h-48 active:scale-[0.97] transition group">
             <div class="w-8 h-8 rounded-xl bg-theme text-white flex items-center justify-center shadow-sm group-hover:scale-110 transition">
               <i data-lucide="smartphone" class="w-4 h-4 rotate-90"></i>
@@ -86,6 +91,7 @@
             </div>
           </button>
 
+          <!-- 2×2 엽서형 -->
           <button onclick="startSession('grid')" class="bg-gradient-to-b from-indigo-50 to-white hover:from-indigo-100 border-2 border-indigo-500 p-4 rounded-3xl shadow-md flex flex-col items-center justify-between text-center h-48 active:scale-[0.97] transition group">
             <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm group-hover:scale-110 transition">
               <i data-lucide="smartphone" class="w-4 h-4"></i>
@@ -119,6 +125,7 @@
         </div>
       </section>
 
+      <!-- 하단 메뉴바 -->
       <div class="shrink-0 space-y-2 pt-2 border-t border-slate-100">
         <div class="flex items-center gap-1.5">
           <button onclick="showScreen('screenBoard')" class="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-2 rounded-2xl shadow-xs flex items-center space-x-2 active:scale-[0.98] transition">
@@ -155,12 +162,13 @@
   </main>
 
   <!-- ========================================================
-        화면 2: 촬영 화면 (구도 대기실 & 촬영 시작)
+        화면 2: 촬영 화면 (구도 확인 대기실 & 촬영 시작)
   ======================================================== -->
   <section id="screenLiveShoot" class="hidden absolute inset-0 bg-black flex flex-col items-center justify-center z-50 overflow-hidden">
     <div id="flashOverlay" class="hidden absolute inset-0 bg-white z-[60] pointer-events-none"></div>
     <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror z-0"></video>
     
+    <!-- 뷰파인더 가이드라인 -->
     <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10 p-2 sm:p-4">
       <div id="dynamicViewfinderBox" class="border-2 border-white/40 w-full h-full relative flex items-center justify-center transition-all duration-300 rounded-2xl">
         <div class="absolute top-3 left-3 w-5 h-5 border-t-4 border-l-4 border-theme"></div>
@@ -171,6 +179,7 @@
       </div>
     </div>
 
+    <!-- 상단 뱃지 및 제어 바 -->
     <div class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent pb-8">
       <div class="flex items-center space-x-2">
         <span id="liveProgressBadge" class="bg-theme text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg">구도 대기실</span>
@@ -182,7 +191,7 @@
       </div>
     </div>
 
-    <!-- 🌟 촬영 대기실 시작 버튼 바 -->
+    <!-- 구도 대기실: 촬영 시작 버튼 바 -->
     <div id="waitingRoomControls" class="absolute inset-x-0 bottom-6 z-30 flex flex-col items-center px-4 space-y-2.5 pointer-events-auto">
       <div class="flex items-center space-x-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-[11px] font-bold text-white shadow-lg">
         <button onclick="setViewfinderRatio('full', this)" class="ratio-btn px-2.5 py-1 rounded-lg bg-theme text-white shadow">풀화면</button>
@@ -195,7 +204,7 @@
       </button>
     </div>
 
-    <!-- 카운트다운 & 포즈 가이드 레이어 -->
+    <!-- 촬영 중 카운트다운 & 24종 포즈 안내 레이어 -->
     <div id="activeShootingLayer" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
       <span id="liveCountdownText" class="stroke-countdown-translucent text-[140px] font-black scale-100 transition-all">6</span>
       <div class="mt-2 text-center px-4">
@@ -206,7 +215,7 @@
       </div>
     </div>
 
-    <!-- 하단 썸네일 바 -->
+    <!-- 하단 썸네일 & 1초 촬영 버튼 바 -->
     <div id="shootingBottomBar" class="hidden absolute bottom-5 w-full flex flex-col items-center space-y-2 z-20 px-4">
       <button onclick="triggerInstantOneSec()" class="text-white text-xs font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] active:scale-90 transition py-1 px-3 pointer-events-auto bg-black/40 rounded-full border border-white/20">⚡ 1초 뒤 바로 찰칵</button>
       <div class="w-full max-w-md flex items-center justify-center space-x-1.5">
@@ -221,22 +230,22 @@
   </section>
 
   <!-- ========================================================
-        화면 3: 🌟 [수정2] 사진 선택 화면 (슬롯 대형화 & 테마팩/색상칩 제거)
+        화면 3: 사진 선택 화면 (초대형 슬롯 & 대형 캐러셀)
   ======================================================== -->
   <section id="screenPick" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row items-center justify-between p-3 sm:p-5 gap-4 bg-white text-slate-900 overflow-y-auto touch-scroll">
     
-    <!-- 좌측: 대형 프레임 슬롯 프리뷰 (공간 100% 활용) -->
+    <!-- 좌측: 대형 프레임 슬롯 프리뷰 -->
     <div class="w-full lg:w-5/12 flex flex-col items-center justify-center shrink-0">
       <div class="w-full max-w-xs mb-2 text-center">
         <h3 class="text-sm font-black text-slate-800">프레임에 담길 사진 배치 (1~4번)</h3>
-        <p class="text-[11px] text-slate-400 mt-0.5">슬롯을 누르거나 사진을 끌어다 놓으세요</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">슬롯을 탭하거나 사진을 끌어다 놓으세요</p>
       </div>
 
-      <!-- 🌟 화면에 시원하게 들어오는 초대형 슬롯 프리뷰 -->
+      <!-- 초대형 프레임 슬롯 박스 -->
       <div id="pickMiniFramePreview" class="bg-black p-3.5 shadow-2xl flex flex-col border-2 border-slate-300 rounded-2xl transition-all duration-300"></div>
     </div>
 
-    <!-- 우측: 대형 캐러셀 뷰어 & 스튜디오 꾸미기 버튼 -->
+    <!-- 우측: 대형 캐러셀 뷰어 & 스튜디오 꾸미기 전환 버튼 -->
     <div class="w-full lg:w-7/12 flex flex-col max-w-lg mx-auto space-y-2.5">
       <div class="flex items-center justify-between">
         <div>
@@ -248,7 +257,6 @@
 
       <div class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center p-2 min-h-[400px] lg:min-h-[500px]">
         <div id="carouselImageWrapper" class="w-full h-full flex items-center justify-center touch-pan-y cursor-grab select-none">
-          <!-- 🌟 첫 화면 진입 시에도 바로 첫 사진이 노출됨 -->
           <img id="carouselCurrentImg" src="" draggable="true" class="max-h-[390px] lg:max-h-[480px] w-auto object-contain rounded-xl shadow-2xl transition-transform duration-200 cursor-grab">
         </div>
 
@@ -266,14 +274,13 @@
 
       <div id="carouselIndicatorStrip" class="flex items-center justify-center space-x-2 py-0.5"></div>
 
-      <!-- 하단 3분할 한 줄 버튼바 -->
+      <!-- 하단 3분할 버튼바 -->
       <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200">
         <button onclick="assignCurrentCarouselPhoto()" class="bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1 shadow active:scale-95 transition truncate px-1">
           <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i>
           <span id="btnAssignText" class="truncate">슬롯에 넣기</span>
         </button>
         
-        <!-- 🌟 [수정3] 100% 정상 작동하는 스튜디오 꾸미기 버튼 -->
         <button onclick="confirmSelectedFour()" id="btnConfirmPick" class="bg-theme hover:bg-theme text-white font-black py-3 rounded-xl text-xs shadow-lg active:scale-95 transition truncate px-1 ring-2 ring-rose-400/50">
           스튜디오 꾸미기 ➔
         </button>
@@ -286,9 +293,11 @@
   </section>
 
   <!-- ========================================================
-        화면 4: 스튜디오 에디터 (돋보기 뷰어 & 하단 1열 가로 바)
+        화면 4: 스튜디오 에디터 (3대 테마 & 핀치 제스처 작업대)
   ======================================================== -->
   <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
+    
+    <!-- 캔버스 작업 영역 (터치 핀치/회전 및 플로팅 돋보기) -->
     <div class="w-full h-[46%] lg:h-full lg:w-1/2 flex flex-col bg-[#F6F3EC] border-b lg:border-r border-[#EBE6DC] shadow-inner relative z-10 shrink-0">
       <div class="absolute top-2 left-2 z-20 flex items-center space-x-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl shadow-sm border border-slate-200 text-xs font-bold">
         <button onclick="zoomCanvas(-0.15)" class="p-1 text-slate-600 hover:text-rose-600 active:scale-90"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
@@ -302,21 +311,22 @@
           <canvas id="photoCanvas" class="max-h-[38vh] lg:max-h-[75vh] w-auto h-auto object-contain shadow-2xl bg-white"></canvas>
         </div>
 
+        <!-- 가림 방지 플로팅 돋보기(Loupe) -->
         <div id="floatingLoupe" class="hidden absolute pointer-events-none z-40 w-24 h-24 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-white/95 backdrop-blur">
           <canvas id="loupeCanvas" class="w-full h-full"></canvas>
         </div>
 
         <div class="absolute bottom-2 left-2 pointer-events-none bg-black/60 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-xs">
-          🤏 두 손가락 줌&이동 / 한 손가락 드래그 이동(Pan)
+          🤏 두 손가락으로 스티커 크기·회전 조절
         </div>
       </div>
 
       <p class="text-[10px] text-slate-500 text-center py-1 shrink-0 bg-[#F6F3EC]">
-        <i data-lucide="hand" class="w-3 h-3 text-theme inline mr-0.5"></i>스티커를 두 손가락으로 벌리거나 돌려 조절해 보세요
+        <i data-lucide="hand" class="w-3 h-3 text-theme inline mr-0.5"></i>스티커를 두 손가락으로 벌려 크기를 키우거나 비틀어 회전해 보세요
       </p>
     </div>
 
-    <!-- 우측 에디터 패널 -->
+    <!-- 우측 에디터 컨트롤 패널 -->
     <div class="flex-1 lg:w-1/2 h-[54%] lg:h-full flex flex-col bg-white overflow-hidden relative z-0">
       <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0 bg-white z-20 shadow-2xs">
         <div class="flex items-center space-x-2">
@@ -333,6 +343,8 @@
       </div>
 
       <div class="flex-1 overflow-y-auto touch-scroll p-4 space-y-3.5">
+        
+        <!-- 레이아웃 선택 (1x4 스트립용) -->
         <div id="layoutSelectionRow" class="hidden">
           <label class="block text-[11px] font-bold text-slate-600 mb-1.5">출력 레이아웃 선택</label>
           <div class="grid grid-cols-2 gap-1.5">
@@ -341,23 +353,68 @@
           </div>
         </div>
 
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="text-[11px] font-bold text-slate-700">🎨 프레임 테마</label>
-            <button onclick="triggerCustomFrameUpload()" class="text-[10px] text-theme font-bold hover:underline">+ 내 투명 PNG 불러오기</button>
+        <!-- 🌟 테마 3대 분류 시스템 (기본 | 심플 | 프리미엄) -->
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="text-[11px] font-bold text-slate-700">🎨 테마 선택</label>
+            <div class="flex space-x-1 text-[10px] font-bold bg-slate-200 p-0.5 rounded-lg">
+              <button onclick="switchThemeCategory('basic')" id="tabThemeBasic" class="px-2.5 py-1 rounded-md bg-white text-theme shadow-2xs font-black">기본</button>
+              <button onclick="switchThemeCategory('simple')" id="tabThemeSimple" class="px-2.5 py-1 rounded-md text-slate-500">심플</button>
+              <button onclick="switchThemeCategory('premium')" id="tabThemePremium" class="px-2.5 py-1 rounded-md text-slate-500">프리미엄</button>
+            </div>
           </div>
-          <div class="grid grid-cols-4 gap-1 text-[10px] font-bold">
-            <button onclick="applyEditorThemePreset('middle')" class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-theme truncate">추억네컷</button>
-            <button onclick="applyEditorThemePreset('simple')" class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-theme truncate">포토이지</button>
-            <button onclick="applyEditorThemePreset('bottom')" class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-theme truncate">인생4컷</button>
-            <button onclick="applyEditorThemePreset('photoism')" class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-theme truncate">포토이즘</button>
-            <button onclick="applyEditorThemePreset('classicmono')" class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-theme truncate">클래식필름</button>
-            <button onclick="applyEditorThemePreset('y2k')" class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-theme truncate">Y2K사이버</button>
-            <button onclick="applyEditorThemePreset('graduation')" class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-theme truncate">청춘우정</button>
-            <button onclick="applyEditorThemePreset('birthday')" class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-theme truncate">생일파티</button>
+
+          <!-- 1. 기본 테마: 문구 위치 선택 & 무제한 색상 -->
+          <div id="themeSubPanelBasic" class="space-y-2">
+            <div class="grid grid-cols-4 gap-1 text-[10px] font-bold">
+              <button onclick="setBasicTextPosition('top', this)" class="basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg">상단문구</button>
+              <button onclick="setBasicTextPosition('middle', this)" class="basic-pos-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black shadow-2xs">중간문구</button>
+              <button onclick="setBasicTextPosition('bottom', this)" class="basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg">하단문구</button>
+              <button onclick="setBasicTextPosition('none', this)" class="basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg">문구없음</button>
+            </div>
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-[10px] font-bold text-slate-500">프레임 색상:</span>
+              <div id="frameColorGridBasic" class="flex items-center space-x-1 overflow-x-auto no-scrollbar"></div>
+            </div>
+          </div>
+
+          <!-- 2. 심플 테마: 각인 & 앤틱 라인 -->
+          <div id="themeSubPanelSimple" class="hidden space-y-2">
+            <div class="grid grid-cols-4 gap-1 text-[10px] font-bold">
+              <button onclick="setSimpleSubTheme('classicmono', this)" class="simple-theme-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black truncate">클래식필름</button>
+              <button onclick="setSimpleSubTheme('antique', this)" class="simple-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">앤틱라인</button>
+              <button onclick="setSimpleSubTheme('timestamp', this)" class="simple-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">타임스탬프</button>
+              <button onclick="setSimpleSubTheme('slogan', this)" class="simple-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">슬로건각인</button>
+            </div>
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-[10px] font-bold text-slate-500">어반 색상:</span>
+              <div id="frameColorGridSimple" class="flex items-center space-x-1 overflow-x-auto no-scrollbar"></div>
+            </div>
+          </div>
+
+          <!-- 3. 프리미엄 테마: 그래픽 팩 & 투명 PNG 프레임 (블랙/화이트 한정) -->
+          <div id="themeSubPanelPremium" class="hidden space-y-2">
+            <div class="grid grid-cols-4 gap-1 text-[10px] font-bold">
+              <button onclick="setPremiumSubTheme('birthday', this)" class="premium-theme-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black truncate">🎂생일파티</button>
+              <button onclick="setPremiumSubTheme('baseball', this)" class="premium-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">⚾야구빈티지</button>
+              <button onclick="setPremiumSubTheme('comic', this)" class="premium-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">🪵야구코믹</button>
+              <button onclick="setPremiumSubTheme('photoism', this)" class="premium-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">포토이즘</button>
+            </div>
+            <div class="flex items-center justify-between pt-1">
+              <button onclick="triggerCustomFrameUpload()" class="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg flex items-center space-x-1 shadow active:scale-95 transition">
+                <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>+ 내 투명 PNG 불러오기</span>
+              </button>
+              <div class="flex items-center space-x-1.5">
+                <span class="text-[10px] font-bold text-slate-500">색상:</span>
+                <button onclick="changeFrameColor('#000000', this)" class="w-5 h-5 rounded-full bg-black border-2 border-theme shadow-xs"></button>
+                <button onclick="changeFrameColor('#FFFFFF', this)" class="w-5 h-5 rounded-full bg-white border-2 border-slate-300 shadow-xs"></button>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- 감성 필터 15종 (기본값: 원본) -->
         <div>
           <div class="flex justify-between items-center mb-1.5">
             <label class="text-[11px] font-bold text-slate-700">✨ 감성 필터 (15종)</label>
@@ -387,12 +444,13 @@
           </div>
         </div>
 
+        <!-- 프레임 여백 두께 슬라이더 -->
         <div class="flex items-center justify-between space-x-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-          <span class="text-[11px] font-bold text-slate-600 shrink-0">여백크기</span>
-          <input type="range" id="sliderThickness" min="15" max="70" value="40" oninput="onThicknessChange(this.value)" class="w-full accent-theme h-1.5 bg-slate-200 rounded flex-1 mx-2">
-          <div id="frameColorGrid" class="flex flex-wrap gap-1 items-center justify-end w-44 overflow-x-auto no-scrollbar"></div>
+          <span class="text-[11px] font-bold text-slate-600 shrink-0">프레임 여백</span>
+          <input type="range" id="sliderThickness" min="20" max="70" value="40" oninput="onThicknessChange(this.value)" class="w-full accent-theme h-1.5 bg-slate-200 rounded mx-2">
         </div>
 
+        <!-- 문구 & 날짜 설정 -->
         <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
           <div class="flex items-center justify-between">
             <label class="text-[11px] font-bold text-slate-600" id="labelCustomText">문구 & 날짜 설정</label>
@@ -412,9 +470,10 @@
           </div>
         </div>
 
+        <!-- 스티커 & 텍스트 추가 (선택박스 없는 제스처 조작) -->
         <div>
           <div class="flex justify-between items-center mb-1">
-            <label class="text-[11px] font-bold text-slate-600">스티커 & 텍스트 추가</label>
+            <label class="text-[11px] font-bold text-slate-600">스티커 추가</label>
             <button onclick="clearAllStickers()" class="text-[10px] text-theme hover:underline">전체 비우기</button>
           </div>
 
@@ -429,9 +488,10 @@
           <div id="textStickerGrid" class="flex items-center space-x-1.5 overflow-x-auto pb-2 no-scrollbar"></div>
           <div id="emojiGrid" class="emoji-grid-15 p-2 bg-slate-50 rounded-2xl border border-slate-200 text-sm overflow-x-auto no-scrollbar text-center"></div>
 
+          <!-- 터치 선택 시 하단에만 깔끔하게 노출되는 보조 제어 바 -->
           <div id="stickerControlBar" class="hidden mt-2 p-2.5 bg-theme-light rounded-xl border border-rose-200 space-y-2">
             <div class="flex items-center justify-between text-[10px] text-theme font-bold">
-              <span>크기:</span><input type="range" id="stickerSizeSlider" min="20" max="200" value="65" oninput="onSelectedStickerResize(this.value)" class="w-24 accent-rose-500 h-1 bg-slate-300 rounded">
+              <span>크기:</span><input type="range" id="stickerSizeSlider" min="20" max="250" value="65" oninput="onSelectedStickerResize(this.value)" class="w-24 accent-rose-500 h-1 bg-slate-300 rounded">
               <span class="ml-2">회전:</span><input type="range" id="stickerRotateSlider" min="0" max="360" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-20 accent-rose-500 h-1 bg-slate-300 rounded">
               <button onclick="deleteSelectedSticker()" class="text-xs text-white font-bold px-2 py-1 rounded bg-theme hover:bg-theme ml-2">삭제</button>
             </div>
@@ -484,7 +544,7 @@
     </div>
   </section>
 
-  <!-- 비디오 대형 모달 -->
+  <!-- 비디오 대형 모달 (10Mbps) -->
   <div id="videoResultModal" class="hidden absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
     <div class="bg-white rounded-3xl p-4 sm:p-5 max-w-md w-full shadow-2xl flex flex-col items-center space-y-3">
       <div class="flex items-center justify-between w-full border-b border-slate-100 pb-2">
@@ -511,7 +571,7 @@
     </div>
   </div>
 
-  <!-- 결과 화면 -->
+  <!-- 결과 화면 (구글 드라이브 단독 직결) -->
   <section id="screenResult" class="hidden absolute inset-0 z-50 w-full flex flex-col items-center justify-center px-4 bg-slate-50 text-center overflow-y-auto">
     <div class="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center my-auto">
       <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5">
