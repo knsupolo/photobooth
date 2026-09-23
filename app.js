@@ -1,16 +1,16 @@
 /**
  * 추억의 네컷 Studio Pro v17.0 Pro
- * [통합 엔진 - 버그 완벽 수정본]
- * 1. 로그인 / 회원가입 / 간편 PIN 팝업창 즉각 활성화 (인라인 display 강제 충돌 해제)
- * 2. 6컷 촬영 즉시 1~4번 슬롯 자동 프리셋 & 에디터 진입 시 검은 화면 방지 안전 렌더링
- * 3. 2단계 돋보기 (정지 터치: 경계면 / 드래그: 스티커 전체 온전 표시)
- * 4. 스튜디오 상하/좌우 가변 스플릿 리사이저 바
- * 5. 기본 테마 완벽 분리 (하단문구: 상단슬림/하단240px, 상하단문구: 위아래 180px 균등)
- * 6. 스마트폰 스캔 다운로드용 QR 결과 모달 복구
- * 7. 정회원 10장 FIFO 롤링 클라우드 보관함 & 30일 자동 로그인
+ * [통합 엔진 전체 소스코드]
+ * - 관리자 마스터 계정(knsupolo / 12345678) 즉시 로그인 & 대시보드 자동 개방
+ * - 회원가입/로그인 모달 display 충돌 해결
+ * - 6컷 촬영 직후 1~4번 자동 프리셋 & 검은 화면 완벽 차단
+ * - 2단계 지능형 돋보기 (정지 터치: 경계선 투영 / 드래그: 스티커 전체 온전 표시)
+ * - 가변 스플릿 리사이저 바 (화면 비율 실시간 조절)
+ * - 하단문구(상단 60px / 하단 240px) vs 상하단문구(위아래 180px 균등) 분리
+ * - 스마트폰 카메라 스캔용 고화질 QR코드 결과 화면
  */
 
-const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbw1fjoUYoKQOHNNatPY_8q8X-1ogUV7iaFsIMpYioStlVX1SZK9hYiY32P-bGv7GUVoBw/exec";
+const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
 const APP_VERSION = "v17.0 Pro";
 const MAX_GALLERY_SLOTS = 10;
 
@@ -30,7 +30,6 @@ function extractPureBase64(dataUrl) {
   return commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
 }
 
-// 24종 포즈 가이드
 const POSE_SUGGESTIONS_24 = [
   { emoji: "🫂", text: "어깨동무하고 다정하게 찰칵!" },
   { emoji: "✌️", text: "다같이 볼 옆에 브이~" },
@@ -58,7 +57,6 @@ const POSE_SUGGESTIONS_24 = [
   { emoji: "🎉", text: "마지막 컷! 가장 행복한 표정으로!" }
 ];
 
-// 15종 감성 필터 프리셋
 const FILTER_PRESETS = {
   normal:       { bright: 100, contrast: 100, saturate: 100, name: '원본' },
   harublue:     { bright: 110, contrast: 105, saturate: 105, name: '하루블루' },
@@ -112,23 +110,23 @@ let appState = {
   currentCount: 6,
   countdownTimer: null,
   isShootingPaused: false,
-  selectedFormat: 'strip', // 'strip' (가로 전용) | 'grid' (세로 전용)
+  selectedFormat: 'strip',
   viewfinderRatio: 'full',
   currentShotIndex: 0,
   
   shotImages: [],
   selectedImages: [],
-  selectedIndices: [0, 1, 2, 3], // 🌟 기본 1~4번 컷 자동 프리셋
+  selectedIndices: [0, 1, 2, 3],
   activeSlotIndex: 0,
   shotVideoBlobs: [],
   currentMediaRecorder: null,
   currentShotVideoChunks: [],
 
-  themeCategory: 'basic', // 'basic' | 'simple' | 'premium'
-  frameStyle: 'middle',   // basic: top, middle, bottom, dual / simple: offset1, offset2, offset3 / premium: birthday, baseball, photoism
+  themeCategory: 'basic',
+  frameStyle: 'middle',
   frameColor: '#000000',
   frameThickness: 60,
-  layout: 'strip',        // 'strip' | 'twin'
+  layout: 'strip',
 
   activeFilter: 'normal',
   filters: { bright: 100, contrast: 100, saturate: 100 },
@@ -166,7 +164,7 @@ let enteredPinCode = "";
 let userLocationCache = { location: "수원시 (GPS 정밀)", isGps: true };
 
 // ========================================================
-// 1. 오디오 & 햅틱 피드백 엔진
+// 1. 오디오 & 햅틱 엔진
 // ========================================================
 let audioCtx = null;
 function initAudio() {
@@ -217,7 +215,7 @@ function triggerHaptic(type = 'light') {
 }
 
 // ========================================================
-// 2. 하이브리드 위치 텔레메트리
+// 2. 위치 수집 텔레메트리
 // ========================================================
 async function initUserLocationEngine() {
   if ("geolocation" in navigator) {
@@ -273,13 +271,12 @@ async function sendVisitTelemetry() {
 }
 
 // ========================================================
-// 3. 🌟 회원 인증 & 모달 제어 (무반응 에러 완벽 해결)
+// 3. 회원 인증 & 마스터 관리자 (knsupolo / 12345678)
 // ========================================================
 function openAuthModal(tab = 'login') {
   const modal = document.getElementById('authModal');
   if (!modal) return;
   modal.classList.remove('hidden');
-  // 🌟 핵심 해결: DOMContentLoaded에서 설정된 display: none !important 강제 해제 및 flex 적용
   modal.style.removeProperty('display');
   modal.style.setProperty('display', 'flex', 'important');
   switchAuthTab(tab);
@@ -326,6 +323,11 @@ async function checkUserIdDuplicate() {
   const val = (idInput.value || "").trim().toLowerCase();
   if (!val || val.length < 4 || val.length > 12) {
     alert("아이디는 4~12자리 영문/숫자여야 합니다.");
+    return;
+  }
+  if (val === 'knsupolo') {
+    alert("이미 사용 중인 최고 관리자 아이디입니다.");
+    idInput.setAttribute('data-valid', 'false');
     return;
   }
   try {
@@ -382,11 +384,31 @@ async function processRegister() {
   }
 }
 
+// 🌟 로그인 처리 (knsupolo / 12345678 마스터 즉시 인증)
 async function processLogin() {
-  const id = document.getElementById('loginUserId').value.trim().toLowerCase();
-  const pw = document.getElementById('loginUserPw').value;
+  const idInput = document.getElementById('loginUserId');
+  const pwInput = document.getElementById('loginUserPw');
+  const id = (idInput ? idInput.value : '').trim().toLowerCase();
+  const pw = pwInput ? pwInput.value : '';
   if (!id || !pw) { alert("아이디와 비밀번호를 입력해주세요."); return; }
 
+  // 👑 마스터 관리자 즉시 로그인
+  if (id === 'knsupolo' && pw === '12345678') {
+    appState.isAdmin = true;
+    const adminUser = {
+      userId: 'knsupolo',
+      dob: '19830413',
+      email: 'admin@chueok.com',
+      isAdmin: true
+    };
+    applyUserLoginSuccess(adminUser, 'master-admin-token-' + Date.now());
+    closeAuthModal();
+    alert("👑 최고 관리자(knsupolo) 계정으로 로그인되었습니다!\n관리자 센터 및 모든 프리미엄 기능이 개방되었습니다.");
+    openAdminDashboard();
+    return;
+  }
+
+  // 일반 회원 로그인 통신
   try {
     const res = await fetch(GOOGLE_DB_URL, {
       method: 'POST',
@@ -397,7 +419,7 @@ async function processLogin() {
     if (data.success) {
       applyUserLoginSuccess(data.user, data.sessionToken);
       closeAuthModal();
-      alert(`환영합니다, ${data.user.userId}님! 정회원 전용 프리미엄 테마 및 마이 갤러리가 활성화되었습니다. 💖`);
+      alert(`환영합니다, ${data.user.userId}님! 정회원 전용 프리미엄 혜택이 활성화되었습니다. 💖`);
     } else {
       alert(data.message || "로그인 정보가 일치하지 않습니다.");
     }
@@ -427,6 +449,7 @@ function checkAutoLoginSession() {
     if (payload.expiresAt && Date.now() < payload.expiresAt && payload.user) {
       appState.currentUser = payload.user;
       appState.isRegisteredUser = true;
+      if (payload.user.userId === 'knsupolo') appState.isAdmin = true;
       updateUserHeaderUI();
     } else {
       localStorage.removeItem('chueok_auth_session');
@@ -464,6 +487,7 @@ function processLogout() {
   if (!confirm("로그아웃 하시겠습니까?")) return;
   appState.currentUser = null;
   appState.isRegisteredUser = false;
+  appState.isAdmin = false;
   localStorage.removeItem('chueok_auth_session');
   updateUserHeaderUI();
   alert("정상적으로 로그아웃되었습니다.");
@@ -554,7 +578,7 @@ async function promptResetPassword() {
   }
 }
 
-// 마이 갤러리 10장 FIFO 롤링 보관함
+// 🌟 마이 갤러리 10장 FIFO 롤링 보관함
 async function saveToMyGalleryCloud() {
   if (!appState.isRegisteredUser || !appState.currentUser) {
     alert("마이 갤러리 클라우드 저장은 [정회원 전용] 기능입니다.\n간편 회원가입 또는 로그인 후 이용해 주세요! 🔒");
@@ -682,7 +706,7 @@ async function deleteGalleryPhoto(photoId) {
 }
 
 // ========================================================
-// 4. 가로/세로 방향 감지 센서 & 카운트 일시정지
+// 4. 가로/세로 방향 감지 센서
 // ========================================================
 function checkDeviceOrientation() {
   const overlay = document.getElementById('orientationWarningOverlay');
@@ -733,7 +757,7 @@ function resumeCountdown() {
 }
 
 // ========================================================
-// 5. 카메라 구도 대기실 (2x2 풀화면 일치화)
+// 5. 카메라 구도 대기실
 // ========================================================
 function startSession(format) {
   appState.selectedFormat = format || 'strip';
@@ -851,7 +875,7 @@ function setViewfinderRatio(ratio, btn) {
 }
 
 // ========================================================
-// 6. 6컷 연속 촬영 파이프라인
+// 6. 6컷 연속 촬영
 // ========================================================
 function startActualCountdownSession() {
   playBeep(900);
@@ -1026,12 +1050,11 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 7. 🌟 사진 선택 화면 (1~4번 자동 프리셋 & 1번 컷 노출)
+// 7. 사진 선택 & 자동 프리셋
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
   
-  // 🌟 핵심 해결 1: 촬영 직후 1~4번 컷을 슬롯에 자동 프리필하여 빈 슬롯 방지
   appState.selectedIndices = [0, 1, 2, 3]; 
   appState.activeSlotIndex = 0; 
   currentCarouselIdx = 0;
@@ -1044,7 +1067,7 @@ function renderPickScreen() {
   buildPickMiniPreviewStructure();
   setupCarouselViewer();
   setupSlotDragAndDrop();
-  updatePreviewSlots(); // 🌟 1~4번 슬롯 프리뷰에 사진 즉시 표시
+  updatePreviewSlots();
   updateCarouselView();
   refreshPickUI();
 }
@@ -1248,9 +1271,8 @@ function refreshPickUI() {
   if (btn) btn.textContent = chosenCount === 4 ? "스튜디오 꾸미기 ➔" : `스튜디오 꾸미기 (${chosenCount}/4)`;
 }
 
-// 🌟 스튜디오 에디터 진입 (검은 화면 방지 안전 렌더링)
+// 🌟 스튜디오 에디터 전환 & 캔버스 안전 렌더링
 function confirmSelectedFour() {
-  // 슬롯이 비어있다면 가용 사진으로 즉시 보정
   for (let i = 0; i < 4; i++) {
     if (appState.selectedIndices[i] === null || !appState.shotImages[appState.selectedIndices[i]]) {
       appState.selectedIndices[i] = (i < appState.shotImages.length) ? i : 0;
@@ -1260,13 +1282,12 @@ function confirmSelectedFour() {
   playBeep(1000);
   triggerHaptic('medium');
 
-  // Image 객체 매핑
   appState.selectedImages = appState.selectedIndices.map(idx => appState.shotImages[idx]);
 
   resetEditorToDefault();
   showScreen('screenEdit');
 
-  // 🌟 핵심 해결 2: DOM 렌더링 사이클이 완전히 끝난 직후 프레임 렌더링 실행
+  // DOM 배치 완료 후 캔버스 리페인트
   requestAnimationFrame(() => {
     renderStrip();
   });
@@ -1306,7 +1327,7 @@ function resetEditorToDefault() {
   }
 }
 
-// 앨범 사진 4장 선택 수집
+// 앨범 업로드
 function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
 
 function compressAndLoadImage(file) {
@@ -1374,7 +1395,7 @@ function cancelGalleryCollect() {
 }
 
 // ========================================================
-// 8. 🌟 3대 테마 분류 컨트롤러
+// 8. 3대 테마 분류 컨트롤러
 // ========================================================
 function switchThemeCategory(category) {
   if (category !== 'basic' && (!appState.isRegisteredUser || !appState.currentUser)) {
@@ -1411,7 +1432,6 @@ function switchThemeCategory(category) {
   }
 }
 
-// 1. 기본 테마: 상단 / 중간 / 하단(상단슬림/하단240px) / 상·하단(위아래 180px 균등)
 function setBasicTextPosition(pos, btn) {
   appState.frameStyle = pos; 
   document.querySelectorAll('.basic-pos-btn').forEach(b => {
@@ -1421,7 +1441,6 @@ function setBasicTextPosition(pos, btn) {
   renderStrip();
 }
 
-// 2. 심플 테마: 1x4 & 2x2 비대칭 오프셋 3종
 function setSimpleOffsetLayout(key, btn) {
   if (!appState.isRegisteredUser) { openAuthModal('login'); return; }
   appState.frameStyle = key; 
@@ -1432,7 +1451,6 @@ function setSimpleOffsetLayout(key, btn) {
   renderStrip();
 }
 
-// 3. 프리미엄 테마: 생일, 야구, 포토이즘 (색상 자유화)
 function setPremiumSubTheme(key, btn) {
   if (!appState.isRegisteredUser) { openAuthModal('login'); return; }
   appState.frameStyle = key; 
@@ -1444,14 +1462,13 @@ function setPremiumSubTheme(key, btn) {
 }
 
 // ========================================================
-// 9. 🌟 메인 캔버스 렌더러 (하단문구 vs 상하단문구 분리)
+// 9. 캔버스 렌더러 (하단문구 vs 상하단문구 분리)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return; 
   const ctx = canvas.getContext('2d');
   
-  // 🌟 핵심 해결 3: selectedImages가 없으면 shotImages에서 즉시 안전 복구
   if (!appState.selectedImages || appState.selectedImages.length < 4) {
     if (appState.shotImages && appState.shotImages.length >= 4) {
       appState.selectedImages = appState.shotImages.slice(0, 4);
@@ -1475,12 +1492,10 @@ function renderStrip(isFinalExport = false) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  // [레이어 1: 바닥 배경]
   if (fStyle === 'birthday') ctx.fillStyle = '#FAF7EE';
   else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // [레이어 2: 사진 슬롯 배치]
   if (layout === 'strip') {
     renderStripLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark);
   } else if (layout === 'grid') {
@@ -1489,10 +1504,7 @@ function renderStrip(isFinalExport = false) {
     renderTwinLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark);
   }
 
-  // [레이어 3: 테마 오버레이 & 트렌디 각인]
   renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout);
-
-  // [레이어 4: 스티커 & 날짜 렌더링]
   renderStickersAndMirrors(ctx, canvas, layout);
 }
 
@@ -1516,7 +1528,6 @@ function renderStripLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
     }
   } 
-  // 🌟 하단 문구 모드: 상단은 60px 슬림, 하단만 240px 대형 여백
   else if (fStyle === 'bottom') {
     const topH = pad; 
     const bottomH = 240; 
@@ -1526,7 +1537,6 @@ function renderStripLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
     }
   } 
-  // 🌟 상/하단 문구 모드: 상단 180px, 하단 180px 위아래 균등 배분
   else if (fStyle === 'dual') {
     const dualH = 180;
     const imgW = canvas.width - (pad * 2);
@@ -1580,14 +1590,12 @@ function renderGridLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
     drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerY, imgW, imgH);
     drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + imgW + gap, lowerY, imgW, imgH);
   }
-  // 🌟 하단 문구 모드 2x2: 상단 60px 슬림, 하단만 200px 확장
   else if (fStyle === 'bottom') {
     const topH = pad; const bottomH = 200;
     const imgW = (canvas.width - (pad * 2) - gap) / 2;
     const imgH = (canvas.height - topH - bottomH - gap) / 2;
     drawGridPhotoSlots(ctx, pad, topH, imgW, imgH, gap);
   }
-  // 🌟 상/하단 문구 모드 2x2: 상단 160px, 하단 180px 균형 배분
   else if (fStyle === 'dual') {
     const topH = 160; const bottomH = 180;
     const imgW = (canvas.width - (pad * 2) - gap) / 2;
@@ -1731,7 +1739,6 @@ function renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout) {
     ctx.fillText("⚾", canvas.width - pad - 60, 100);
   }
 
-  // 트렌디 각인 (하단 고정 문구 없이 깔끔하게 출력)
   if (fStyle !== 'photoism') {
     ctx.fillStyle = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)';
     ctx.font = "bold 18px monospace";
@@ -1745,7 +1752,6 @@ function renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout) {
 
 function drawFilteredSlotPhoto(ctx, img, targetX, targetY, targetW, targetH) {
   ctx.save();
-  // 🌟 핵심 해결 4: 사진 로딩 전에도 검은 바탕으로 먹통되지 않도록 밝은 회색 플레이스홀더 우선 렌더링
   ctx.fillStyle = '#E2E8F0';
   ctx.fillRect(targetX, targetY, targetW, targetH);
 
@@ -1873,7 +1879,7 @@ function drawSingleSticker(ctx, st) {
 }
 
 // ========================================================
-// 10. 날짜 오브젝트 시스템 (자유 이동 & 서식 변경)
+// 10. 날짜 오브젝트 시스템
 // ========================================================
 function toggleDateObject(checked) {
   saveStateForUndo();
@@ -1913,7 +1919,7 @@ function initOrUpdateDateSticker(show) {
 }
 
 // ========================================================
-// 11. 🌟 2단계 지능형 돋보기 (이동 시 스티커 전체 확대)
+// 11. 2단계 돋보기 (이동 시 스티커 전체 확대)
 // ========================================================
 function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY, isDragging) {
   const loupe = document.getElementById('floatingLoupe');
@@ -1933,7 +1939,6 @@ function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY, isDragg
   lCtx.imageSmoothingQuality = 'high';
   lCtx.clearRect(0, 0, loupeW, loupeH);
 
-  // [1단계: 정지 터치 시] 누른 지점의 경계면 + 뒤쪽 배경 확대
   if (!isDragging) {
     const cropSize = 80;
     lCtx.drawImage(
@@ -1954,7 +1959,6 @@ function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY, isDragg
     lCtx.moveTo(50, 70); lCtx.lineTo(90, 70);
     lCtx.stroke();
   } 
-  // [2단계: 드래그 이동 시] 스티커 전체가 여백과 함께 온전히 돋보기 안에 표시
   else if (appState.selectedStickerIdx >= 0) {
     const st = appState.stickers[appState.selectedStickerIdx];
     lCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
@@ -2124,7 +2128,7 @@ function initCanvasInteractions() {
   window.addEventListener('touchend', handleEnd);
 }
 
-// 🌟 센터 0° 양방향 회전 스크롤러 & 서식 제어
+// 🌟 센터 0° 회전 슬라이더 & 서식 제어
 function onSelectedStickerRotate(deg) {
   if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) {
     const val = parseInt(deg);
@@ -2300,7 +2304,7 @@ function setupCanvasPinchZoom() {
 }
 
 // ========================================================
-// 12. 🌟 가변 스플릿 리사이저 엔진
+// 12. 가변 스플릿 리사이저 바
 // ========================================================
 function initSplitResizer() {
   const resizer = document.getElementById('editorSplitResizer');
@@ -2354,7 +2358,7 @@ function initSplitResizer() {
 }
 
 // ========================================================
-// 13. 🌟 비디오 키프레임 포스터 & [복구] QR코드 다운로드
+// 13. 비디오 키프레임 포스터 & [복구] QR코드 다운로드
 // ========================================================
 async function generateFourCutVideo() {
   if (!appState.isRegisteredUser) {
@@ -2429,7 +2433,6 @@ async function generateFourCutVideo() {
     };
     recorder.start();
 
-    // 0.2초 키프레임 포스터 주입
     const posterCanvas = document.getElementById('photoCanvas');
     const topH = 160; const bottomH = 240; const pad = 50; const gap = 24; 
     const slotW = vCanvas.width - (pad * 2); 
@@ -2503,7 +2506,6 @@ async function generateImageQRCode() {
 
     if (res && res.success && res.fileId) {
       const driveDirectUrl = `https://drive.google.com/file/d/${res.fileId}/view?usp=sharing`;
-      // 사용자 스마트폰으로 사진을 다운받을 수 있는 QR 모달 화면 출력
       displayResultWithQR(driveDirectUrl);
     } else {
       alert("구글 드라이브 업로드 지연 중입니다. 잠시 후 다시 시도해 주세요.");
@@ -2642,7 +2644,7 @@ async function shareCurrentVideoFile() {
 }
 
 // ========================================================
-// 14. 이용후기, 고객소리함 & 관리자 대시보드
+// 14. 이용후기, 고객소리함 & 관리자 모드
 // ========================================================
 function handleStarClick(starNum) {
   currentRatingValue = starNum;
@@ -2879,10 +2881,17 @@ async function sendCustomerBotMessage() {
   }, 400);
 }
 
+// 🌟 관리자 설정 센터 호출 (knsupolo 및 12345678 대응)
 function promptAdminMode(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
+
+  if (appState.isAdmin && appState.currentUser && appState.currentUser.userId === 'knsupolo') {
+    openAdminDashboard();
+    return;
+  }
+
   const pw = prompt("관리자 비밀번호를 입력하세요:");
-  if (pw === "0724" || pw === "1234") {
+  if (pw === "12345678" || pw === "0724" || pw === "1234") {
     appState.isAdmin = true;
     openAdminDashboard();
   } else if (pw !== null) {
@@ -3440,7 +3449,7 @@ function initDynamicUI() {
 }
 
 // ========================================================
-// 16. 앱 초기 구동 엔트리포인트
+// 16. 앱 초기 구동
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   ['screenLiveShoot', 'screenPick', 'screenEdit', 'screenBoard', 'screenResult', 'videoResultModal', 'galleryCollectModal', 'adminDashboardModal', 'customerBotModal', 'authModal', 'myGalleryModal'].forEach(id => {
