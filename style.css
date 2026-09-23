@@ -124,3 +124,7 @@ body {
   color: #1e293b;
   border-radius: 16px 16px 16px 4px;
 }
+/* 숨김 레이어 클릭 차단 방지 강제 규칙 */
+.hidden, [hidden] {
+  display: none !important;
+}
