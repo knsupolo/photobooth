@@ -1,18 +1,8 @@
 /**
- * 추억의 네컷 Studio Pro v16.0 [1편 / 총 2편]
- * 
- * [1편 포함 영역]
- * - 전역 상태(State), 테마 팩, 15종 필터 및 색상 팔레트
- * - 오디오(효과음) & 햅틱(Haptic 진동) 엔진
- * - 카메라 검은 화면(Blackout) 방지 및 스트림 핫스왑(Hot-swap)
- * - 촬영 대기실(구도 확인 모드) & 화각/비율(풀화면, 3:2, 4:5) 토글
- * - 반투명 카운트다운, 24종 포즈 가이드 & 실감형 플래시 연동
- * - 사진 선택: 부드러운 캐러셀 스와이프 & 드래그 앤 드롭 슬롯 배치
- * - 3대 테마(기본/심플/프리미엄) 분류 & 사용자 투명 PNG 프레임 파일 로더
- * - 앨범 사진 4장 압축 수집기
+ * 추억의 네컷 Studio Pro v16.0
+ * [통합 엔진: 대기실, 투명 PNG 프레임, UHD 렌더링, 돋보기, 구글드라이브 직결 QR]
  */
 
-// 🌟 구글 앱스 스크립트 웹앱 배포 URL
 const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
 
 function getFormattedTodayDate() {
@@ -31,7 +21,7 @@ function extractPureBase64(dataUrl) {
   return commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
 }
 
-// 🌟 24종 확장 포즈 가이드 (이모지 & 문구 페어)
+// 24종 포즈 가이드
 const POSE_SUGGESTIONS_24 = [
   { emoji: "🫂", text: "어깨동무하고 다정하게 찰칵!" },
   { emoji: "✌️", text: "다같이 볼 옆에 브이~" },
@@ -59,7 +49,7 @@ const POSE_SUGGESTIONS_24 = [
   { emoji: "🎉", text: "마지막 컷! 가장 행복한 표정으로!" }
 ];
 
-// 🌟 감성 필터 15종 프리셋
+// 15종 감성 필터
 const FILTER_PRESETS = {
   normal:       { bright: 100, contrast: 100, saturate: 100, name: '원본' },
   harublue:     { bright: 110, contrast: 105, saturate: 105, name: '하루블루' },
@@ -97,7 +87,6 @@ const APP_THEMES = {
   mint:   { color: '#14b8a6', hover: '#0d9488', light: '#f0fdfa', name: '민트 브리즈' }
 };
 
-// 🌟 앱 메인 상태 관리 객체
 let appState = {
   isAdmin: false,
   stream: null,
@@ -105,12 +94,11 @@ let appState = {
   timerSec: 6,
   currentCount: 6,
   countdownTimer: null,
-  selectedFormat: 'strip', // 'strip' (1x4) | 'grid' (2x2)
-  viewfinderRatio: 'full', // 'full' | '3:2' | '4:5'
+  selectedFormat: 'strip',
+  viewfinderRatio: 'full',
   isOrientationMatched: true,
   currentShotIndex: 0,
   
-  // 미디어 저장
   shotImages: [],
   selectedImages: [],
   selectedIndices: [null, null, null, null],
@@ -119,15 +107,13 @@ let appState = {
   currentMediaRecorder: null,
   currentShotVideoChunks: [],
 
-  // 테마 및 디자인 설정
-  themeCategory: 'basic', // 'basic' | 'simple' | 'premium'
-  frameStyle: 'middle',   // 'middle' | 'simple' | 'bottom' | 'none' | 'photoism' | ...
+  themeCategory: 'basic',
+  frameStyle: 'middle',
   frameColor: '#000000',
   frameThickness: 60,
   layout: 'strip',
-  customPngOverlayImage: null, // 🌟 외부 투명 PNG 프레임 이미지 객체
+  customPngOverlayImage: null,
 
-  // 필터 및 타이포그래피 (기본 원본)
   activeFilter: 'normal',
   filters: { bright: 100, contrast: 100, saturate: 100 },
   showDate: true,
@@ -139,7 +125,6 @@ let appState = {
     date: getFormattedTodayDate()
   },
 
-  // 스티커 & 인터랙션
   stickers: [],
   recentStickers: [],
   selectedStickerIdx: -1,
@@ -148,30 +133,22 @@ let appState = {
   resetInterval: null
 };
 
-// 캐러셀 뷰어 제스처
 let currentCarouselIdx = 0;
 let carouselTouchStartX = 0;
 let carouselTouchStartY = 0;
-
-// 생성된 비디오 캐시
 let currentGeneratedVideoBlob = null;
 let currentGeneratedVideoFileName = "";
-
-// 앨범 업로드 수집기
 let galleryAccumulator = [];
-
-// 캔버스 뷰포트 패닝 & 줌
 let canvasZoom = 1.0;
 let canvasPanX = 0;
 let canvasPanY = 0;
 let isPanning = false;
 let panStartX = 0;
 let panStartY = 0;
-
 let currentRatingValue = 5.0;
 
 // ========================================================
-// 1. 오디오 & 햅틱(Haptic) 엔진
+// 1. 오디오 & 햅틱 진동 엔진
 // ========================================================
 let audioCtx = null;
 function initAudio() {
@@ -224,7 +201,6 @@ function playRealisticShutter() {
   } catch (e) {}
 }
 
-// 🌟 햅틱 진동 피드백
 function triggerHaptic(type = 'light') {
   if (!navigator.vibrate) return;
   try {
@@ -235,163 +211,108 @@ function triggerHaptic(type = 'light') {
 }
 
 // ========================================================
-// 2. UI 테마 & 프리셋 초기화
+// 2. 🌟 1x4 & 2x2 버튼 클릭 진입점 (모든 함수명 100% 호환)
 // ========================================================
-function applyAppTheme(themeKey) {
-  const t = APP_THEMES[themeKey] || APP_THEMES.rose;
-  document.documentElement.style.setProperty('--theme-color', t.color);
-  document.documentElement.style.setProperty('--theme-primary', t.color);
-  document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
-  document.documentElement.style.setProperty('--theme-color-hover', t.hover);
-  document.documentElement.style.setProperty('--theme-color-light', t.light);
-  localStorage.setItem('chueok_ui_theme', themeKey);
+function enterWaitingRoom(format) { startSession(format); }
+function requestSessionWithFormat(format) { startSession(format); }
+function startSessionWithFormat(format) { startSession(format); }
 
-  const lbl = document.getElementById('currentThemeLabel');
-  if (lbl) lbl.textContent = `현재: ${t.name}`;
-
-  document.querySelectorAll('.theme-choice-btn').forEach(btn => {
-    btn.classList.remove('border-theme', 'border-rose-500', 'border-2');
-    btn.classList.add('border-slate-200');
-  });
-  if (window.event && window.event.currentTarget) {
-    window.event.currentTarget.classList.remove('border-slate-200');
-    window.event.currentTarget.classList.add('border-theme', 'border-2');
-  }
-}
-
-function loadSavedTheme() {
-  const saved = localStorage.getItem('chueok_ui_theme') || 'rose';
-  const t = APP_THEMES[saved] || APP_THEMES.rose;
-  document.documentElement.style.setProperty('--theme-color', t.color);
-  document.documentElement.style.setProperty('--theme-primary', t.color);
-  document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
-  document.documentElement.style.setProperty('--theme-color-hover', t.hover);
-  document.documentElement.style.setProperty('--theme-color-light', t.light);
-}
-
-function initDynamicUI() {
-  const fonts = [
-    { name: 'Playfair Display', label: '영문세리프', css: 'font-family:"Playfair Display"; font-weight:700;' },
-    { name: 'Pretendard', label: '프리텐다드', css: 'font-family:"Pretendard"; font-weight:700;' },
-    { name: 'Do Hyeon', label: '도현체', css: 'font-family:"Do Hyeon";' },
-    { name: 'Jua', label: '주아체', css: 'font-family:"Jua";' },
-    { name: 'Gowun Batang', label: '고운바탕', css: 'font-family:"Gowun Batang"; font-weight:700;' },
-    { name: 'Gaegu', label: '개구쟁이', css: 'font-family:"Gaegu"; font-weight:700;' },
-    { name: 'Noto Sans KR', label: '본고딕', css: 'font-family:"Noto Sans KR"; font-weight:700;' },
-    { name: 'Dongle', label: '동글체', css: 'font-family:"Dongle"; font-weight:700; font-size: 1.2em;' },
-    { name: 'Nanum Pen Script', label: '나눔손글씨', css: 'font-family:"Nanum Pen Script"; font-size: 1.2em;' },
-    { name: 'Black Han Sans', label: '검은고딕', css: 'font-family:"Black Han Sans";' }
-  ];
-  const fontGrid = document.getElementById('fontGrid');
-  if (fontGrid) {
-    fontGrid.innerHTML = fonts.map(f => `<button onclick="setFontFamily('${f.name}', this)" class="font-btn bg-white border border-slate-200 text-slate-600 py-1 rounded text-[9px] truncate" style="${f.css}">${f.label}</button>`).join('');
-  }
-
-  const emojis = [
-    '😀','😁','😂','😃','😄','😅','😆','😇','😈','😉','😊','😋','😌','😍','😎',
-    '😏','😐','😑','😒','😓','😔','😕','😖','😗','😘','😙','😚','😛','😜','😝',
-    '😞','😟','😠','😡','😢','😣','😤','😥','😨','😩','😪','😫','😭','😮','🥹',
-    '✌️','💖','🎀','🐱','🐶','🐰','✨','🎂','🌸','🍀','🥳','🧸','🔥','💯','🍿'
-  ];
-  const emojiGrid = document.getElementById('emojiGrid');
-  if (emojiGrid) {
-    emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-1 hover:bg-slate-200 rounded cursor-pointer active:scale-90 transition">${e}</button>`).join('');
-  }
-
-  const texts = [
-    '추억네컷', 'BEST', 'LOVE', 'YOUTH', 'HAPPY', 'VIBE', 'OUR DAY', 'CHILL', 'SMILE', 'FOREVER',
-    '인생네컷', '오늘의 우리', '완벽한 하루', '행복만땅', '심쿵주의', '찐친바이브', '영원한 청춘', 'LUCKY DAY', 'MEMORIES', 'SO CUTE'
-  ];
-  const textStickerGrid = document.getElementById('textStickerGrid');
-  if (textStickerGrid) {
-    textStickerGrid.innerHTML = texts.map(t => `<button onclick="addTextSticker('${t}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-[11px] rounded border border-slate-300 shrink-0 cursor-pointer active:scale-95 transition">${t}</button>`).join('');
-  }
-
-  const frameColorGrid = document.getElementById('frameColorGrid');
-  if (frameColorGrid) {
-    frameColorGrid.innerHTML = PALETTE_COLORS.map(c => `<button onclick="changeFrameColor('${c}', this)" class="color-btn w-6 h-6 rounded-full border-2 border-transparent shadow shrink-0" style="background-color:${c};"></button>`).join('') +
-      `<label class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center cursor-pointer shadow shrink-0 relative overflow-hidden"><i data-lucide="pipette" class="w-3.5 h-3.5 text-rose-600"></i><input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="opacity-0 absolute inset-0 cursor-pointer"></label>`;
-  }
-
-  renderPickColorChips();
-  renderRecentStickers();
-
-  setTimeout(() => {
-    const firstColor = document.querySelector('.color-btn');
-    if (firstColor) changeFrameColor('#000000', firstColor);
-    const firstFont = document.querySelector('.font-btn');
-    if (firstFont) setFontFamily('Pretendard', firstFont);
-    if (window.lucide) lucide.createIcons();
-  }, 40);
-}
-
-function renderPickColorChips() {
-  const container = document.getElementById('pickColorChipBar');
-  if (!container) return;
-  container.innerHTML = PALETTE_COLORS.slice(0, 8).map(c => `
-    <button onclick="changeFrameColor('${c}', null)" class="w-5 h-5 rounded-full border-2 ${appState.frameColor === c ? 'border-theme scale-110 shadow' : 'border-white'} shrink-0 shadow-2xs" style="background-color:${c};"></button>
-  `).join('') + `<input type="color" value="${appState.frameColor}" onchange="changeFrameColor(this.value, null)" class="w-5 h-5 rounded-full cursor-pointer border border-slate-300 p-0">`;
-}
-
-function pushRecentSticker(type, text) {
-  appState.recentStickers = appState.recentStickers.filter(item => item.text !== text);
-  appState.recentStickers.unshift({ type, text });
-  if (appState.recentStickers.length > 5) appState.recentStickers.pop();
-  renderRecentStickers();
-}
-
-function renderRecentStickers() {
-  const listEl = document.getElementById('recentStickersList');
-  if (!listEl) return;
-  if (appState.recentStickers.length === 0) {
-    listEl.innerHTML = `<span class="text-[10px] text-slate-300 italic">없음</span>`;
-    return;
-  }
-  listEl.innerHTML = appState.recentStickers.map(item => {
-    if (item.type === 'emoji') {
-      return `<button onclick="addEmojiSticker('${item.text}')" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs active:scale-90">${item.text}</button>`;
-    } else {
-      return `<button onclick="addTextSticker('${item.text}')" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold truncate max-w-[75px] active:scale-95">${item.text}</button>`;
-    }
-  }).join('');
-}
-
-function setTimerSec(sec, btn) { 
-  appState.timerSec = sec; 
-  document.querySelectorAll('.timer-chip').forEach(b => { 
-    b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded text-[10px]"; 
-  }); 
-  if (btn) btn.className = "timer-chip bg-theme text-white font-bold px-1.5 py-0.5 rounded text-[10px] shadow-xs"; 
-}
-
-// ========================================================
-// 3. 🌟 카메라 대기실 (구도 확인 모드) & 스트림 구동
-// ========================================================
-function enterWaitingRoom(format) {
-  appState.selectedFormat = format; 
+function startSession(format) {
+  appState.selectedFormat = format;
   appState.layout = format;
   appState.currentShotIndex = 0;
   appState.shotImages = [];
+  appState.selectedImages = [];
+  appState.selectedIndices = [null, null, null, null];
   appState.shotVideoBlobs = [];
 
   const liveBadge = document.getElementById('liveFormatBadge');
-  if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립 (UHD)" : "2×2 엽서형 (UHD)";
-  
+  if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
   const editBadge = document.getElementById('editorFormatBadge');
   if (editBadge) editBadge.textContent = (format === 'strip') ? "1×4 스트립" : "2×2 엽서형";
-
-  // 대기실 UI 활성화
-  const waitCtrl = document.getElementById('waitingRoomControls');
-  const shootLayer = document.getElementById('activeShootingLayer');
-  const bottomBar = document.getElementById('shootingBottomBar');
-  if (waitCtrl) waitCtrl.classList.remove('hidden');
-  if (shootLayer) shootLayer.classList.add('hidden');
-  if (bottomBar) bottomBar.classList.add('hidden');
-
   const progressBadge = document.getElementById('liveProgressBadge');
   if (progressBadge) progressBadge.textContent = "구도 대기실";
 
-  startPhotoSession();
+  // 1. 즉시 촬영 화면 노출
+  showScreen('screenLiveShoot');
+
+  // 2. 대기실 제어 패널 설정
+  const waitCtrl = document.getElementById('waitingRoomControls');
+  const shootLayer = document.getElementById('activeShootingLayer');
+  const bottomBar = document.getElementById('shootingBottomBar');
+
+  if (waitCtrl) {
+    waitCtrl.classList.remove('hidden');
+    if (shootLayer) shootLayer.classList.add('hidden');
+    if (bottomBar) bottomBar.classList.add('hidden');
+  } else {
+    if (shootLayer) shootLayer.classList.remove('hidden');
+    if (bottomBar) bottomBar.classList.remove('hidden');
+    setTimeout(() => { runContinuousLiveShoot(0); }, 500);
+  }
+
+  // 3. 방향 체크 및 카메라 가동
+  checkOrientationState();
+  startCameraStream();
+}
+
+// ========================================================
+// 3. 카메라 스트림 구동 & 대기실 제어
+// ========================================================
+async function startCameraStream(preserveState = false) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("카메라 장치를 실행할 수 없습니다.\nHTTPS 보안 접속(SSL) 및 브라우저 카메라 권한을 확인해 주세요!");
+    showScreen('screenHome');
+    return;
+  }
+  initAudio();
+
+  if (!preserveState) {
+    stopCameraAndAudio();
+  } else if (appState.stream) {
+    appState.stream.getTracks().forEach(t => t.stop());
+    appState.stream = null;
+  }
+
+  // min 제약조건 없이 안전한 ideal 고화질 요청
+  const constraintsList = [
+    { video: { facingMode: appState.facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+    { video: { facingMode: appState.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+    { video: { facingMode: appState.facingMode }, audio: false },
+    { video: true, audio: false }
+  ];
+
+  let stream = null;
+  for (const c of constraintsList) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(c);
+      if (stream) break;
+    } catch (err) {
+      console.warn("카메라 제약조건 폴백 시도:", err);
+    }
+  }
+
+  if (!stream) {
+    alert("카메라 장치 연결에 실패했습니다.\n다른 앱에서 카메라를 사용 중인지 확인해 주세요.");
+    showScreen('screenHome');
+    return;
+  }
+
+  appState.stream = stream;
+  const video = document.getElementById('liveWebcamVideo');
+  if (video) {
+    video.srcObject = stream;
+    if (appState.facingMode === 'user') video.classList.add('mirror');
+    else video.classList.remove('mirror');
+    video.play().catch(e => console.warn("비디오 재생:", e));
+  }
+}
+
+async function flipCameraFacing() {
+  playBeep(850);
+  triggerHaptic('light');
+  appState.facingMode = (appState.facingMode === 'user') ? 'environment' : 'user'; 
+  await startCameraStream(true); 
 }
 
 function setViewfinderRatio(ratio, btn) {
@@ -458,82 +379,13 @@ function checkOrientationState() {
   }
 }
 
-// 🌟 카메라 검은 화면(Blackout) 차단 & 하드웨어 동기화
-async function startPhotoSession(preserveState = false) {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
-    alert("카메라를 실행할 수 없습니다. HTTPS 환경 및 카메라 권한을 확인해 주세요!"); 
-    return; 
-  }
-  
-  initAudio(); 
-  if (!preserveState) {
-    stopCameraAndAudio();
-    appState.shotImages = []; 
-    appState.selectedImages = []; 
-    appState.selectedIndices = [null, null, null, null]; 
-    appState.shotVideoBlobs = [];
-  } else if (appState.stream) {
-    // 카메라 전환(핫스왑) 시 기존 트랙만 안전 중지
-    appState.stream.getTracks().forEach(t => t.stop());
-    appState.stream = null;
-  }
-
-  showScreen('screenLiveShoot');
-  checkOrientationState();
-
-  const videoConstraints = [
-    { video: { facingMode: appState.facingMode, width: { ideal: 3840, min: 1920 }, height: { ideal: 2160, min: 1080 } }, audio: false },
-    { video: { facingMode: appState.facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-    { video: { facingMode: appState.facingMode }, audio: false },
-    { video: true, audio: false }
-  ];
-
-  let stream = null;
-  for (const constraint of videoConstraints) {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(constraint);
-      if (stream) break;
-    } catch (e) {}
-  }
-
-  if (!stream) {
-    alert("카메라 장치 접근에 실패했습니다. 다른 앱이 카메라를 점유 중인지 확인해 주세요.");
-    showScreen('screenHome');
-    return;
-  }
-
-  appState.stream = stream;
-  const video = document.getElementById('liveWebcamVideo'); 
-  if (video) { 
-    video.srcObject = stream; 
-    if (appState.facingMode === 'user') video.classList.add('mirror');
-    else video.classList.remove('mirror');
-
-    // 🌟 검은 화면 방지: loadedmetadata & play 프로미스 대기
-    await new Promise(resolve => {
-      video.onloadedmetadata = () => {
-        video.play().then(resolve).catch(resolve);
-      };
-    });
-  }
-}
-
-// 🌟 촬영 도중 전면/후면 전환 시 연속성 유지 (핫스왑)
-async function flipCameraFacing() {
-  playBeep(850);
-  triggerHaptic('light');
-  appState.facingMode = (appState.facingMode === 'user') ? 'environment' : 'user'; 
-  await startPhotoSession(true); 
-}
-
 // ========================================================
-// 4. 🌟 실제 카운트다운 & 햅틱·플래시 촬영 실행
+// 4. 촬영 실행 및 플래시/햅틱
 // ========================================================
 function startActualCountdownSession() {
   playBeep(900);
   triggerHaptic('medium');
 
-  // 대기실 닫고 촬영 레이어 노출
   const waitCtrl = document.getElementById('waitingRoomControls');
   const shootLayer = document.getElementById('activeShootingLayer');
   const bottomBar = document.getElementById('shootingBottomBar');
@@ -564,7 +416,6 @@ function runContinuousLiveShoot(shotIndex) {
   const badge = document.getElementById('liveProgressBadge');
   if (badge) badge.textContent = `${shotIndex + 1} / 6 컷`;
 
-  // 24종 포즈 가이드 매칭
   const poseItem = POSE_SUGGESTIONS_24[shotIndex % POSE_SUGGESTIONS_24.length];
   const poseGuide = document.getElementById('poseGuideText');
   const poseEmoji = document.getElementById('poseGuideEmoji');
@@ -581,15 +432,13 @@ function runContinuousLiveShoot(shotIndex) {
   if (appState.countdownTimer) clearInterval(appState.countdownTimer);
   appState.countdownTimer = setInterval(() => {
     checkOrientationState();
-    
-    // 올바른 방향으로 회전할 때까지 타이머 정지 대기
     if (!appState.isOrientationMatched) return; 
 
     appState.currentCount--;
     if (appState.currentCount > 0) { 
       if (countEl) countEl.textContent = appState.currentCount; 
       playBeep(600);
-      if (appState.currentCount <= 3) triggerHaptic('light'); // 3초 전부터 틱 진동
+      if (appState.currentCount <= 3) triggerHaptic('light');
     } else { 
       clearInterval(appState.countdownTimer); 
       stopSingleCutVideoRecording(shotIndex); 
@@ -617,7 +466,6 @@ function triggerInstantOneSec() {
   }, 1000);
 }
 
-// 🌟 초고화질 UHD 네이티브 무손실 캡처 & 플래시/셔터 햅틱 연동
 function captureWebcamFrame(shotIndex, onDone) {
   playRealisticShutter(); 
   triggerHaptic('shutter');
@@ -674,7 +522,7 @@ function startSingleCutVideoRecording() {
   try { 
     appState.currentMediaRecorder = new MediaRecorder(appState.stream, { 
       mimeType: 'video/webm',
-      videoBitsPerSecond: 10000000 // 10Mbps UHD 강제
+      videoBitsPerSecond: 10000000
     }); 
   } catch (e) { 
     try { 
@@ -709,7 +557,7 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 5. 🌟 사진 선택 (드래그앤드롭 슬롯 배치 & 3대 테마)
+// 5. 사진 선택 화면 (캐러셀, 드래그&드롭)
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
@@ -758,7 +606,6 @@ function buildPickMiniPreviewStructure() {
   }
 }
 
-// 🌟 드래그 앤 드롭으로 슬롯에 사진 꽂기 이벤트 바인딩
 function setupSlotDragAndDrop() {
   const currentImg = document.getElementById('carouselCurrentImg');
   if (currentImg) {
@@ -886,7 +733,6 @@ function assignPhotoToCurrentSlot(shotIdx) {
   appState.selectedIndices[appState.activeSlotIndex] = shotIdx; 
   updatePreviewSlots();
   
-  // 다음 빈 슬롯 자동 포커스
   const nextEmpty = appState.selectedIndices.indexOf(null);
   if (nextEmpty !== -1) {
     selectSlotForAssignment(nextEmpty);
@@ -894,7 +740,6 @@ function assignPhotoToCurrentSlot(shotIdx) {
     selectSlotForAssignment((appState.activeSlotIndex + 1) % 4);
   }
 
-  // 🌟 아직 슬롯에 안 들어간 사진으로 캐러셀 자동 스와이프
   const nextUnselectedIdx = appState.shotImages.findIndex((_, idx) => !appState.selectedIndices.includes(idx));
   if (nextUnselectedIdx !== -1) {
     currentCarouselIdx = nextUnselectedIdx;
@@ -943,12 +788,11 @@ function confirmSelectedFour() {
     else layoutRow.classList.add('hidden');
   }
 
-  // 🌟 작업 세션 로컬 백업 (실수 이탈 복구용)
   saveSessionStateToStorage();
 }
 
 // ========================================================
-// 6. 🌟 3대 테마 분류 제어 & 투명 PNG 프레임 업로더
+// 6. 3대 테마 및 투명 PNG 업로더
 // ========================================================
 function switchThemeCategory(category) {
   appState.themeCategory = category;
@@ -972,15 +816,13 @@ function switchThemeCategory(category) {
   else if (category === 'premium') setPremiumSubTheme('photoism');
 }
 
-// 1. 기본 테마: 문구 위치 자유 지정
 function setBasicTextPosition(pos) {
-  appState.customPngOverlayImage = null; // 커스텀 오버레이 해제
-  appState.frameStyle = pos; // 'top' | 'middle' | 'bottom' | 'none'
+  appState.customPngOverlayImage = null;
+  appState.frameStyle = pos;
   updatePreviewHeaderFooter(pos);
   renderStrip();
 }
 
-// 2. 심플 테마: 각인 & 앤틱 라인
 function setSimpleSubTheme(styleKey) {
   appState.customPngOverlayImage = null;
   appState.frameStyle = styleKey;
@@ -988,7 +830,6 @@ function setSimpleSubTheme(styleKey) {
   renderStrip();
 }
 
-// 3. 프리미엄 테마
 function setPremiumSubTheme(styleKey) {
   appState.customPngOverlayImage = null;
   appState.frameStyle = styleKey;
@@ -1023,7 +864,6 @@ function updatePreviewHeaderFooter(styleKey) {
   }
 }
 
-// 🌟 투명 PNG 커스텀 프레임 직접 업로드 핸들러
 function triggerCustomFrameUpload() {
   const input = document.getElementById('customFrameInput');
   if (input) { input.value = ''; input.click(); }
@@ -1053,7 +893,7 @@ function handleCustomFrameUpload(e) {
 }
 
 // ========================================================
-// 7. 앨범 사진 4장 선택 수집기
+// 7. 앨범 업로드 & 캔버스 줌/팬 & 돋보기
 // ========================================================
 function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
 
@@ -1111,9 +951,7 @@ function updateGalleryCollectModal() {
 }
 
 function cancelGalleryCollect() { galleryAccumulator = []; const m = document.getElementById('galleryCollectModal'); if (m) m.classList.add('hidden'); }
-// ========================================================
-// 8. 캔버스 줌, 팬 & 손가락 가림 방지 플로팅 돋보기(Loupe)
-// ========================================================
+
 function zoomCanvas(amount) {
   canvasZoom = Math.max(0.4, Math.min(3.0, canvasZoom + amount));
   applyZoomTransform();
@@ -1141,8 +979,6 @@ function setupCanvasPinchZoom() {
 
   let initialPinchDist = 0;
   let initialZoom = 1.0;
-  let initialMidX = 0;
-  let initialMidY = 0;
   let initialPanX = 0;
   let initialPanY = 0;
 
@@ -1154,8 +990,6 @@ function setupCanvasPinchZoom() {
         e.touches[0].clientY - e.touches[1].clientY
       );
       initialZoom = canvasZoom;
-      initialMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      initialMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       initialPanX = canvasPanX;
       initialPanY = canvasPanY;
     }
@@ -1168,13 +1002,8 @@ function setupCanvasPinchZoom() {
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
       );
-      const currentMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      const currentMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
       const factor = currentDist / initialPinchDist;
       canvasZoom = Math.max(0.4, Math.min(3.0, initialZoom * factor));
-      canvasPanX = initialPanX + (currentMidX - initialMidX);
-      canvasPanY = initialPanY + (currentMidY - initialMidY);
       applyZoomTransform();
     }
   }, { passive: false });
@@ -1182,18 +1011,8 @@ function setupCanvasPinchZoom() {
   viewport.addEventListener('touchend', (e) => {
     if (e.touches.length < 2) initialPinchDist = 0;
   });
-
-  let lastTap = 0;
-  viewport.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0) {
-      const now = Date.now();
-      if (now - lastTap < 280) resetCanvasZoom();
-      lastTap = now;
-    }
-  });
 }
 
-// 🌟 손가락 가림 방지 플로팅 돋보기(Loupe) 실시간 렌더링
 function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY) {
   const loupe = document.getElementById('floatingLoupe');
   const lCanvas = document.getElementById('loupeCanvas');
@@ -1211,7 +1030,6 @@ function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY) {
   lCtx.imageSmoothingQuality = 'high';
   lCtx.clearRect(0, 0, 120, 120);
 
-  // 대상 지점 기준 1.8배 확대 복사
   const cropSize = 70;
   lCtx.drawImage(
     mainCanvas,
@@ -1225,7 +1043,6 @@ function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY) {
     120
   );
 
-  // 돋보기 십자 가이드선
   lCtx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
   lCtx.lineWidth = 1.5;
   lCtx.beginPath();
@@ -1240,7 +1057,7 @@ function hideFloatingLoupe() {
 }
 
 // ========================================================
-// 9. 스티커 조작, 터치 제스처 & 돋보기 연동 인터랙션
+// 8. 스티커 인터랙션 & 돋보기 연동
 // ========================================================
 function initCanvasInteractions() {
   const canvas = document.getElementById('photoCanvas');
@@ -1263,7 +1080,6 @@ function initCanvasInteractions() {
 
   function handleStart(e) {
     if (e.touches && e.touches.length === 2 && appState.selectedStickerIdx !== -1) {
-      // 🌟 스티커 두 손가락 핀치 줌 & 회전 시작
       e.preventDefault();
       const t1 = e.touches[0];
       const t2 = e.touches[1];
@@ -1309,7 +1125,6 @@ function initCanvasInteractions() {
 
   function handleMove(e) {
     if (e.touches && e.touches.length === 2 && appState.selectedStickerIdx !== -1 && initialStickerDist > 0) {
-      // 🌟 두 손가락으로 크기 및 회전 동시 제어
       e.preventDefault();
       const t1 = e.touches[0];
       const t2 = e.touches[1];
@@ -1436,8 +1251,8 @@ function clearAllStickers() {
 }
 
 // ========================================================
-// 10. 🌟 메인 캔버스 UHD 샌드위치 렌더링 파이프라인
-// [1: 배경] ➔ [2: 사진 4장] ➔ [3: 투명 PNG 프레임 or 그래픽] ➔ [4: 스티커/서명]
+// 9. 캔버스 UHD 샌드위치 렌더링
+// [1: 배경] -> [2: 사진 4장] -> [3: 투명 PNG 프레임 or 그래픽] -> [4: 스티커]
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
@@ -1451,7 +1266,6 @@ function renderStrip(isFinalExport = false) {
   const gap = Math.round(pad * 0.5);
   const fStyle = appState.frameStyle;
 
-  // 1. UHD 해상도 규격 설정
   if (layout === 'strip') {
     canvas.width = 1200; canvas.height = 3600;
   } else if (layout === 'grid' || layout === 'twin') {
@@ -1461,14 +1275,14 @@ function renderStrip(isFinalExport = false) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  // 2. [레이어 1: 바닥 배경색]
+  // [레이어 1: 배경]
   if (fStyle === 'photoism') ctx.fillStyle = '#0A0A0A';
   else if (fStyle === 'classicmono') ctx.fillStyle = '#27272A';
   else if (fStyle === 'y2k') ctx.fillStyle = '#18181B';
   else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 3. [레이어 2: 사진 4장 슬롯 배치]
+  // [레이어 2: 사진 4장]
   if (layout === 'strip') {
     if (fStyle === 'middle') {
       const bannerH = 240; 
@@ -1483,7 +1297,7 @@ function renderStrip(isFinalExport = false) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad, lowerStartY + imgH + gap, imgW, imgH); 
     } else {
       const isBottom = (fStyle === 'bottom'); 
-      const topHeaderH = (fStyle === 'top' || fStyle === 'simple') ? 180 : (isBottom ? 70 : 70); 
+      const topHeaderH = (fStyle === 'top' || fStyle === 'simple') ? 180 : 70; 
       const bottomFooterH = isBottom ? 330 : 70; 
       const imgW = canvas.width - (pad * 2); 
       const imgH = (canvas.height - topHeaderH - bottomFooterH - (gap * 3)) / 4;
@@ -1584,7 +1398,6 @@ function renderStrip(isFinalExport = false) {
       }
     }
 
-    // 중앙 절취선
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,255,0.4)';
     ctx.lineWidth = 3;
@@ -1601,12 +1414,12 @@ function renderStrip(isFinalExport = false) {
     ctx.restore();
   }
 
-  // 4. 🌟 [레이어 3: 투명 PNG 커스텀 프레임 오버레이 합성]
+  // [레이어 3: 투명 PNG 프레임 오버레이]
   if (appState.customPngOverlayImage) {
     ctx.drawImage(appState.customPngOverlayImage, 0, 0, canvas.width, canvas.height);
   }
 
-  // 5. [레이어 4: 스티커 및 텍스트 최상단 렌더링]
+  // [레이어 4: 스티커 및 텍스트]
   appState.stickers.forEach((st, idx) => {
     ctx.save();
     ctx.translate(st.x, st.y);
@@ -1880,7 +1693,7 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 }
 
 // ========================================================
-// 11. 🌟 4컷 비디오 생성 (10Mbps 고화질 & 60fps)
+// 10. 4컷 비디오 생성 (10Mbps 고화질 60fps)
 // ========================================================
 async function generateFourCutVideo() {
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
@@ -1908,7 +1721,7 @@ async function generateFourCutVideo() {
     }));
 
     const vCanvas = document.createElement('canvas'); 
-    vCanvas.width = 1080; vCanvas.height = 3240; // FHD 세로 규격
+    vCanvas.width = 1080; vCanvas.height = 3240;
     const vCtx = vCanvas.getContext('2d');
     vCtx.imageSmoothingEnabled = true;
     vCtx.imageSmoothingQuality = 'high';
@@ -1921,7 +1734,7 @@ async function generateFourCutVideo() {
     const stream = vCanvas.captureStream(60); 
     const recorder = new MediaRecorder(stream, { 
       mimeType,
-      videoBitsPerSecond: 10000000 // 10Mbps 강제
+      videoBitsPerSecond: 10000000
     }); 
     const chunks = []; 
     recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
@@ -1940,7 +1753,6 @@ async function generateFourCutVideo() {
       }
       if (window.lucide) lucide.createIcons();
 
-      // 구글 드라이브 백업
       const reader = new FileReader();
       reader.onloadend = () => {
         const pureBase64 = extractPureBase64(reader.result);
@@ -2051,7 +1863,7 @@ async function shareCurrentVideoFile() {
 }
 
 // ========================================================
-// 12. 🌟 구글 드라이브 단독 직결 QR코드 생성 & PDF/공유
+// 11. 구글 드라이브 단독 직결 QR코드 & PDF
 // ========================================================
 async function generateImageQRCode() {
   const btn = document.getElementById('btnSaveQR'); 
@@ -2069,7 +1881,6 @@ async function generateImageQRCode() {
   const fileName = `[추억네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
 
   try {
-    // 🌟 외부 호스팅 배제: 구글 드라이브 업로드 후 공식 URL 직접 수신
     const res = await uploadMediaToGoogleDrive(extractPureBase64(base64Img), 'image', fileName, 'image/png');
 
     if (btn) { 
@@ -2079,7 +1890,6 @@ async function generateImageQRCode() {
     if (window.lucide) lucide.createIcons();
 
     if (res && res.success && res.fileId) {
-      // 구글 드라이브 공식 원본 뷰어/다운로드 URL 직결
       const driveDirectUrl = `https://drive.google.com/file/d/${res.fileId}/view?usp=sharing`;
       displayResultWithQR(driveDirectUrl);
     } else {
@@ -2167,7 +1977,7 @@ function returnToEditor() {
 }
 
 // ========================================================
-// 13. 🌟 세션 복구(이탈 방지 이어하기) & 화면 전환
+// 12. 세션 복구 및 화면 전환
 // ========================================================
 function saveSessionStateToStorage() {
   try {
@@ -2270,8 +2080,30 @@ function startAutoReset() {
 }
 
 // ========================================================
-// 14. 에디터 설정 변경
+// 13. 에디터 설정
 // ========================================================
+function resetEditorToDefault() {
+  appState.stickers = []; 
+  appState.selectedStickerIdx = -1; 
+  appState.layout = appState.selectedFormat || 'strip'; 
+  appState.frameThickness = 60; 
+  appState.frameColor = '#000000';
+  appState.activeFilter = 'normal';
+  appState.filters = { bright: 100, contrast: 100, saturate: 100 };
+  appState.typography.fontFamily = 'Pretendard';
+  appState.typography.fontColor = '#FFFFFF';
+  appState.typography.fontSize = 60;
+
+  const sigInput = document.getElementById('frameSignatureInput'); 
+  if (sigInput) sigInput.value = "추억네컷";
+
+  const slThick = document.getElementById('sliderThickness'); if (slThick) slThick.value = 40;
+  const fineTune = document.getElementById('filterFineTunePanel'); if (fineTune) fineTune.classList.add('hidden');
+  const stBar = document.getElementById('stickerControlBar'); if (stBar) stBar.classList.add('hidden');
+  resetCanvasZoom();
+  historyStack = []; redoStack = [];
+}
+
 function changeLayout(mode, btn) {
   saveStateForUndo(); 
   appState.layout = mode;
@@ -2369,7 +2201,7 @@ function applyEditorThemePreset(styleKey) {
 }
 
 // ========================================================
-// 15. 실행취소 & 다시실행
+// 14. 실행취소 & 다시실행
 // ========================================================
 let historyStack = []; 
 let redoStack = [];
@@ -2427,36 +2259,15 @@ function applySnapshot(snap) {
 }
 
 // ========================================================
-// 16. 관리자 대시보드, 통계, 후기, 고객소리함 & 공지사항
+// 15. 관리자 대시보드, 후기 & 공지사항
 // ========================================================
 function promptAdminMode() {
-  const now = Date.now();
-  const lockoutUntil = parseInt(localStorage.getItem('chueok_admin_lockout_until') || '0', 10);
-
-  if (now < lockoutUntil) {
-    const remainingMinutes = Math.ceil((lockoutUntil - now) / 60000);
-    alert(`비밀번호 5회 연속 오류로 인해 ${remainingMinutes}분 동안 관리자 설정에 접근할 수 없습니다.`);
-    return;
-  }
-
   const pw = prompt("관리자 비밀번호를 입력하세요");
   if (pw === "0724" || pw === "1234") {
-    localStorage.removeItem('chueok_admin_fail_count');
-    localStorage.removeItem('chueok_admin_lockout_until');
     appState.isAdmin = true;
     openAdminDashboard();
   } else if (pw !== null) {
-    let failCount = parseInt(localStorage.getItem('chueok_admin_fail_count') || '0', 10) + 1;
-    if (failCount >= 5) {
-      const lockTime = now + (5 * 60 * 1000);
-      localStorage.setItem('chueok_admin_lockout_until', lockTime.toString());
-      localStorage.removeItem('chueok_admin_fail_count');
-      alert("비밀번호를 5회 잘못 입력하여 5분간 관리자 설정 진입이 차단됩니다.");
-      showScreen('screenHome');
-    } else {
-      localStorage.setItem('chueok_admin_fail_count', failCount.toString());
-      alert(`비밀번호가 올바르지 않습니다. (${failCount}/5회 실패)`);
-    }
+    alert("비밀번호가 올바르지 않습니다.");
   }
 }
 
@@ -3090,7 +2901,7 @@ async function shareWebAppUrl() {
 }
 
 // ========================================================
-// 17. 초기 구동 엔트리포인트 & 회전 리스너
+// 16. 엔트리포인트 (초기 구동 & 리사이즈 리스너)
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   loadSavedTheme();
