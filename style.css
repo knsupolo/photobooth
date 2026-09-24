@@ -63,7 +63,7 @@ body {
 .text-theme { color: var(--theme-color) !important; }
 .border-theme { border-color: var(--theme-color) !important; }
 
-/* 🌟 스티커 주변 배경 투영 2단계 플로팅 돋보기(Loupe) */
+/* 2단계 플로팅 돋보기(Loupe) */
 #floatingLoupe {
   pointer-events: none;
   transform: translate(-50%, -125%);
