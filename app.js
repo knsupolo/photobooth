@@ -1,17 +1,20 @@
 /**
- * 추억의 네컷 Studio Pro v17.0 Pro
- * [통합 엔진 전체 소스코드]
- * - 관리자 마스터 계정(knsupolo / 12345678) 즉시 로그인 & 대시보드 자동 개방
- * - 회원가입/로그인 모달 display 충돌 해결
- * - 6컷 촬영 직후 1~4번 자동 프리셋 & 검은 화면 완벽 차단
- * - 2단계 지능형 돋보기 (정지 터치: 경계선 투영 / 드래그: 스티커 전체 온전 표시)
- * - 가변 스플릿 리사이저 바 (화면 비율 실시간 조절)
- * - 하단문구(상단 60px / 하단 240px) vs 상하단문구(위아래 180px 균등) 분리
- * - 스마트폰 카메라 스캔용 고화질 QR코드 결과 화면
+ * 추억의 네컷 Studio Pro v17.1 Pro [1편 / 전반부]
+ * 
+ * [탑재 핵심 엔진]
+ * 1. 시스템 버전 v17.1 Pro 전역 동기화 및 마스터 관리자 인증 (knsupolo / 12345678)
+ * 2. 오디오(Web Audio API) & 실감형 햅틱 피드백 엔진
+ * 3. 하이브리드 위치 센서 (GPS 정밀 좌표 & 통신사 기지국 IDC 라우팅 보정)
+ * 4. 정회원 멤버십 가치 극대화: 30일 자동 로그인, 4자리 간편 PIN, 나만의 시그니처 테마 저장/불러오기
+ * 5. 마이 갤러리 3중 하이브리드 보관함 (히스토리 10장 FIFO + ⭐ 찜한 인생네컷 영구 보관)
+ * 6. 초기화면 멀티 채널 공유 센터 (에어드롭 / 카카오톡 / 현장 즉석 스캔용 대형 QR 모달)
+ * 7. 가로/세로 하드웨어 파지 방향 감지 센서 & 카운트다운 일시정지 오버레이
+ * 8. 2x2 풀화면 뷰파인더 일치화 카메라 대기실 & 24종 포즈 가이드 & 6컷 연속 촬영
+ * 9. 사진 선택(screenPick) 자동 프리셋 & 에디터 간 양방향 네비게이션 ([◀ 사진 다시 고르기])
  */
 
-const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbybeL46ymy2_hypZb2I4CvSLJTkFAlTd2OR3bncVvwv9-2BsOR3DUi7Fduf6PG0mWWo-Q/exec";
-const APP_VERSION = "v17.0 Pro";
+const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbw1fjoUYoKQOHNNatPY_8q8X-1ogUV7iaFsIMpYioStlVX1SZK9hYiY32P-bGv7GUVoBw/exec";
+const APP_VERSION = "v17.1 Pro";
 const MAX_GALLERY_SLOTS = 10;
 
 function getFormattedTodayDate() {
@@ -30,6 +33,7 @@ function extractPureBase64(dataUrl) {
   return commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
 }
 
+// 24종 포즈 가이드
 const POSE_SUGGESTIONS_24 = [
   { emoji: "🫂", text: "어깨동무하고 다정하게 찰칵!" },
   { emoji: "✌️", text: "다같이 볼 옆에 브이~" },
@@ -57,6 +61,7 @@ const POSE_SUGGESTIONS_24 = [
   { emoji: "🎉", text: "마지막 컷! 가장 행복한 표정으로!" }
 ];
 
+// 15종 감성 필터 프리셋
 const FILTER_PRESETS = {
   normal:       { bright: 100, contrast: 100, saturate: 100, name: '원본' },
   harublue:     { bright: 110, contrast: 105, saturate: 105, name: '하루블루' },
@@ -131,6 +136,8 @@ let appState = {
   activeFilter: 'normal',
   filters: { bright: 100, contrast: 100, saturate: 100 },
   showDate: true,
+  isCurrentFavorite: false, // 🌟 현재 작업물 찜 상태
+  currentPhotoId: null,     // 백엔드 연결 고유 ID
   typography: {
     fontFamily: 'Pretendard',
     fontSize: 54,
@@ -163,8 +170,12 @@ let currentRatingValue = 5.0;
 let enteredPinCode = "";
 let userLocationCache = { location: "수원시 (GPS 정밀)", isGps: true };
 
+// 보관함 탭 활성화 상태 ('history' | 'favorites')
+let activeGalleryTab = 'history';
+let cachedUserGalleryPhotos = [];
+
 // ========================================================
-// 1. 오디오 & 햅틱 엔진
+// 1. 오디오 & 햅틱 피드백 엔진
 // ========================================================
 let audioCtx = null;
 function initAudio() {
@@ -215,7 +226,7 @@ function triggerHaptic(type = 'light') {
 }
 
 // ========================================================
-// 2. 위치 수집 텔레메트리
+// 2. 하이브리드 위치 텔레메트리 (GPS / 기지국 보정)
 // ========================================================
 async function initUserLocationEngine() {
   if ("geolocation" in navigator) {
@@ -320,7 +331,7 @@ function switchAuthTab(tab) {
 
 async function checkUserIdDuplicate() {
   const idInput = document.getElementById('regUserId');
-  const val = (idInput.value || "").trim().toLowerCase();
+  const val = (idInput ? idInput.value : "").trim().toLowerCase();
   if (!val || val.length < 4 || val.length > 12) {
     alert("아이디는 4~12자리 영문/숫자여야 합니다.");
     return;
@@ -384,7 +395,6 @@ async function processRegister() {
   }
 }
 
-// 🌟 로그인 처리 (knsupolo / 12345678 마스터 즉시 인증)
 async function processLogin() {
   const idInput = document.getElementById('loginUserId');
   const pwInput = document.getElementById('loginUserPw');
@@ -392,14 +402,15 @@ async function processLogin() {
   const pw = pwInput ? pwInput.value : '';
   if (!id || !pw) { alert("아이디와 비밀번호를 입력해주세요."); return; }
 
-  // 👑 마스터 관리자 즉시 로그인
+  // 👑 마스터 최고 관리자 계정 즉시 인증 (knsupolo / 12345678)
   if (id === 'knsupolo' && pw === '12345678') {
     appState.isAdmin = true;
     const adminUser = {
       userId: 'knsupolo',
       dob: '19830413',
       email: 'admin@chueok.com',
-      isAdmin: true
+      isAdmin: true,
+      totalShots: 999
     };
     applyUserLoginSuccess(adminUser, 'master-admin-token-' + Date.now());
     closeAuthModal();
@@ -408,7 +419,6 @@ async function processLogin() {
     return;
   }
 
-  // 일반 회원 로그인 통신
   try {
     const res = await fetch(GOOGLE_DB_URL, {
       method: 'POST',
@@ -419,7 +429,8 @@ async function processLogin() {
     if (data.success) {
       applyUserLoginSuccess(data.user, data.sessionToken);
       closeAuthModal();
-      alert(`환영합니다, ${data.user.userId}님! 정회원 전용 프리미엄 혜택이 활성화되었습니다. 💖`);
+      alert(`환영합니다, ${data.user.userId}님! 정회원 전용 프리미엄 테마 및 마이 갤러리가 활성화되었습니다. 💖`);
+      loadUserSignatureTheme(); // 시그니처 테마 자동 동기화
     } else {
       alert(data.message || "로그인 정보가 일치하지 않습니다.");
     }
@@ -451,6 +462,7 @@ function checkAutoLoginSession() {
       appState.isRegisteredUser = true;
       if (payload.user.userId === 'knsupolo') appState.isAdmin = true;
       updateUserHeaderUI();
+      loadUserSignatureTheme();
     } else {
       localStorage.removeItem('chueok_auth_session');
     }
@@ -578,53 +590,139 @@ async function promptResetPassword() {
   }
 }
 
-// 🌟 마이 갤러리 10장 FIFO 롤링 보관함
-async function saveToMyGalleryCloud() {
+// ========================================================
+// 4. 🌟 정회원 개인화 시그니처 테마 저장/적용 엔진
+// ========================================================
+async function saveMySignatureTheme() {
   if (!appState.isRegisteredUser || !appState.currentUser) {
-    alert("마이 갤러리 클라우드 저장은 [정회원 전용] 기능입니다.\n간편 회원가입 또는 로그인 후 이용해 주세요! 🔒");
+    alert("나만의 시그니처 테마 저장은 [정회원 전용] 기능입니다. 로그인 후 이용해 주세요! 🔒");
     openAuthModal('login');
     return;
   }
 
-  const btn = document.getElementById('btnSaveMyGallery');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>저장 중</span>`;
-  }
-  if (window.lucide) lucide.createIcons();
+  const signatureData = {
+    themeCategory: appState.themeCategory,
+    frameStyle: appState.frameStyle,
+    frameColor: appState.frameColor,
+    frameThickness: appState.frameThickness,
+    activeFilter: appState.activeFilter,
+    fontFamily: appState.typography.fontFamily,
+    fontColor: appState.typography.fontColor
+  };
 
-  renderStrip(true);
-  const canvas = document.getElementById('photoCanvas');
-  if (!canvas) return;
-  const base64Img = canvas.toDataURL('image/png');
+  localStorage.setItem(`chueok_sig_theme_${appState.currentUser.userId}`, JSON.stringify(signatureData));
 
   try {
-    const res = await fetch(GOOGLE_DB_URL, {
+    fetch(GOOGLE_DB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
-        action: 'SAVE_TO_GALLERY',
+        action: 'SAVE_SIGNATURE_THEME',
         userId: appState.currentUser.userId,
-        base64Data: extractPureBase64(base64Img)
+        themeData: JSON.stringify(signatureData)
       })
     });
+  } catch (e) {}
+
+  alert("🎨 현재 프레임 색상, 글꼴 및 필터가 [나만의 시그니처 테마]로 저장되었습니다!\n다음부터 자동으로 이 스타일이 기본 적용됩니다.");
+}
+
+async function loadUserSignatureTheme() {
+  if (!appState.isRegisteredUser || !appState.currentUser) return;
+  const localSig = localStorage.getItem(`chueok_sig_theme_${appState.currentUser.userId}`);
+  if (localSig) {
+    try {
+      const sig = JSON.parse(localSig);
+      applySignatureThemeData(sig);
+      return;
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch(`${GOOGLE_DB_URL}?action=GET_SIGNATURE_THEME&userId=${encodeURIComponent(appState.currentUser.userId)}&_t=${Date.now()}`);
     const data = await res.json();
-    if (data.success) {
-      alert("내 클라우드 보관함에 안전하게 저장되었습니다! ☁️\n(최근 저장 순 최대 10장까지 보관됩니다)");
-    } else {
-      alert("보관함 저장 실패: " + data.message);
+    if (data && data.success && data.theme) {
+      localStorage.setItem(`chueok_sig_theme_${appState.currentUser.userId}`, JSON.stringify(data.theme));
+      applySignatureThemeData(data.theme);
     }
-  } catch (err) {
-    alert("보관함 저장 통신 오류: " + err.message);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = `<i data-lucide="cloud" class="w-3.5 h-3.5"></i><span>보관함 저장</span>`;
-    }
-    if (window.lucide) lucide.createIcons();
+  } catch (e) {}
+}
+
+function applySignatureThemeData(sig) {
+  if (!sig) return;
+  if (sig.frameColor) appState.frameColor = sig.frameColor;
+  if (sig.frameThickness) appState.frameThickness = sig.frameThickness;
+  if (sig.activeFilter) appState.activeFilter = sig.activeFilter;
+  if (sig.fontFamily) appState.typography.fontFamily = sig.fontFamily;
+  if (sig.fontColor) appState.typography.fontColor = sig.fontColor;
+  if (sig.frameStyle) appState.frameStyle = sig.frameStyle;
+  if (sig.themeCategory) appState.themeCategory = sig.themeCategory;
+}
+
+// ========================================================
+// 5. 🌟 초기화면 통합 멀티 채널 공유 센터 (대형 QR & 에어드롭/카카오)
+// ========================================================
+function openMainShareModal() {
+  const modal = document.getElementById('mainShareModal');
+  const qrBox = document.getElementById('homeShareQrBox');
+  if (!modal || !qrBox) return;
+
+  const currentAppUrl = window.location.href.split('?')[0];
+  qrBox.innerHTML = '';
+  new QRCode(qrBox, {
+    text: currentAppUrl,
+    width: 180,
+    height: 180,
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  modal.classList.remove('hidden');
+  modal.style.removeProperty('display');
+  modal.style.setProperty('display', 'flex', 'important');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeMainShareModal() {
+  const modal = document.getElementById('mainShareModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.setProperty('display', 'none', 'important');
   }
 }
 
+async function triggerNativeShareAction() {
+  const currentAppUrl = window.location.href.split('?')[0];
+  const sharePayload = {
+    title: '추억의 네컷 Studio Pro v17.1 Pro',
+    text: '지금 친구들과 함께 모바일로 추억의 네컷 사진을 촬영해 보세요! 📸✨',
+    url: currentAppUrl
+  };
+
+  if (navigator.share && navigator.canShare && navigator.canShare(sharePayload)) {
+    try {
+      await navigator.share(sharePayload);
+      closeMainShareModal();
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  copyWebAppShareUrl();
+}
+
+function copyWebAppShareUrl() {
+  const currentAppUrl = window.location.href.split('?')[0];
+  navigator.clipboard.writeText(currentAppUrl).then(() => {
+    alert("스튜디오 접속 링크가 클립보드에 복사되었습니다! 📋\n카카오톡이나 메시지 창에 붙여넣어 공유하세요.");
+    closeMainShareModal();
+  }).catch(() => {
+    prompt("아래 웹 주소를 복사하여 공유하세요:", currentAppUrl);
+  });
+}
+
+// ========================================================
+// 6. 🌟 마이 갤러리 (히스토리 10장 + ⭐ 찜 목록 탭 제어)
+// ========================================================
 async function openMyGalleryModal() {
   if (!appState.isRegisteredUser || !appState.currentUser) {
     openAuthModal('login');
@@ -643,8 +741,13 @@ async function openMyGalleryModal() {
   try {
     const res = await fetch(`${GOOGLE_DB_URL}?action=GET_USER_GALLERY&userId=${encodeURIComponent(appState.currentUser.userId)}&_t=${Date.now()}`);
     const data = await res.json();
-    if (data.success && Array.isArray(data.photos)) {
-      renderMyGalleryCards(data.photos);
+    if (data && data.success && Array.isArray(data.photos)) {
+      cachedUserGalleryPhotos = data.photos;
+      const statsText = document.getElementById('memberArchiveStatsText');
+      if (statsText) {
+        statsText.textContent = `총 ${data.totalShots || data.photos.length}회 촬영 완료 • 찜한 사진 ${data.favoriteCount || 0}장`;
+      }
+      renderFilteredGalleryGrid();
     } else {
       grid.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">보관함에 저장된 사진이 없습니다.</p>`;
     }
@@ -661,27 +764,57 @@ function closeMyGalleryModal() {
   }
 }
 
-function renderMyGalleryCards(photos) {
+function switchGalleryTab(tabKey) {
+  activeGalleryTab = tabKey;
+  const tabHist = document.getElementById('tabGalleryHistory');
+  const tabFav = document.getElementById('tabGalleryFavorites');
+  if (tabKey === 'history') {
+    if (tabHist) tabHist.className = "py-1.5 rounded-lg bg-white text-slate-900 shadow-xs font-black";
+    if (tabFav) tabFav.className = "py-1.5 rounded-lg text-slate-600 hover:text-slate-900";
+  } else {
+    if (tabHist) tabHist.className = "py-1.5 rounded-lg text-slate-600 hover:text-slate-900";
+    if (tabFav) tabFav.className = "py-1.5 rounded-lg bg-white text-slate-900 shadow-xs font-black";
+  }
+  renderFilteredGalleryGrid();
+}
+
+function renderFilteredGalleryGrid() {
   const grid = document.getElementById('myGalleryGrid');
   if (!grid) return;
-  if (photos.length === 0) {
-    grid.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">보관함에 저장된 네컷 사진이 없습니다.</p>`;
+
+  let displayPhotos = [...cachedUserGalleryPhotos];
+  if (activeGalleryTab === 'favorites') {
+    displayPhotos = displayPhotos.filter(p => p.isFavorite === true);
+  }
+
+  if (displayPhotos.length === 0) {
+    grid.innerHTML = activeGalleryTab === 'favorites'
+      ? `<div class="text-center py-12 text-xs text-slate-400"><i data-lucide="star" class="w-8 h-8 text-amber-300 mx-auto mb-2 opacity-50"></i>아직 찜한 인생네컷이 없습니다.<br>에디터에서 [⭐ 인생네컷 찜]을 눌러보세요!</div>`
+      : `<p class="text-xs text-slate-400 text-center py-10">보관함에 저장된 촬영 기록이 없습니다.</p>`;
+    if (window.lucide) lucide.createIcons();
     return;
   }
 
   grid.innerHTML = `
     <div class="grid grid-cols-2 gap-3">
-      ${photos.map((p, idx) => `
+      ${displayPhotos.map((p, idx) => `
         <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex flex-col justify-between space-y-2 shadow-xs">
           <div class="aspect-[3/4] bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
-            <span class="absolute top-1.5 left-1.5 bg-black/75 text-white text-[9px] font-black px-1.5 py-0.5 rounded">#${idx + 1}</span>
+            <span class="absolute top-1.5 left-1.5 bg-black/75 text-white text-[9px] font-black px-1.5 py-0.5 rounded">#${idx + 1}</span>${p.isFavorite ? `<span class="absolute top-1.5 right-1.5 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">⭐ 찜</span>` : ''}
             <img src="https://drive.google.com/thumbnail?id=${p.fileId}&sz=w600" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x600?text=Photo';">
           </div>
           <div class="flex items-center justify-between pt-1">
             <span class="text-[9px] text-slate-400">${p.date ? p.date.slice(0, 10) : ''}</span>
             <div class="flex space-x-1">
-              <a href="${p.fileUrl}" target="_blank" class="p-1 bg-white border border-slate-200 rounded-lg text-slate-700 hover:text-theme active:scale-90" title="보기/다운"><i data-lucide="external-link" class="w-3.5 h-3.5"></i></a>
-              <button onclick="deleteGalleryPhoto('${p.id}')" class="p-1 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 active:scale-90" title="삭제"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+              <button onclick="togglePhotoFavoriteStatus('${p.id}')" class="p-1 rounded-lg border text-xs active:scale-90 ${p.isFavorite ? 'bg-amber-50 border-amber-300 text-amber-500' : 'bg-white border-slate-200 text-slate-400'}" title="찜 토글">
+                ★
+              </button>
+              <a href="${p.fileUrl}" target="_blank" class="p-1 bg-white border border-slate-200 rounded-lg text-slate-700 hover:text-theme active:scale-90" title="보기/다운">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              </a>
+              <button onclick="deleteGalleryPhotoItem('${p.id}')" class="p-1 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 active:scale-90" title="삭제">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -691,7 +824,23 @@ function renderMyGalleryCards(photos) {
   if (window.lucide) lucide.createIcons();
 }
 
-async function deleteGalleryPhoto(photoId) {
+async function togglePhotoFavoriteStatus(photoId) {
+  try {
+    const res = await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'TOGGLE_FAVORITE', photoId: photoId, userId: appState.currentUser.userId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const target = cachedUserGalleryPhotos.find(p => p.id === photoId);
+      if (target) target.isFavorite = data.isFavorite;
+      renderFilteredGalleryGrid();
+    }
+  } catch (e) {}
+}
+
+async function deleteGalleryPhotoItem(photoId) {
   if (!confirm("이 사진을 보관함에서 영구 삭제하시겠습니까?")) return;
   try {
     await fetch(GOOGLE_DB_URL, {
@@ -699,14 +848,15 @@ async function deleteGalleryPhoto(photoId) {
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: 'DELETE_GALLERY_PHOTO', photoId: photoId, userId: appState.currentUser.userId })
     });
-    openMyGalleryModal();
+    cachedUserGalleryPhotos = cachedUserGalleryPhotos.filter(p => p.id !== photoId);
+    renderFilteredGalleryGrid();
   } catch (e) {
     alert("사진 삭제 실패");
   }
 }
 
 // ========================================================
-// 4. 가로/세로 방향 감지 센서
+// 7. 가로/세로 방향 감지 센서
 // ========================================================
 function checkDeviceOrientation() {
   const overlay = document.getElementById('orientationWarningOverlay');
@@ -757,7 +907,7 @@ function resumeCountdown() {
 }
 
 // ========================================================
-// 5. 카메라 구도 대기실
+// 8. 카메라 구도 대기실 (2x2 풀화면 일치화)
 // ========================================================
 function startSession(format) {
   appState.selectedFormat = format || 'strip';
@@ -767,6 +917,8 @@ function startSession(format) {
   appState.selectedImages = [];
   appState.selectedIndices = [0, 1, 2, 3];
   appState.shotVideoBlobs = [];
+  appState.isCurrentFavorite = false;
+  appState.currentPhotoId = null;
 
   const liveBadge = document.getElementById('liveFormatBadge');
   if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립 (가로)" : "2×2 엽서형 (세로)";
@@ -875,7 +1027,7 @@ function setViewfinderRatio(ratio, btn) {
 }
 
 // ========================================================
-// 6. 6컷 연속 촬영
+// 9. 6컷 연속 촬영 파이프라인
 // ========================================================
 function startActualCountdownSession() {
   playBeep(900);
@@ -1050,12 +1202,14 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 7. 사진 선택 & 자동 프리셋
+// 10. 사진 선택 & 🌟 [사진 다시 고르기] 양방향 네비게이션
 // ========================================================
 function renderPickScreen() {
   showScreen('screenPick');
   
-  appState.selectedIndices = [0, 1, 2, 3]; 
+  if (!appState.selectedIndices || appState.selectedIndices.length !== 4) {
+    appState.selectedIndices = [0, 1, 2, 3];
+  }
   appState.activeSlotIndex = 0; 
   currentCarouselIdx = 0;
 
@@ -1070,6 +1224,13 @@ function renderPickScreen() {
   updatePreviewSlots();
   updateCarouselView();
   refreshPickUI();
+}
+
+// 🌟 에디터 스튜디오에서 사진 선택 화면으로 안전 복귀
+function returnToPickScreen() {
+  if (confirm("사진 선택 화면으로 돌아가시겠습니까?\n(현재 꾸며둔 스티커와 설정은 그대로 유지됩니다)")) {
+    renderPickScreen();
+  }
 }
 
 function buildPickMiniPreviewStructure() {
@@ -1271,7 +1432,6 @@ function refreshPickUI() {
   if (btn) btn.textContent = chosenCount === 4 ? "스튜디오 꾸미기 ➔" : `스튜디오 꾸미기 (${chosenCount}/4)`;
 }
 
-// 🌟 스튜디오 에디터 전환 & 캔버스 안전 렌더링
 function confirmSelectedFour() {
   for (let i = 0; i < 4; i++) {
     if (appState.selectedIndices[i] === null || !appState.shotImages[appState.selectedIndices[i]]) {
@@ -1284,10 +1444,12 @@ function confirmSelectedFour() {
 
   appState.selectedImages = appState.selectedIndices.map(idx => appState.shotImages[idx]);
 
-  resetEditorToDefault();
+  // 기존 스티커/필터가 비어 있을 때만 기본 리셋 실행
+  if (!appState.stickers || appState.stickers.length === 0) {
+    resetEditorToDefault();
+  }
   showScreen('screenEdit');
 
-  // DOM 배치 완료 후 캔버스 리페인트
   requestAnimationFrame(() => {
     renderStrip();
   });
@@ -1394,8 +1556,9 @@ function cancelGalleryCollect() {
   }
 }
 
+// [1편 끝 - 2편(후반부) 코드를 바로 아래에 이어서 붙여넣어 주세요]
 // ========================================================
-// 8. 3대 테마 분류 컨트롤러
+// 11. 🌟 3대 테마 분류 컨트롤러 & 레이아웃 분리
 // ========================================================
 function switchThemeCategory(category) {
   if (category !== 'basic' && (!appState.isRegisteredUser || !appState.currentUser)) {
@@ -1432,6 +1595,7 @@ function switchThemeCategory(category) {
   }
 }
 
+// 1. 기본 테마: 상단 / 중간 / 하단(상단 60px 슬림, 하단 240px) / 상·하단(위아래 180px 균등)
 function setBasicTextPosition(pos, btn) {
   appState.frameStyle = pos; 
   document.querySelectorAll('.basic-pos-btn').forEach(b => {
@@ -1441,6 +1605,7 @@ function setBasicTextPosition(pos, btn) {
   renderStrip();
 }
 
+// 2. 심플 테마: 1x4 & 2x2 비대칭 오프셋 3종
 function setSimpleOffsetLayout(key, btn) {
   if (!appState.isRegisteredUser) { openAuthModal('login'); return; }
   appState.frameStyle = key; 
@@ -1451,6 +1616,7 @@ function setSimpleOffsetLayout(key, btn) {
   renderStrip();
 }
 
+// 3. 프리미엄 테마: 생일, 야구, 포토이즘 (색상 자유 개방)
 function setPremiumSubTheme(key, btn) {
   if (!appState.isRegisteredUser) { openAuthModal('login'); return; }
   appState.frameStyle = key; 
@@ -1462,7 +1628,7 @@ function setPremiumSubTheme(key, btn) {
 }
 
 // ========================================================
-// 9. 캔버스 렌더러 (하단문구 vs 상하단문구 분리)
+// 12. 🌟 메인 캔버스 렌더러 (적응형 각인 & 하단 각인 삭제)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
@@ -1492,10 +1658,12 @@ function renderStrip(isFinalExport = false) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
+  // [레이어 1: 바닥 배경]
   if (fStyle === 'birthday') ctx.fillStyle = '#FAF7EE';
   else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // [레이어 2: 사진 슬롯 배치]
   if (layout === 'strip') {
     renderStripLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark);
   } else if (layout === 'grid') {
@@ -1504,7 +1672,10 @@ function renderStrip(isFinalExport = false) {
     renderTwinLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark);
   }
 
+  // [레이어 3: 테마 오버레이 & 적응형 각인]
   renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout);
+
+  // [레이어 4: 스티커 & 날짜 오브젝트]
   renderStickersAndMirrors(ctx, canvas, layout);
 }
 
@@ -1528,6 +1699,7 @@ function renderStripLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
     }
   } 
+  // 🌟 하단 문구 모드: 상단은 좌우 테두리와 동일(pad), 하단만 240px 확장
   else if (fStyle === 'bottom') {
     const topH = pad; 
     const bottomH = 240; 
@@ -1537,6 +1709,7 @@ function renderStripLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
     }
   } 
+  // 🌟 상/하단 문구 모드: 위아래 180px 균등 배분
   else if (fStyle === 'dual') {
     const dualH = 180;
     const imgW = canvas.width - (pad * 2);
@@ -1679,12 +1852,17 @@ function renderTwinLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
   ctx.restore();
 }
 
+// 🌟 테마별 그래픽 오버레이 (적응형 각인 & 하단 각인 완전 영구 삭제)
 function renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout) {
   ctx.save();
+
+  // 🌟 테두리 두께(pad)에 비례하는 적응형 각인 폰트 크기 계산 (18px ~ 28px)
+  const adaptiveFontSize = Math.max(18, Math.min(28, Math.round(pad * 0.38)));
 
   if (fStyle === 'photoism') {
     const textColor = isDark ? '#FFFFFF' : '#0F172A';
     
+    // 상단 로고
     ctx.fillStyle = textColor;
     ctx.font = "700 56px 'Playfair Display', serif";
     ctx.textAlign = 'left';
@@ -1694,20 +1872,22 @@ function renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout) {
     const topH = 180; const bottomH = pad; const gap = Math.round(pad * 0.5);
     const imgH = (canvas.height - topH - bottomH - (gap * 3)) / 4;
 
+    // 좌측 기둥: 정렬된 ▲ 재생버튼 4개
     for (let i = 0; i < 4; i++) {
       const centerY = topH + (i * (imgH + gap)) + (imgH / 2);
       ctx.fillStyle = textColor;
-      ctx.font = "bold 30px monospace"; 
+      ctx.font = `bold ${Math.round(adaptiveFontSize * 1.3)}px monospace`; 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText("▲", pad / 2, centerY);
     }
 
+    // 우측 기둥: 테두리에 맞게 선명하게 커진 세로 적응형 각인
     ctx.save();
     ctx.translate(canvas.width - (pad / 2), canvas.height / 2);
     ctx.rotate(Math.PI / 2);
     ctx.fillStyle = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
-    ctx.font = "bold 16px monospace";
+    ctx.font = `bold ${adaptiveFontSize}px monospace`;
     ctx.textAlign = 'center';
     ctx.fillText("Photography      PhotoBooth      PhotoIs      editor", 0, 0);
     ctx.restore();
@@ -1739,13 +1919,8 @@ function renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout) {
     ctx.fillText("⚾", canvas.width - pad - 60, 100);
   }
 
-  if (fStyle !== 'photoism') {
-    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)';
-    ctx.font = "bold 18px monospace";
-    ctx.textAlign = 'center';
-    ctx.letterSpacing = "2px";
-    ctx.fillText("Photography  |  PhotoBooth  |  PhotoIs  |  editor", canvas.width / 2, canvas.height - 35);
-  }
+  // 🌟 [요청 반영] 이상하고 어색하던 프레임 하단부 각인 문구는 완전히 삭제하여
+  // 100% 사용자가 자유롭게 꾸밀 수 있는 순수 클린 Safe Zone으로 유지합니다.
 
   ctx.restore();
 }
@@ -1835,7 +2010,7 @@ function applyPixelFilterMath(imageData, filterKey, customAdjust) {
 
     if (sMul !== 1 && filterKey !== 'mono' && filterKey !== 'deepmono') { 
       const lum = 0.299*r + 0.587*g + 0.114*b; 
-      r = lum + (r - lum)*sMul; g = lum + (g - lum)*sMul; b = lum + (b - lum)*sMul; 
+      r = lum + (r - lum)*sMul; g = lum + (g - lum)*sMul; b = lum + (g - lum)*sMul; 
     }
     d[i] = Math.min(255, Math.max(0, r)); 
     d[i+1] = Math.min(255, Math.max(0, g)); 
@@ -1879,7 +2054,7 @@ function drawSingleSticker(ctx, st) {
 }
 
 // ========================================================
-// 10. 날짜 오브젝트 시스템
+// 13. 날짜 오브젝트 시스템
 // ========================================================
 function toggleDateObject(checked) {
   saveStateForUndo();
@@ -1900,7 +2075,7 @@ function initOrUpdateDateSticker(show) {
         isDate: true,
         text: appState.typography.date,
         x: canvas && canvas.width ? canvas.width / 2 : 600,
-        y: canvas && canvas.height ? (appState.selectedFormat === 'strip' ? canvas.height - 180 : canvas.height - 140) : 3450,
+        y: canvas && canvas.height ? (appState.selectedFormat === 'strip' ? canvas.height - 140 : canvas.height - 120) : 3450,
         size: 38,
         rotation: 0,
         color: (appState.frameColor === '#FFFFFF' || appState.frameColor === '#E2E8F0') ? '#1E293B' : '#FFFFFF',
@@ -1919,7 +2094,7 @@ function initOrUpdateDateSticker(show) {
 }
 
 // ========================================================
-// 11. 2단계 돋보기 (이동 시 스티커 전체 확대)
+// 14. 2단계 돋보기 (이동 시 스티커 전체 확대)
 // ========================================================
 function updateFloatingLoupe(touchX, touchY, canvasCoordX, canvasCoordY, isDragging) {
   const loupe = document.getElementById('floatingLoupe');
@@ -2304,7 +2479,7 @@ function setupCanvasPinchZoom() {
 }
 
 // ========================================================
-// 12. 가변 스플릿 리사이저 바
+// 15. 가변 스플릿 리사이저 바
 // ========================================================
 function initSplitResizer() {
   const resizer = document.getElementById('editorSplitResizer');
@@ -2358,7 +2533,87 @@ function initSplitResizer() {
 }
 
 // ========================================================
-// 13. 비디오 키프레임 포스터 & [복구] QR코드 다운로드
+// 16. 🌟 [추천안 1, 2] 무소음 백그라운드 자동 아카이빙 & ⭐ 찜 엔진
+// ========================================================
+async function autoArchiveToCloudQuietly(canvas, isFav = false) {
+  if (!appState.isRegisteredUser || !appState.currentUser) return;
+
+  try {
+    const base64Img = canvas.toDataURL('image/png', 0.95);
+    const res = await fetch(GOOGLE_DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'SAVE_TO_GALLERY',
+        userId: appState.currentUser.userId,
+        base64Data: extractPureBase64(base64Img),
+        isFavorite: isFav
+      })
+    });
+    const data = await res.json();
+    if (data && data.success && data.photoId) {
+      appState.currentPhotoId = data.photoId;
+    }
+  } catch (e) {
+    // 백그라운드 무소음 처리 (사용자 경험 저해 팝업 차단)
+  }
+}
+
+// 🌟 에디터 하단 [⭐ 인생네컷 찜] 버튼 토글
+async function toggleFavoriteStrip() {
+  if (!appState.isRegisteredUser || !appState.currentUser) {
+    alert("인생네컷 ⭐ 찜 기능은 [정회원 전용]입니다.\n간편 로그인 후 영구 보관해 보세요! 🔒");
+    openAuthModal('login');
+    return;
+  }
+
+  playBeep(950);
+  triggerHaptic('medium');
+
+  appState.isCurrentFavorite = !appState.isCurrentFavorite;
+  updateFavoriteButtonUI();
+
+  renderStrip(true);
+  const canvas = document.getElementById('photoCanvas');
+  if (!canvas) return;
+
+  if (appState.isCurrentFavorite) {
+    alert("⭐ 이 네컷 사진이 [인생네컷 찜]에 등록되었습니다!\n최근 히스토리 10장 FIFO 자동 삭제에서 영구 제외되어 안전하게 보관됩니다.");
+    autoArchiveToCloudQuietly(canvas, true);
+  } else {
+    alert("찜이 해제되었습니다. (일반 최근 히스토리 목록으로 관리됩니다)");
+    if (appState.currentPhotoId) {
+      try {
+        fetch(GOOGLE_DB_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: 'TOGGLE_FAVORITE',
+            photoId: appState.currentPhotoId,
+            userId: appState.currentUser.userId
+          })
+        });
+      } catch (e) {}
+    }
+  }
+}
+
+function updateFavoriteButtonUI() {
+  const btn = document.getElementById('btnFavoriteStrip');
+  const label = document.getElementById('btnFavoriteText');
+  if (!btn || !label) return;
+
+  if (appState.isCurrentFavorite) {
+    btn.className = "bg-amber-500 hover:bg-amber-600 text-white font-black py-2.5 rounded-xl text-[9px] flex flex-col items-center justify-center space-y-0.5 shadow active:scale-95 transition ring-2 ring-white";
+    label.textContent = "⭐ 찜 완료";
+  } else {
+    btn.className = "bg-rose-500 hover:bg-rose-600 text-white font-black py-2.5 rounded-xl text-[9px] flex flex-col items-center justify-center space-y-0.5 shadow active:scale-95 transition";
+    label.textContent = "인생네컷 찜";
+  }
+}
+
+// ========================================================
+// 17. 10Mbps 비디오 & [복구] QR코드 스캔 다운로드 화면
 // ========================================================
 async function generateFourCutVideo() {
   if (!appState.isRegisteredUser) {
@@ -2479,7 +2734,7 @@ async function generateFourCutVideo() {
   }
 }
 
-// 🌟 [본래 목적 100% 복구] QR코드 스캔 다운로드 화면 생성
+// 🌟 [복구 & 추천안 1] 스마트폰 스캔 다운로드용 QR코드 결과 모달
 async function generateImageQRCode() {
   const btn = document.getElementById('btnSaveQR'); 
   if (btn) { 
@@ -2491,6 +2746,9 @@ async function generateImageQRCode() {
   renderStrip(true); 
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return;
+
+  // 🌟 [추천안 1] QR 생성 시 백그라운드 무소음 자동 보관함 아카이빙 실행
+  autoArchiveToCloudQuietly(canvas, appState.isCurrentFavorite);
 
   const base64Img = canvas.toDataURL('image/png');
   const fileName = `[추억네컷]_${appState.selectedFormat || 'photo'}_${Date.now()}.png`;
@@ -2543,6 +2801,9 @@ function autoSavePDF() {
   renderStrip(true); 
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return; 
+
+  autoArchiveToCloudQuietly(canvas, appState.isCurrentFavorite);
+
   const imgData = canvas.toDataURL('image/jpeg', 0.98); 
   const { jsPDF } = window.jspdf; 
 
@@ -2563,6 +2824,9 @@ function sharePhotoDirectly() {
   renderStrip(true); 
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return;
+
+  autoArchiveToCloudQuietly(canvas, appState.isCurrentFavorite);
+
   canvas.toBlob(async (blob) => {
     if (!blob) return; 
     const file = new File([blob], `[추억네컷]_Photo_${Date.now()}.png`, { type: 'image/png' });
@@ -2644,7 +2908,7 @@ async function shareCurrentVideoFile() {
 }
 
 // ========================================================
-// 14. 이용후기, 고객소리함 & 관리자 모드
+// 18. 이용후기, 고객소리함 & 관리자 모드
 // ========================================================
 function handleStarClick(starNum) {
   currentRatingValue = starNum;
@@ -2729,8 +2993,8 @@ function renderBoard() {
 async function submitBoardPost() {
   const nicknameInput = document.getElementById('boardNickname');
   const contentInput = document.getElementById('boardContent');
-  const nickname = nicknameInput.value.trim() || '익명의 사진작가';
-  const content = contentInput.value.trim();
+  const nickname = (nicknameInput ? nicknameInput.value : '').trim() || '익명의 사진작가';
+  const content = (contentInput ? contentInput.value : '').trim();
   const rating = currentRatingValue;
   if (!content) { alert("후기 내용을 입력해주세요."); return; }
 
@@ -2750,8 +3014,8 @@ async function submitBoardPost() {
   localStorage.setItem('vibe_posts', JSON.stringify(posts));
   renderBoard();
 
-  contentInput.value = ''; 
-  nicknameInput.value = '';
+  if (contentInput) contentInput.value = ''; 
+  if (nicknameInput) nicknameInput.value = '';
 
   try {
     await fetch(GOOGLE_DB_URL, {
@@ -2825,8 +3089,8 @@ function closeCustomerBotModal() {
 async function sendCustomerBotMessage() {
   const emailInput = document.getElementById('botContactEmail');
   const chatInput = document.getElementById('botChatInput');
-  const email = emailInput.value.trim();
-  const userMsg = chatInput.value.trim();
+  const email = (emailInput ? emailInput.value : '').trim();
+  const userMsg = (chatInput ? chatInput.value : '').trim();
 
   if (!userMsg) return;
 
@@ -2840,7 +3104,7 @@ async function sendCustomerBotMessage() {
     </div>
   `;
   chatArea.appendChild(userDiv);
-  chatInput.value = '';
+  if (chatInput) chatInput.value = '';
   chatArea.scrollTop = chatArea.scrollHeight;
 
   const btn = document.getElementById('btnSendBot');
@@ -2881,7 +3145,7 @@ async function sendCustomerBotMessage() {
   }, 400);
 }
 
-// 🌟 관리자 설정 센터 호출 (knsupolo 및 12345678 대응)
+// 🌟 관리자 모드
 function promptAdminMode(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
 
@@ -3031,7 +3295,7 @@ function renderAdminNoticeManageList() {
   listEl.innerHTML = notices.map(n => `
     <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
       <div>
-        <span class="font-black text-theme text-[10px] mr-1">[${n.version || 'v17.0 Pro'}]</span>
+        <span class="font-black text-theme text-[10px] mr-1">[${n.version || APP_VERSION}]</span>
         <span class="font-bold text-slate-800">${n.content}</span>
         <p class="text-[9px] text-slate-400 mt-0.5">${n.date}</p>
       </div>
@@ -3047,7 +3311,7 @@ async function writeAdminNotice() {
   const newNotice = { 
     id: Date.now().toString(), 
     date: getFormattedTodayDate(), 
-    version: 'v17.0 Pro', 
+    version: APP_VERSION, 
     content: content.trim() 
   };
   let list = getStoredNotices();
@@ -3093,10 +3357,10 @@ function getStoredNotices() {
   }
   if (!list || list.length === 0) {
     list = [{ 
-      id: 'v17_0', 
+      id: 'v17_1_init', 
       date: getFormattedTodayDate(), 
-      version: 'v17.0 Pro', 
-      content: 'v17.0 Pro: 회원가입, 10장 클라우드 보관함, 2단계 돋보기 & 2x2 풀화면 적용 완료!' 
+      version: APP_VERSION, 
+      content: 'v17.1 Pro: 회원 히스토리, 사진 다시 고르기, 테두리 적응형 각인 & 멀티 공유 QR 업데이트 완료!' 
     }];
   }
   return list;
@@ -3109,8 +3373,8 @@ function renderMainNotices() {
   area.classList.remove('hidden');
   container.innerHTML = `
     <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-left">
-      <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0">v17.0 Pro</span>
-      <p class="text-[11px] font-bold text-slate-800 truncate ml-2">회원 보관함(10장), 2단계 돋보기 & 테마 최적화 완료!</p>
+      <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0">v17.1 Pro</span>
+      <p class="text-[11px] font-bold text-slate-800 truncate ml-2">회원 히스토리, 사진 다시 고르기 & 멀티 공유 센터 업데이트!</p>
     </div>
   `;
 }
@@ -3159,7 +3423,7 @@ async function collectDeviceTelemetry() {
 }
 
 // ========================================================
-// 15. 화면 전환 & 라이프사이클 관리
+// 19. 화면 전환 & 라이프사이클 관리
 // ========================================================
 function showScreen(id) {
   const screenIds = ['screenHome', 'screenBoard', 'screenLiveShoot', 'screenPick', 'screenEdit', 'screenResult'];
@@ -3192,6 +3456,8 @@ function resetApp() {
   appState.selectedIndices = [0, 1, 2, 3]; 
   appState.stickers = []; 
   appState.selectedStickerIdx = -1; 
+  appState.isCurrentFavorite = false;
+  appState.currentPhotoId = null;
   galleryAccumulator = []; 
   showScreen('screenHome');
 }
@@ -3324,7 +3590,8 @@ function saveStateForUndo() {
   const snapshot = JSON.stringify({
     stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
     frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
-    filters: appState.filters, typography: appState.typography, showDate: appState.showDate
+    filters: appState.filters, typography: appState.typography, showDate: appState.showDate,
+    isCurrentFavorite: appState.isCurrentFavorite
   });
   historyStack.push(snapshot); 
   if (historyStack.length > 25) historyStack.shift(); 
@@ -3336,7 +3603,8 @@ function undo() {
   const currentSnap = JSON.stringify({
     stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
     frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
-    filters: appState.filters, typography: appState.typography, showDate: appState.showDate
+    filters: appState.filters, typography: appState.typography, showDate: appState.showDate,
+    isCurrentFavorite: appState.isCurrentFavorite
   });
   redoStack.push(currentSnap);
   applySnapshot(JSON.parse(historyStack.pop()));
@@ -3347,7 +3615,8 @@ function redo() {
   const currentSnap = JSON.stringify({
     stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
     frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
-    filters: appState.filters, typography: appState.typography, showDate: appState.showDate
+    filters: appState.filters, typography: appState.typography, showDate: appState.showDate,
+    isCurrentFavorite: appState.isCurrentFavorite
   });
   historyStack.push(currentSnap);
   applySnapshot(JSON.parse(redoStack.pop()));
@@ -3363,8 +3632,11 @@ function applySnapshot(snap) {
   appState.filters = snap.filters; 
   appState.typography = snap.typography;
   appState.showDate = snap.showDate !== undefined ? snap.showDate : true;
+  appState.isCurrentFavorite = snap.isCurrentFavorite || false;
+  
   const dateCheck = document.getElementById('checkShowDate');
   if (dateCheck) dateCheck.checked = appState.showDate;
+  updateFavoriteButtonUI();
   renderStrip();
 }
 
@@ -3394,15 +3666,6 @@ function setTimerSec(sec, btn) {
     b.className = "timer-chip bg-white border border-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded text-[10px]"; 
   }); 
   if (btn) btn.className = "timer-chip bg-theme text-white font-bold px-1.5 py-0.5 rounded text-[10px] shadow-xs"; 
-}
-
-function shareWebAppUrl() {
-  const shareUrl = window.location.href.split('?')[0];
-  if (navigator.share && navigator.canShare && navigator.canShare({ url: shareUrl })) {
-    navigator.share({ title: '추억의 네컷', url: shareUrl }).catch(() => {});
-  } else {
-    navigator.clipboard.writeText(shareUrl).then(() => alert("링크가 복사되었습니다! 📋")).catch(() => {});
-  }
 }
 
 function initDynamicUI() {
@@ -3449,10 +3712,10 @@ function initDynamicUI() {
 }
 
 // ========================================================
-// 16. 앱 초기 구동
+// 20. 앱 초기 구동
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
-  ['screenLiveShoot', 'screenPick', 'screenEdit', 'screenBoard', 'screenResult', 'videoResultModal', 'galleryCollectModal', 'adminDashboardModal', 'customerBotModal', 'authModal', 'myGalleryModal'].forEach(id => {
+  ['screenLiveShoot', 'screenPick', 'screenEdit', 'screenBoard', 'screenResult', 'videoResultModal', 'galleryCollectModal', 'adminDashboardModal', 'customerBotModal', 'authModal', 'myGalleryModal', 'mainShareModal'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.classList.add('hidden');
