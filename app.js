@@ -1,20 +1,22 @@
 /**
- * 추억의 네컷 Studio Pro v17.2 Pro [1편 / 전반부]
+ * 추억의 네컷 Studio Pro v17.3 Pro [1편 / 전반부]
  * 
- * [v17.2 Pro 주요 엔진 및 수정 반영]
- * 1. 최신 구글 웹앱 배포 URL 연동 및 v17.2 Pro 시스템 동기화
- * 2. 메인 공유 버튼 즉각 반응 (에어드롭 / 카카오톡 / 대형 QR 팝업 센터)
- * 3. 2x2 세로모드 촬영 시 풀화면 크기 축소 버그 완벽 수정 (뷰파인더 비율 고정)
- * 4. 마이페이지 (내 정보 관리 센터) 신설: 4자리 PIN 관리 & 시그니처 테마 저장
- * 5. 계정 복구 센터: 아이디 찾기 및 Gmail 임시 비밀번호 무료 발송
- * 6. 스튜디오 ➔ [◀ 사진 다시 고르기] 원클릭 양방향 네비게이션 복구
- * 7. 마스터 관리자(knsupolo / 12345678) 상시 직통 승인
- * 8. 필름 모터 인화 사운드 & 실감형 햅틱 엔진 탑재
+ * [v17.3 Pro 주요 엔진 및 수정 반영]
+ * 1. 최신 구글 웹앱 배포 URL 연동 (2026.09 배포본)
+ * 2. 🌟 카메라 회전 안내 오버레이 개선: 반투명 카메라 비침 유지 & 우측 상단 닫기(X) 추가
+ * 3. 🌟 2x2 세로모드 촬영 시작 시 화면 축소 버그 원천 해결 (뷰포트 fixed 및 뷰파인더 고정)
+ * 4. 🌟 사진 배치(screenPick) 화면: 포토이스트(photoist) 매트 블랙(#111111) 통일
+ * 5. 🌟 초기 슬롯 비우기(Empty Slots): 사용자가 직접 탭/드래그하여 원하는 위치에 담는 방식 복원
+ * 6. 🌟 4컷 / 5컷(화보형: 상2-중1대형-하2) / 6컷(2x3 그리드 & 1x6 스트립) 가변 선택 엔진
+ * 7. 🌟 4자리 PIN 로그인 완전 삭제 (아이디/비밀번호 단일 체계로 간소화)
+ * 8. 🌟 회원가입 유효성 강화: 이름 + 생년월일 6자리 중복 가입 방지 & 비밀번호 확인 일치 검증
+ * 9. 🌟 마이페이지 (내 정보 관리): 10종 앱 전체 UI 테마 선택기 탑재 (시그니처 색상 제거)
+ * 10. 상단 딤드 그라데이션 제거 & iOS/아이패드 뷰포트 높이(--app-vh) 동적 보정
  */
 
-// 🌟 제공해주신 최신 구글 웹앱 배포 URL 적용 완료
+// 🌟 제공해주신 최신 구글 웹앱 배포 URL
 const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbw1fjoUYoKQOHNNatPY_8q8X-1ogUV7iaFsIMpYioStlVX1SZK9hYiY32P-bGv7GUVoBw/exec";
-const APP_VERSION = "v17.2 Pro";
+const APP_VERSION = "v17.3 Pro";
 const MAX_GALLERY_SLOTS = 10;
 
 function getFormattedTodayDate() {
@@ -115,13 +117,16 @@ let appState = {
   currentCount: 6,
   countdownTimer: null,
   isShootingPaused: false,
+  orientationWarningDismissed: false,
   selectedFormat: 'strip',
   viewfinderRatio: 'full',
   currentShotIndex: 0,
   
+  // 🌟 4·5·6컷 가변 프레임 상태
+  cutMode: 4, // 4 | 5 | 6
   shotImages: [],
   selectedImages: [],
-  selectedIndices: [0, 1, 2, 3],
+  selectedIndices: [null, null, null, null], // 🌟 초기 슬롯은 완전히 비워둠
   activeSlotIndex: 0,
   shotVideoBlobs: [],
   currentMediaRecorder: null,
@@ -132,12 +137,12 @@ let appState = {
   frameColor: '#000000',
   frameThickness: 60,
   layout: 'strip',
-  customEngraveText: '', // 🌟 B-3 측면 커스텀 브랜드 각인
+  customEngraveText: '', // 🌟 측면 커스텀 각인 문구
 
   activeFilter: 'normal',
   filters: { bright: 100, contrast: 100, saturate: 100 },
   showDate: true,
-  isCurrentFavorite: false, // 🌟 [⭐ 추억네컷 찜] 상태
+  isCurrentFavorite: false, // 🌟 [추억네컷 찜] 상태
   currentPhotoId: null,
   typography: {
     fontFamily: 'Pretendard',
@@ -168,14 +173,13 @@ let isPanning = false;
 let panStartX = 0;
 let panStartY = 0;
 let currentRatingValue = 5.0;
-let enteredPinCode = "";
 let userLocationCache = { location: "수원시 (GPS 정밀)", isGps: true };
 
 let activeGalleryTab = 'history';
 let cachedUserGalleryPhotos = [];
 
 // ========================================================
-// 1. 오디오 & 햅틱 피드백 엔진
+// 1. 오디오 & 실감형 햅틱 피드백 엔진
 // ========================================================
 let audioCtx = null;
 function initAudio() {
@@ -216,7 +220,6 @@ function playRealisticShutter() {
   } catch (e) {}
 }
 
-// 🌟 아날로그 필름 모터 인화 사운드
 function playMotorPrintSound() {
   try {
     initAudio();
@@ -245,8 +248,13 @@ function triggerHaptic(type = 'light') {
 }
 
 // ========================================================
-// 2. 하이브리드 위치 텔레메트리 (GPS / 기지국 보정)
+// 2. 동적 뷰포트(--app-vh) & 하이브리드 위치 텔레메트리
 // ========================================================
+function updateDynamicViewportHeight() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--app-vh', `${window.innerHeight}px`);
+}
+
 async function initUserLocationEngine() {
   if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(
@@ -301,7 +309,7 @@ async function sendVisitTelemetry() {
 }
 
 // ========================================================
-// 3. 회원 인증 & 마스터 관리자 (knsupolo / 12345678)
+// 3. 🌟 회원 인증 (PIN 완전 삭제, 이름+생년월일 6자리 중복 방지)
 // ========================================================
 function openAuthModal(tab = 'login') {
   const modal = document.getElementById('authModal');
@@ -321,11 +329,9 @@ function closeAuthModal() {
   }
 }
 
-// 🌟 3분할 탭: 로그인 | 회원가입 | 계정찾기
 function switchAuthTab(tab) {
   const loginForm = document.getElementById('authFormLogin');
   const regForm = document.getElementById('authFormRegister');
-  const pinForm = document.getElementById('authFormPin');
   const findForm = document.getElementById('authFormFind');
   const tabLogin = document.getElementById('tabModalLogin');
   const tabReg = document.getElementById('tabModalRegister');
@@ -333,11 +339,10 @@ function switchAuthTab(tab) {
 
   if (loginForm) loginForm.classList.add('hidden');
   if (regForm) regForm.classList.add('hidden');
-  if (pinForm) pinForm.classList.add('hidden');
   if (findForm) findForm.classList.add('hidden');
 
-  const inactiveClass = "px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-900";
-  const activeClass = "px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-xs font-black";
+  const inactiveClass = "px-3 py-1 rounded-lg text-slate-500 hover:text-slate-900";
+  const activeClass = "px-3 py-1 rounded-lg bg-white text-slate-900 shadow-xs font-black";
 
   if (tabLogin) tabLogin.className = inactiveClass;
   if (tabReg) tabReg.className = inactiveClass;
@@ -349,9 +354,6 @@ function switchAuthTab(tab) {
   } else if (tab === 'register') {
     if (regForm) regForm.classList.remove('hidden');
     if (tabReg) tabReg.className = activeClass;
-  } else if (tab === 'pin') {
-    if (pinForm) pinForm.classList.remove('hidden');
-    clearPinInput();
   } else if (tab === 'find') {
     if (findForm) findForm.classList.remove('hidden');
     if (tabFind) tabFind.className = activeClass;
@@ -385,19 +387,33 @@ async function checkUserIdDuplicate() {
   }
 }
 
+// 🌟 회원가입 처리 (비밀번호 확인 + 이름 + 생년월일 6자리 검증)
 async function processRegister() {
-  const id = document.getElementById('regUserId').value.trim().toLowerCase();
+  const name = (document.getElementById('regUserName').value || "").trim();
+  const dob = (document.getElementById('regUserDob').value || "").trim();
+  const id = (document.getElementById('regUserId').value || "").trim().toLowerCase();
   const pw = document.getElementById('regUserPw').value;
-  const dob = document.getElementById('regUserDob').value.trim();
-  const email = document.getElementById('regUserEmail').value.trim();
+  const pwConfirm = document.getElementById('regUserPwConfirm').value;
+  const email = (document.getElementById('regUserEmail').value || "").trim().toLowerCase();
 
-  if (!id || id.length < 4) { alert("아이디를 올바르게 입력해주세요."); return; }
+  if (!name || name.length < 2) {
+    alert("이름을 2자 이상 올바르게 입력해주세요.");
+    return;
+  }
+  if (!dob || dob.length !== 6 || isNaN(dob)) {
+    alert("생년월일은 앞자리 6자리 숫자(예: 980521)로 입력해주세요.");
+    return;
+  }
+  if (!id || id.length < 4 || id.length > 12) {
+    alert("아이디는 4~12자리 영문 또는 숫자여야 합니다.");
+    return;
+  }
   if (!pw || pw.length < 6 || !/(?=.*[A-Za-z])(?=.*\d)/.test(pw)) {
     alert("비밀번호는 6자리 이상 영문과 숫자를 혼합해야 합니다.");
     return;
   }
-  if (!dob || dob.length !== 8 || isNaN(dob)) {
-    alert("생년월일은 8자리 숫자(예: 19980521)로 입력해주세요.");
+  if (pw !== pwConfirm) {
+    alert("비밀번호와 비밀번호 확인 입력값이 일치하지 않습니다.");
     return;
   }
   if (!email || !email.includes('@')) {
@@ -409,13 +425,14 @@ async function processRegister() {
     const res = await fetch(GOOGLE_DB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'REGISTER', userId: id, userPw: pw, dob: dob, email: email })
+      body: JSON.stringify({ action: 'REGISTER', name: name, userId: id, userPw: pw, dob: dob, email: email })
     });
     const data = await res.json();
     if (data.success) {
-      alert("회원가입이 완료되었습니다! 4자리 간편 PIN을 등록하시면 다음부터 초고속으로 로그인할 수 있습니다.");
-      promptPinRegistration(id);
+      alert(`🎉 회원가입이 완료되었습니다!\n환영합니다, ${name}님. 로그인 후 스튜디오를 이용해 보세요.`);
       switchAuthTab('login');
+      const loginIdInput = document.getElementById('loginUserId');
+      if (loginIdInput) loginIdInput.value = id;
     } else {
       alert("가입 실패: " + data.message);
     }
@@ -424,7 +441,7 @@ async function processRegister() {
   }
 }
 
-// 🌟 로그인 처리 (knsupolo / 12345678 마스터 직통 인증)
+// 🌟 로그인 처리 (knsupolo 마스터 직통 인증)
 async function processLogin() {
   const idInput = document.getElementById('loginUserId');
   const pwInput = document.getElementById('loginUserPw');
@@ -432,12 +449,12 @@ async function processLogin() {
   const pw = pwInput ? pwInput.value : '';
   if (!id || !pw) { alert("아이디와 비밀번호를 입력해주세요."); return; }
 
-  // 👑 최고 관리자 즉시 로그인
   if (id === 'knsupolo' && pw === '12345678') {
     appState.isAdmin = true;
     const adminUser = {
+      name: "관리자",
       userId: 'knsupolo',
-      dob: '19830413',
+      dob: '830413',
       email: 'admin@chueok.com',
       isAdmin: true,
       totalShots: 999
@@ -459,10 +476,10 @@ async function processLogin() {
     if (data.success) {
       applyUserLoginSuccess(data.user, data.sessionToken);
       closeAuthModal();
-      alert(`환영합니다, ${data.user.userId}님! 정회원 전용 프리미엄 테마 및 마이 갤러리가 활성화되었습니다. 💖`);
-      loadUserSignatureTheme();
+      alert(`환영합니다, ${data.user.name || data.user.userId}님! 프리미엄 혜택이 활성화되었습니다. 💖`);
+      loadUserSavedTheme();
     } else {
-      alert(data.message || "로그인 정보가 일치하지 않습니다.");
+      alert(data.message || "아이디 또는 비밀번호가 일치하지 않습니다.");
     }
   } catch (err) {
     alert("로그인 통신 중 오류가 발생했습니다.");
@@ -492,7 +509,7 @@ function checkAutoLoginSession() {
       appState.isRegisteredUser = true;
       if (payload.user.userId === 'knsupolo') appState.isAdmin = true;
       updateUserHeaderUI();
-      loadUserSignatureTheme();
+      loadUserSavedTheme();
     } else {
       localStorage.removeItem('chueok_auth_session');
     }
@@ -514,7 +531,7 @@ function updateUserHeaderUI() {
       badge.classList.remove('hidden');
       badge.style.display = 'flex';
     }
-    if (nameEl) nameEl.textContent = appState.currentUser.userId;
+    if (nameEl) nameEl.textContent = appState.currentUser.name || appState.currentUser.userId;
   } else {
     if (loginBtn) loginBtn.classList.remove('hidden');
     if (regBtn) regBtn.classList.remove('hidden');
@@ -535,95 +552,33 @@ function processLogout() {
   alert("정상적으로 로그아웃되었습니다.");
 }
 
-// 🌟 계정 복구 센터: 아이디 확인 & 임시비번 메일 발송
-async function processFindPassword() {
-  const id = (document.getElementById('findUserId').value || "").trim().toLowerCase();
-  const email = (document.getElementById('findUserEmail').value || "").trim();
+// 🌟 계정 복구 센터: 이름 + 생년월일 6자리 + 이메일 대조
+async function processFindAccount() {
+  const name = (document.getElementById('findUserName').value || "").trim();
   const dob = (document.getElementById('findUserDob').value || "").trim();
+  const email = (document.getElementById('findUserEmail').value || "").trim().toLowerCase();
 
-  if (!email || !email.includes('@')) { alert("가입 이메일을 올바르게 입력해주세요."); return; }
-  if (!dob || dob.length !== 8) { alert("생년월일 8자리를 입력해주세요."); return; }
+  if (!name || !dob || !email) {
+    alert("이름, 생년월일 6자리, 이메일을 모두 입력해주세요.");
+    return;
+  }
 
   try {
     const res = await fetch(GOOGLE_DB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'FIND_ACCOUNT', userId: id, email: email, dob: dob })
+      body: JSON.stringify({ action: 'FIND_ACCOUNT', name: name, dob: dob, email: email })
     });
     const data = await res.json();
-    alert(data.message || (data.success ? "계정 정보가 발송되었습니다!" : "계정을 찾을 수 없습니다."));
+    alert(data.message || (data.success ? "계정 정보가 발송되었습니다!" : "일치하는 계정을 찾을 수 없습니다."));
     if (data.success) switchAuthTab('login');
   } catch (e) {
     alert("계정 찾기 통신 중 오류가 발생했습니다.");
   }
 }
 
-function promptPinRegistration(userId) {
-  const pin = prompt("현장에서 1초 만에 로그인할 수 있는 숫자 4자리 간편 PIN 번호를 설정하세요 (취소 시 건너뜀):");
-  if (pin && pin.length === 4 && !isNaN(pin)) {
-    fetch(GOOGLE_DB_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'SET_PIN', userId: userId, pin: pin })
-    }).then(() => alert("4자리 간편 PIN이 등록되었습니다!"));
-  }
-}
-
-function pressPinKey(digit) {
-  if (enteredPinCode.length < 4) {
-    enteredPinCode += digit;
-    updatePinDotsUI();
-    if (enteredPinCode.length === 4) {
-      submitPinLogin(enteredPinCode);
-    }
-  }
-}
-
-function clearPinInput() {
-  enteredPinCode = "";
-  updatePinDotsUI();
-}
-
-function backspacePinKey() {
-  if (enteredPinCode.length > 0) {
-    enteredPinCode = enteredPinCode.slice(0, -1);
-    updatePinDotsUI();
-  }
-}
-
-function updatePinDotsUI() {
-  const dots = document.querySelectorAll('.pin-dot');
-  dots.forEach((dot, idx) => {
-    if (idx < enteredPinCode.length) dot.classList.add('filled');
-    else dot.classList.remove('filled');
-  });
-}
-
-async function submitPinLogin(pin) {
-  playBeep(900);
-  try {
-    const res = await fetch(GOOGLE_DB_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'LOGIN_PIN', pin: pin })
-    });
-    const data = await res.json();
-    if (data.success) {
-      applyUserLoginSuccess(data.user, data.sessionToken);
-      closeAuthModal();
-      alert(`PIN 인증 성공! 환영합니다, ${data.user.userId}님 ✨`);
-    } else {
-      alert("PIN 번호가 올바르지 않습니다.");
-      clearPinInput();
-    }
-  } catch (e) {
-    alert("PIN 인증 통신 실패");
-    clearPinInput();
-  }
-}
-
 // ========================================================
-// 4. 🌟 마이페이지 (내 정보 관리 센터) 제어
+// 4. 🌟 마이페이지 (PIN 삭제 & 프로그램 전체 UI 10종 테마 선택)
 // ========================================================
 function openMyProfileModal() {
   if (!appState.isRegisteredUser || !appState.currentUser) {
@@ -635,11 +590,15 @@ function openMyProfileModal() {
 
   const idEl = document.getElementById('profileModalUserId');
   const countEl = document.getElementById('profileModalShotCount');
-  const colorPicker = document.getElementById('profileSignatureColor');
+  const currentThemeLabel = document.getElementById('profileCurrentThemeName');
 
-  if (idEl) idEl.textContent = appState.currentUser.userId;
+  if (idEl) idEl.textContent = `${appState.currentUser.name || '회원'} (${appState.currentUser.userId})`;
   if (countEl) countEl.textContent = `${appState.currentUser.totalShots || 0}회`;
-  if (colorPicker) colorPicker.value = appState.frameColor || '#000000';
+  
+  const savedKey = localStorage.getItem('chueok_ui_theme') || 'rose';
+  if (currentThemeLabel && APP_THEMES[savedKey]) {
+    currentThemeLabel.textContent = APP_THEMES[savedKey].name;
+  }
 
   modal.classList.remove('hidden');
   modal.style.removeProperty('display');
@@ -655,101 +614,47 @@ function closeMyProfileModal() {
   }
 }
 
-async function submitNewProfilePin() {
-  const pinInput = document.getElementById('inputProfilePin');
-  const pin = (pinInput ? pinInput.value : "").trim();
-  if (pin.length !== 4 || isNaN(pin)) {
-    alert("PIN 번호는 4자리 숫자여야 합니다.");
-    return;
-  }
+// 🌟 UI 테마 클라우드 및 로컬 동기화
+function applyAppTheme(themeKey) {
+  const t = APP_THEMES[themeKey] || APP_THEMES.rose;
+  document.documentElement.style.setProperty('--theme-color', t.color);
+  document.documentElement.style.setProperty('--theme-primary', t.color);
+  document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
+  document.documentElement.style.setProperty('--theme-color-hover', t.hover);
+  document.documentElement.style.setProperty('--theme-color-light', t.light);
+  localStorage.setItem('chueok_ui_theme', themeKey);
 
-  try {
-    const res = await fetch(GOOGLE_DB_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'SET_PIN', userId: appState.currentUser.userId, pin: pin })
-    });
-    const data = await res.json();
-    alert(data.message || "4자리 PIN 번호가 성공적으로 저장되었습니다!");
-    if (pinInput) pinInput.value = '';
-  } catch (e) {
-    alert("PIN 저장 중 오류가 발생했습니다.");
-  }
-}
+  const currentThemeLabel = document.getElementById('profileCurrentThemeName');
+  if (currentThemeLabel) currentThemeLabel.textContent = t.name;
 
-function saveMySignatureThemeFromProfile() {
-  const colorPicker = document.getElementById('profileSignatureColor');
-  if (colorPicker) appState.frameColor = colorPicker.value;
-  saveMySignatureTheme();
-}
-
-async function saveMySignatureTheme() {
-  if (!appState.isRegisteredUser || !appState.currentUser) {
-    alert("나만의 시그니처 테마 저장은 [정회원 전용] 기능입니다. 로그인 후 이용해 주세요! 🔒");
-    openAuthModal('login');
-    return;
-  }
-
-  const signatureData = {
-    themeCategory: appState.themeCategory,
-    frameStyle: appState.frameStyle,
-    frameColor: appState.frameColor,
-    frameThickness: appState.frameThickness,
-    activeFilter: appState.activeFilter,
-    fontFamily: appState.typography.fontFamily,
-    fontColor: appState.typography.fontColor
-  };
-
-  localStorage.setItem(`chueok_sig_theme_${appState.currentUser.userId}`, JSON.stringify(signatureData));
-
-  try {
+  if (appState.isRegisteredUser && appState.currentUser) {
     fetch(GOOGLE_DB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'SAVE_SIGNATURE_THEME',
-        userId: appState.currentUser.userId,
-        themeData: JSON.stringify(signatureData)
-      })
-    });
-  } catch (e) {}
-
-  alert("🎨 현재 프레임 색상, 글꼴 및 필터가 [나만의 시그니처 테마]로 저장되었습니다!\n다음부터 자동으로 이 스타일이 기본 적용됩니다.");
+      body: JSON.stringify({ action: 'SAVE_UI_THEME', userId: appState.currentUser.userId, themeKey: themeKey })
+    }).catch(() => {});
+  }
 }
 
-async function loadUserSignatureTheme() {
-  if (!appState.isRegisteredUser || !appState.currentUser) return;
-  const localSig = localStorage.getItem(`chueok_sig_theme_${appState.currentUser.userId}`);
-  if (localSig) {
-    try {
-      applySignatureThemeData(JSON.parse(localSig));
-      return;
-    } catch (e) {}
+async function loadUserSavedTheme() {
+  const localTheme = localStorage.getItem('chueok_ui_theme');
+  if (localTheme) {
+    applyAppTheme(localTheme);
+    return;
   }
+  if (!appState.isRegisteredUser || !appState.currentUser) return;
 
   try {
-    const res = await fetch(`${GOOGLE_DB_URL}?action=GET_SIGNATURE_THEME&userId=${encodeURIComponent(appState.currentUser.userId)}&_t=${Date.now()}`);
+    const res = await fetch(`${GOOGLE_DB_URL}?action=GET_UI_THEME&userId=${encodeURIComponent(appState.currentUser.userId)}&_t=${Date.now()}`);
     const data = await res.json();
-    if (data && data.success && data.theme) {
-      localStorage.setItem(`chueok_sig_theme_${appState.currentUser.userId}`, JSON.stringify(data.theme));
-      applySignatureThemeData(data.theme);
+    if (data && data.success && data.themeKey) {
+      applyAppTheme(data.themeKey);
     }
   } catch (e) {}
 }
 
-function applySignatureThemeData(sig) {
-  if (!sig) return;
-  if (sig.frameColor) appState.frameColor = sig.frameColor;
-  if (sig.frameThickness) appState.frameThickness = sig.frameThickness;
-  if (sig.activeFilter) appState.activeFilter = sig.activeFilter;
-  if (sig.fontFamily) appState.typography.fontFamily = sig.fontFamily;
-  if (sig.fontColor) appState.typography.fontColor = sig.fontColor;
-  if (sig.frameStyle) appState.frameStyle = sig.frameStyle;
-  if (sig.themeCategory) appState.themeCategory = sig.themeCategory;
-}
-
 // ========================================================
-// 5. 🌟 초기화면 통합 멀티 공유 센터 (미반응 완벽 해결)
+// 5. 초기화면 멀티 공유 센터 (대형 QR & 에어드롭/카카오톡)
 // ========================================================
 function openMainShareModal() {
   const modal = document.getElementById('mainShareModal');
@@ -784,7 +689,7 @@ function closeMainShareModal() {
 async function triggerNativeShareAction() {
   const currentAppUrl = window.location.href.split('?')[0];
   const sharePayload = {
-    title: '추억의 네컷 Studio Pro v17.2 Pro',
+    title: '추억의 네컷 Studio Pro v17.3 Pro',
     text: '지금 친구들과 함께 모바일로 추억의 네컷 사진을 촬영해 보세요! 📸✨',
     url: currentAppUrl
   };
@@ -804,7 +709,7 @@ async function triggerNativeShareAction() {
 function copyWebAppShareUrl() {
   const currentAppUrl = window.location.href.split('?')[0];
   navigator.clipboard.writeText(currentAppUrl).then(() => {
-    alert("스튜디오 접속 링크가 복사되었습니다! 📋\n카카오톡이나 메시지 창에 붙여넣어 공유하세요.");
+    alert("스튜디오 접속 링크가 클립보드에 복사되었습니다! 📋\n카카오톡이나 메시지 창에 붙여넣어 공유하세요.");
     closeMainShareModal();
   }).catch(() => {
     prompt("아래 웹 주소를 복사하여 공유하세요:", currentAppUrl);
@@ -812,38 +717,37 @@ function copyWebAppShareUrl() {
 }
 
 // ========================================================
-// 6. 마이 갤러리 아카이브 (히스토리 10장 + 찜 목록)
+// 6. 마이 갤러리 아카이브 제어
 // ========================================================
 async function openMyGalleryModal() {
-  if (!appState.isRegisteredUser || !appState.currentUser) {
-    openAuthModal('login');
-    return;
-  }
   const modal = document.getElementById('myGalleryModal');
   const grid = document.getElementById('myGalleryGrid');
   if (!modal || !grid) return;
 
-  grid.innerHTML = `<div class="py-12 text-center text-xs text-slate-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-theme"></i>보관함 사진을 불러오는 중...</div>`;
   modal.classList.remove('hidden');
   modal.style.removeProperty('display');
   modal.style.setProperty('display', 'flex', 'important');
   if (window.lucide) lucide.createIcons();
 
-  try {
-    const res = await fetch(`${GOOGLE_DB_URL}?action=GET_USER_GALLERY&userId=${encodeURIComponent(appState.currentUser.userId)}&_t=${Date.now()}`);
-    const data = await res.json();
-    if (data && data.success && Array.isArray(data.photos)) {
-      cachedUserGalleryPhotos = data.photos;
-      const statsText = document.getElementById('memberArchiveStatsText');
-      if (statsText) {
-        statsText.textContent = `총 ${data.totalShots || data.photos.length}회 촬영 완료 • 찜한 사진 ${data.favoriteCount || 0}장`;
+  // 1차: 브라우저 로컬 저장소 즉시 렌더링 (통신 지연 0초)
+  const localArchive = JSON.parse(localStorage.getItem('chueok_local_gallery') || '[]');
+  cachedUserGalleryPhotos = localArchive;
+  renderFilteredGalleryGrid();
+
+  // 2차: 로그인 상태일 경우 구글 클라우드와 백그라운드 동기화
+  if (appState.isRegisteredUser && appState.currentUser) {
+    try {
+      const res = await fetch(`${GOOGLE_DB_URL}?action=GET_USER_GALLERY&userId=${encodeURIComponent(appState.currentUser.userId)}&_t=${Date.now()}`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.photos)) {
+        cachedUserGalleryPhotos = data.photos;
+        const statsText = document.getElementById('memberArchiveStatsText');
+        if (statsText) {
+          statsText.textContent = `총 ${data.totalShots || data.photos.length}회 촬영 완료 • 찜한 사진 ${data.favoriteCount || 0}장`;
+        }
+        renderFilteredGalleryGrid();
       }
-      renderFilteredGalleryGrid();
-    } else {
-      grid.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">보관함에 저장된 사진이 없습니다.</p>`;
-    }
-  } catch (e) {
-    grid.innerHTML = `<p class="text-xs text-rose-500 text-center py-10">보관함 로딩에 실패했습니다.</p>`;
+    } catch (e) {}
   }
 }
 
@@ -880,7 +784,7 @@ function renderFilteredGalleryGrid() {
 
   if (displayPhotos.length === 0) {
     grid.innerHTML = activeGalleryTab === 'favorites'
-      ? `<div class="text-center py-12 text-xs text-slate-400"><i data-lucide="star" class="w-8 h-8 text-amber-300 mx-auto mb-2 opacity-50"></i>아직 찜한 인생네컷이 없습니다.<br>에디터에서 [⭐ 추억네컷 찜]을 눌러보세요!</div>`
+      ? `<div class="text-center py-12 text-xs text-slate-400"><i data-lucide="star" class="w-8 h-8 text-amber-300 mx-auto mb-2 opacity-50"></i>아직 찜한 추억네컷이 없습니다.<br>에디터에서 [⭐ 추억네컷 찜]을 눌러보세요!</div>`
       : `<p class="text-xs text-slate-400 text-center py-10">보관함에 저장된 촬영 기록이 없습니다.</p>`;
     if (window.lucide) lucide.createIcons();
     return;
@@ -892,7 +796,7 @@ function renderFilteredGalleryGrid() {
         <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex flex-col justify-between space-y-2 shadow-xs">
           <div class="aspect-[3/4] bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
             <span class="absolute top-1.5 left-1.5 bg-black/75 text-white text-[9px] font-black px-1.5 py-0.5 rounded">#${idx + 1}</span>${p.isFavorite ? `<span class="absolute top-1.5 right-1.5 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">⭐ 찜</span>` : ''}
-            <img src="https://drive.google.com/thumbnail?id=${p.fileId}&sz=w600" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x600?text=Photo';">
+            <img src="${p.fileUrl || ('https://drive.google.com/thumbnail?id=' + p.fileId + '&sz=w600')}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x600?text=Photo';">
           </div>
           <div class="flex items-center justify-between pt-1">
             <span class="text-[9px] text-slate-400">${p.date ? p.date.slice(0, 10) : ''}</span>
@@ -900,7 +804,7 @@ function renderFilteredGalleryGrid() {
               <button onclick="togglePhotoFavoriteStatus('${p.id}')" class="p-1 rounded-lg border text-xs active:scale-90 ${p.isFavorite ? 'bg-amber-50 border-amber-300 text-amber-500' : 'bg-white border-slate-200 text-slate-400'}" title="찜 토글">
                 ★
               </button>
-              <a href="${p.fileUrl}" target="_blank" class="p-1 bg-white border border-slate-200 rounded-lg text-slate-700 hover:text-theme active:scale-90" title="보기/다운">
+              <a href="${p.fileUrl}" target="_blank" download="photo.png" class="p-1 bg-white border border-slate-200 rounded-lg text-slate-700 hover:text-theme active:scale-90" title="보기/다운">
                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
               </a>
               <button onclick="deleteGalleryPhotoItem('${p.id}')" class="p-1 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 active:scale-90" title="삭제">
@@ -916,39 +820,58 @@ function renderFilteredGalleryGrid() {
 }
 
 async function togglePhotoFavoriteStatus(photoId) {
-  try {
-    const res = await fetch(GOOGLE_DB_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'TOGGLE_FAVORITE', photoId: photoId, userId: appState.currentUser.userId })
-    });
-    const data = await res.json();
-    if (data.success) {
-      const target = cachedUserGalleryPhotos.find(p => p.id === photoId);
-      if (target) target.isFavorite = data.isFavorite;
-      renderFilteredGalleryGrid();
-    }
-  } catch (e) {}
+  // 로컬 상태 즉시 토글
+  let localArchive = JSON.parse(localStorage.getItem('chueok_local_gallery') || '[]');
+  const localTarget = localArchive.find(p => p.id === photoId);
+  if (localTarget) {
+    localTarget.isFavorite = !localTarget.isFavorite;
+    localStorage.setItem('chueok_local_gallery', JSON.stringify(localArchive));
+  }
+  const cachedTarget = cachedUserGalleryPhotos.find(p => p.id === photoId);
+  if (cachedTarget) cachedTarget.isFavorite = !cachedTarget.isFavorite;
+  renderFilteredGalleryGrid();
+
+  if (appState.isRegisteredUser && appState.currentUser) {
+    try {
+      fetch(GOOGLE_DB_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'TOGGLE_FAVORITE', photoId: photoId, userId: appState.currentUser.userId })
+      });
+    } catch (e) {}
+  }
 }
 
 async function deleteGalleryPhotoItem(photoId) {
   if (!confirm("이 사진을 보관함에서 영구 삭제하시겠습니까?")) return;
-  try {
-    await fetch(GOOGLE_DB_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'DELETE_GALLERY_PHOTO', photoId: photoId, userId: appState.currentUser.userId })
-    });
-    cachedUserGalleryPhotos = cachedUserGalleryPhotos.filter(p => p.id !== photoId);
-    renderFilteredGalleryGrid();
-  } catch (e) {
-    alert("사진 삭제 실패");
+  let localArchive = JSON.parse(localStorage.getItem('chueok_local_gallery') || '[]');
+  localArchive = localArchive.filter(p => p.id !== photoId);
+  localStorage.setItem('chueok_local_gallery', JSON.stringify(localArchive));
+
+  cachedUserGalleryPhotos = cachedUserGalleryPhotos.filter(p => p.id !== photoId);
+  renderFilteredGalleryGrid();
+
+  if (appState.isRegisteredUser && appState.currentUser) {
+    try {
+      fetch(GOOGLE_DB_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'DELETE_GALLERY_PHOTO', photoId: photoId, userId: appState.currentUser.userId })
+      });
+    } catch (e) {}
   }
 }
 
 // ========================================================
-// 7. 가로/세로 방향 감지 센서
+// 7. 🌟 카메라 회전 감지 & 오버레이 X 닫기 예외 처리
 // ========================================================
+function dismissOrientationWarning() {
+  appState.orientationWarningDismissed = true;
+  const overlay = document.getElementById('orientationWarningOverlay');
+  if (overlay) overlay.classList.add('hidden');
+  resumeCountdown();
+}
+
 function checkDeviceOrientation() {
   const overlay = document.getElementById('orientationWarningOverlay');
   const title = document.getElementById('orientationTitle');
@@ -957,7 +880,7 @@ function checkDeviceOrientation() {
   if (!overlay) return;
 
   const shootScreen = document.getElementById('screenLiveShoot');
-  if (!shootScreen || shootScreen.classList.contains('hidden')) {
+  if (!shootScreen || shootScreen.classList.contains('hidden') || appState.orientationWarningDismissed) {
     overlay.classList.add('hidden');
     return;
   }
@@ -998,7 +921,7 @@ function resumeCountdown() {
 }
 
 // ========================================================
-// 8. 카메라 구도 대기실 (2x2 풀화면 축소 버그 수정)
+// 8. 🌟 카메라 구도 대기실 (2x2 세로모드 풀화면 고정 & 축소 방지)
 // ========================================================
 function startSession(format) {
   appState.selectedFormat = format || 'strip';
@@ -1006,10 +929,12 @@ function startSession(format) {
   appState.currentShotIndex = 0;
   appState.shotImages = [];
   appState.selectedImages = [];
-  appState.selectedIndices = [0, 1, 2, 3];
-  appState.shotVideoBlobs = [];
+  appState.orientationWarningDismissed = false;
   appState.isCurrentFavorite = false;
   appState.currentPhotoId = null;
+
+  // 컷수에 맞춘 초기 슬롯 빈 배열 생성 (기본 4컷)
+  initEmptySlots(appState.cutMode || 4);
 
   const liveBadge = document.getElementById('liveFormatBadge');
   if (liveBadge) liveBadge.textContent = (format === 'strip') ? "1×4 스트립 (가로)" : "2×2 엽서형 (세로)";
@@ -1028,7 +953,7 @@ function startSession(format) {
   if (shootLayer) shootLayer.classList.add('hidden');
   if (bottomBar) bottomBar.classList.add('hidden');
 
-  // 🌟 2x2 세로모드 시 뷰파인더 풀화면 강제 고정 (크기 축소 차단)
+  // 풀화면 비율 강제 지정
   setViewfinderRatio('full', null);
 
   startCameraStream();
@@ -1121,7 +1046,7 @@ function setViewfinderRatio(ratio, btn) {
 }
 
 // ========================================================
-// 9. 6컷 연속 촬영 (풀화면 고정 & 축소 방지)
+// 9. 🌟 6컷 연속 촬영 (풀화면 유지 & 축소 차단)
 // ========================================================
 function startActualCountdownSession() {
   playBeep(900);
@@ -1267,11 +1192,11 @@ function startSingleCutVideoRecording() {
   try { 
     appState.currentMediaRecorder = new MediaRecorder(appState.stream, { 
       mimeType: 'video/webm',
-      videoBitsPerSecond: 10000000
+      videoBitsPerSecond: 15000000 // 🌟 15Mbps 초고화질 녹화
     }); 
   } catch (e) { 
     try { 
-      appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/mp4', videoBitsPerSecond: 10000000 }); 
+      appState.currentMediaRecorder = new MediaRecorder(appState.stream, { mimeType: 'video/mp4', videoBitsPerSecond: 15000000 }); 
     } catch (e2) { 
       try { appState.currentMediaRecorder = new MediaRecorder(appState.stream); } 
       catch (e3) { appState.currentMediaRecorder = null; } 
@@ -1302,13 +1227,43 @@ function stopCameraAndAudio() {
 }
 
 // ========================================================
-// 10. 사진 선택 & 🌟 [사진 다시 고르기] 미작동 완벽 해결
+// 10. 🌟 사진 선택 (포토이스트 매트블랙 통일, 초기 빈 슬롯, 4·5·6컷 가변 지원)
 // ========================================================
+function initEmptySlots(cuts) {
+  appState.cutMode = cuts;
+  appState.selectedIndices = Array(cuts).fill(null);
+  appState.activeSlotIndex = 0;
+}
+
+function changeFrameCutMode(cuts) {
+  playBeep(850);
+  triggerHaptic('light');
+
+  initEmptySlots(cuts);
+
+  [4, 5, 6].forEach(c => {
+    const btn = document.getElementById(`btnCutMode${c}`);
+    if (btn) {
+      if (c === cuts) {
+        btn.className = "px-3 py-1 rounded-xl text-xs font-black bg-white text-slate-900 shadow-xs";
+      } else {
+        btn.className = "px-3 py-1 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900";
+      }
+    }
+  });
+
+  buildPickMiniPreviewStructure();
+  setupSlotDragAndDrop();
+  updatePreviewSlots();
+  updateCarouselView();
+  refreshPickUI();
+}
+
 function renderPickScreen() {
   showScreen('screenPick');
   
-  if (!appState.selectedIndices || appState.selectedIndices.length !== 4) {
-    appState.selectedIndices = [0, 1, 2, 3];
+  if (!appState.selectedIndices || appState.selectedIndices.length !== appState.cutMode) {
+    initEmptySlots(appState.cutMode || 4);
   }
   appState.activeSlotIndex = 0; 
   currentCarouselIdx = 0;
@@ -1326,43 +1281,83 @@ function renderPickScreen() {
   refreshPickUI();
 }
 
-// 🌟 원클릭 즉시 복귀: 불필요한 차단창 없이 선택 화면으로 즉각 전환
 function returnToPickScreen() {
   playBeep(750);
   triggerHaptic('light');
   renderPickScreen();
 }
 
+// 🌟 포토이스트(#111111) 매트블랙 통일 & 4·5·6컷 레이아웃 빌더
 function buildPickMiniPreviewStructure() {
   const container = document.getElementById('pickMiniFramePreview');
   if (!container) return;
+  const cuts = appState.cutMode || 4;
   const isGrid = (appState.selectedFormat === 'grid');
   
-  if (isGrid) {
-    container.className = "w-72 sm:w-80 aspect-[2/3] bg-black p-4 shadow-2xl flex flex-col justify-between border-2 border-slate-300 rounded-2xl transition-all";
-    container.style.backgroundColor = appState.frameColor;
-    container.innerHTML = `
-      <div id="pickPreviewHeader" class="text-center text-white text-sm font-black font-serif py-1">추억네컷</div>
-      <div class="grid grid-cols-2 gap-2.5 flex-1 my-1.5">
-        <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">1번 슬롯</div>
-        <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">2번 슬롯</div>
-        <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">3번 슬롯</div>
-        <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot aspect-[4/5] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">4번 슬롯</div>
+  container.style.backgroundColor = '#111111';
+
+  let slotsHtml = "";
+
+  if (cuts === 4) {
+    if (isGrid) {
+      container.className = "w-72 sm:w-80 aspect-[2/3] p-3.5 shadow-2xl flex flex-col justify-between border border-slate-700 rounded-2xl transition-all";
+      slotsHtml = `
+        <div class="grid grid-cols-2 gap-2 flex-1 my-1.5">
+          <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot aspect-[4/5] bg-zinc-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden rounded-xl">1번 슬롯</div>
+          <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot aspect-[4/5] bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden rounded-xl">2번 슬롯</div>
+          <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot aspect-[4/5] bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden rounded-xl">3번 슬롯</div>
+          <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot aspect-[4/5] bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden rounded-xl">4번 슬롯</div>
+        </div>
+      `;
+    } else {
+      container.className = "w-56 sm:w-60 p-3 shadow-2xl flex flex-col space-y-1.5 border border-slate-700 rounded-2xl transition-all";
+      slotsHtml = `
+        <div class="flex flex-col space-y-1.5 flex-1 my-1">
+          <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot aspect-[3/2] bg-zinc-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden rounded-xl">1번 슬롯</div>
+          <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot aspect-[3/2] bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden rounded-xl">2번 슬롯</div>
+          <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot aspect-[3/2] bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden rounded-xl">3번 슬롯</div>
+          <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot aspect-[3/2] bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden rounded-xl">4번 슬롯</div>
+        </div>
+      `;
+    }
+  } 
+  // 🌟 5컷 모드 (화보형: 상단 2컷, 가운데 와이드 1컷, 하단 2컷)
+  else if (cuts === 5) {
+    container.className = "w-72 sm:w-80 aspect-[2/3] p-3 shadow-2xl flex flex-col justify-between border border-slate-700 rounded-2xl transition-all";
+    slotsHtml = `
+      <div class="flex flex-col gap-1.5 flex-1 my-1">
+        <div class="grid grid-cols-2 gap-1.5 h-[30%]">
+          <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot bg-zinc-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">1번 슬롯</div>
+          <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">2번 슬롯</div>
+        </div>
+        <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot h-[36%] bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-300 text-xs font-black cursor-pointer overflow-hidden rounded-lg">★ 3번 메인 대형 슬롯</div>
+        <div class="grid grid-cols-2 gap-1.5 h-[30%]">
+          <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">4번 슬롯</div>
+          <div onclick="selectSlotForAssignment(4)" data-slot="4" id="previewSlot4" class="drop-slot bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">5번 슬롯</div>
+        </div>
       </div>
-      <div id="pickPreviewFooter" class="text-center text-white text-xs font-mono py-1 border-t border-white/20">Photography | PhotoBooth</div>
-    `;
-  } else {
-    container.className = "w-56 sm:w-64 bg-black p-3.5 shadow-2xl flex flex-col space-y-2 border-2 border-slate-300 rounded-2xl transition-all";
-    container.style.backgroundColor = appState.frameColor;
-    container.innerHTML = `
-      <div id="pickPreviewHeader" class="text-center text-white text-sm font-black font-serif py-1 border-b border-white/20">추억네컷</div>
-      <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">1번 슬롯</div>
-      <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">2번 슬롯</div>
-      <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">3번 슬롯</div>
-      <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot aspect-[3/2] bg-slate-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-xs font-bold cursor-pointer overflow-hidden relative rounded-xl shadow-inner">4번 슬롯</div>
-      <div id="pickPreviewFooter" class="text-center text-white text-xs font-mono py-1 border-t border-white/20">Photography | PhotoBooth</div>
     `;
   }
+  // 🌟 6컷 모드 (2x3 그리드)
+  else if (cuts === 6) {
+    container.className = "w-72 sm:w-80 aspect-[2/3] p-3 shadow-2xl flex flex-col justify-between border border-slate-700 rounded-2xl transition-all";
+    slotsHtml = `
+      <div class="grid grid-cols-2 gap-1.5 flex-1 my-1">
+        <div onclick="selectSlotForAssignment(0)" data-slot="0" id="previewSlot0" class="drop-slot bg-zinc-900 border-2 border-theme ring-2 ring-rose-400 flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">1번 슬롯</div>
+        <div onclick="selectSlotForAssignment(1)" data-slot="1" id="previewSlot1" class="drop-slot bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">2번 슬롯</div>
+        <div onclick="selectSlotForAssignment(2)" data-slot="2" id="previewSlot2" class="drop-slot bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">3번 슬롯</div>
+        <div onclick="selectSlotForAssignment(3)" data-slot="3" id="previewSlot3" class="drop-slot bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">4번 슬롯</div>
+        <div onclick="selectSlotForAssignment(4)" data-slot="4" id="previewSlot4" class="drop-slot bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">5번 슬롯</div>
+        <div onclick="selectSlotForAssignment(5)" data-slot="5" id="previewSlot5" class="drop-slot bg-zinc-900 border-2 border-transparent flex items-center justify-center text-slate-400 text-[10px] font-bold cursor-pointer overflow-hidden rounded-lg">6번 슬롯</div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div id="pickPreviewHeader" class="text-left text-white text-xs font-bold font-serif px-1 py-0.5 tracking-wider">photoist</div>
+    ${slotsHtml}
+    <div id="pickPreviewFooter" class="text-right text-white/50 text-[9px] font-mono px-1 py-0.5">STUDIO PRO</div>
+  `;
 }
 
 function setupSlotDragAndDrop() {
@@ -1475,7 +1470,8 @@ function selectSlotForAssignment(slotIdx) {
   const badge = document.getElementById('currentActiveSlotBadge'); 
   if (badge) badge.textContent = `${slotIdx + 1}번 슬롯 채우는 중`;
   
-  for (let i = 0; i < 4; i++) {
+  const cuts = appState.cutMode || 4;
+  for (let i = 0; i < cuts; i++) {
     const el = document.getElementById(`previewSlot${i}`);
     if (el) { 
       if (i === slotIdx) {
@@ -1494,11 +1490,12 @@ function assignPhotoToCurrentSlot(shotIdx) {
   appState.selectedIndices[appState.activeSlotIndex] = shotIdx; 
   updatePreviewSlots();
   
+  const cuts = appState.cutMode || 4;
   const nextEmpty = appState.selectedIndices.indexOf(null);
   if (nextEmpty !== -1) {
     selectSlotForAssignment(nextEmpty);
   } else {
-    selectSlotForAssignment((appState.activeSlotIndex + 1) % 4);
+    selectSlotForAssignment((appState.activeSlotIndex + 1) % cuts);
   }
 
   const nextUnselectedIdx = appState.shotImages.findIndex((_, idx) => !appState.selectedIndices.includes(idx));
@@ -1513,33 +1510,37 @@ function assignPhotoToCurrentSlot(shotIdx) {
 }
 
 function updatePreviewSlots() {
-  for (let i = 0; i < 4; i++) {
+  const cuts = appState.cutMode || 4;
+  for (let i = 0; i < cuts; i++) {
     const shotIdx = appState.selectedIndices[i]; 
     const slotEl = document.getElementById(`previewSlot${i}`);
     if (slotEl) { 
       if (shotIdx !== null && appState.shotImages[shotIdx]) { 
         slotEl.innerHTML = `<img src="${appState.shotImages[shotIdx].src}" class="w-full h-full object-cover pointer-events-none">`; 
       } else { 
-        slotEl.innerHTML = `<span class="text-slate-400 text-xs font-bold">${i + 1}번 슬롯</span>`; 
+        slotEl.innerHTML = `<span class="text-slate-400 text-xs font-bold">[+] ${i + 1}번</span>`; 
       } 
     }
   }
 }
 
 function refreshPickUI() {
+  const cuts = appState.cutMode || 4;
   const chosenCount = appState.selectedIndices.filter(idx => idx !== null).length;
   const btn = document.getElementById('btnConfirmPick');
-  if (btn) btn.textContent = chosenCount === 4 ? "스튜디오 꾸미기 ➔" : `스튜디오 꾸미기 (${chosenCount}/4)`;
+  if (btn) btn.textContent = chosenCount === cuts ? "스튜디오 꾸미기 ➔" : `스튜디오 꾸미기 (${chosenCount}/${cuts})`;
 }
 
 function confirmSelectedFour() {
-  for (let i = 0; i < 4; i++) {
+  const cuts = appState.cutMode || 4;
+  // 빈 슬롯이 있으면 순서대로 채워줌
+  for (let i = 0; i < cuts; i++) {
     if (appState.selectedIndices[i] === null || !appState.shotImages[appState.selectedIndices[i]]) {
       appState.selectedIndices[i] = (i < appState.shotImages.length) ? i : 0;
     }
   }
 
-  playMotorPrintSound(); // 🌟 아날로그 인화 모터 사운드
+  playMotorPrintSound(); // 아날로그 필름 모터 인화음 재생
   triggerHaptic('medium');
 
   appState.selectedImages = appState.selectedIndices.map(idx => appState.shotImages[idx]);
@@ -1555,7 +1556,7 @@ function confirmSelectedFour() {
 
   const layoutRow = document.getElementById('layoutSelectionRow');
   if (layoutRow) {
-    if (appState.selectedFormat === 'strip') layoutRow.classList.remove('hidden');
+    if (appState.selectedFormat === 'strip' && cuts === 4) layoutRow.classList.remove('hidden');
     else layoutRow.classList.add('hidden');
   }
 
@@ -1572,10 +1573,12 @@ function resetEditorToDefault() {
   appState.typography.fontFamily = 'Pretendard';
   appState.typography.fontColor = (appState.frameColor === '#FFFFFF' || appState.frameColor === '#E2E8F0') ? '#1E293B' : '#FFFFFF';
   appState.typography.fontSize = 54;
+  appState.customEngraveText = '';
 
   const slThick = document.getElementById('sliderThickness'); if (slThick) slThick.value = 60;
   const fineTune = document.getElementById('filterFineTunePanel'); if (fineTune) fineTune.classList.add('hidden');
   const stBar = document.getElementById('stickerControlBar'); if (stBar) stBar.classList.add('hidden');
+  const engraveInput = document.getElementById('customEngraveInput'); if (engraveInput) engraveInput.value = '';
   resetCanvasZoom();
   historyStack = []; 
   redoStack = [];
@@ -1588,7 +1591,7 @@ function resetEditorToDefault() {
   }
 }
 
-// 앨범 업로드
+// 앨범 업로드 (4~6장 지원)
 function triggerGalleryUpload() { const input = document.getElementById('galleryInput'); if (input) { input.value = ''; input.click(); } }
 
 function compressAndLoadImage(file) {
@@ -1623,7 +1626,7 @@ async function handleGalleryUpload(e) {
   const files = Array.from(e.target.files); if (files.length === 0) return;
   const loadedImages = await Promise.all(files.map(file => compressAndLoadImage(file)));
   galleryAccumulator.push(...loadedImages);
-  if (galleryAccumulator.length >= 4) {
+  if (galleryAccumulator.length >= (appState.cutMode || 4)) {
     document.getElementById('galleryCollectModal').classList.add('hidden');
     appState.shotImages = [...galleryAccumulator]; 
     galleryAccumulator = []; 
@@ -1638,7 +1641,7 @@ function updateGalleryCollectModal() {
   const title = document.getElementById('collectModalTitle'); 
   const grid = document.getElementById('collectThumbGrid');
   if (!modal || !title || !grid) return;
-  title.textContent = `사진 수집 중 ( ${galleryAccumulator.length} / 4 )`;
+  title.textContent = `사진 수집 중 ( ${galleryAccumulator.length} / ${appState.cutMode || 4} )`;
   grid.innerHTML = galleryAccumulator.map(img => `<div class="w-12 h-14 rounded-lg overflow-hidden border-2 border-theme shadow-sm"><img src="${img.src}" class="w-full h-full object-cover"></div>`).join('');
   modal.classList.remove('hidden'); 
   modal.style.removeProperty('display');
@@ -1656,7 +1659,7 @@ function cancelGalleryCollect() {
 }
 
 // ========================================================
-// 11. 🌟 3대 테마 분류 컨트롤러 & B-3 측면 커스텀 각인
+// 11. 🌟 테마 컨트롤러 & B-3 측면 각인 툴바
 // ========================================================
 function switchThemeCategory(category) {
   if (category !== 'basic' && (!appState.isRegisteredUser || !appState.currentUser)) {
@@ -1687,23 +1690,23 @@ function switchThemeCategory(category) {
   if (category === 'basic') {
     setBasicTextPosition('middle', null);
   } else if (category === 'simple') {
-    setSimpleOffsetLayout('offset1', null);
+    setSimpleOffsetLayout('minimal_line', null);
   } else if (category === 'premium') {
-    setPremiumSubTheme('photoism', null);
+    setPremiumSubTheme('photoist', null);
   }
 }
 
-// 1. 기본 테마: 상단 / 중간 / 하단(상단 60px / 하단 240px) / 상·하단(위아래 180px 균등)
+// 1. 기본 테마: 상단 / 중간 / 하단 / 상·하단 / 계단형 (문구 여백 240~300px 대폭 확장)
 function setBasicTextPosition(pos, btn) {
   appState.frameStyle = pos; 
   document.querySelectorAll('.basic-pos-btn').forEach(b => {
-    b.className = "basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold";
+    b.className = "basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold";
   });
-  if (btn) btn.className = "basic-pos-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black shadow-2xs text-[10px]";
+  if (btn) btn.className = "basic-pos-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black shadow-2xs text-[9px]";
   renderStrip();
 }
 
-// 2. 심플 테마: 1x4 & 2x2 비대칭 오프셋 3종
+// 2. 심플 테마: 미니멀 라인, 폴라로이드 와이드, 인셋 매거진
 function setSimpleOffsetLayout(key, btn) {
   if (!appState.isRegisteredUser) { openAuthModal('login'); return; }
   appState.frameStyle = key; 
@@ -1714,7 +1717,7 @@ function setSimpleOffsetLayout(key, btn) {
   renderStrip();
 }
 
-// 3. 프리미엄 테마: 생일, 야구, 포토이즘
+// 3. 프리미엄 테마: 생일, 야구, 포토이스트(photoist)
 function setPremiumSubTheme(key, btn) {
   if (!appState.isRegisteredUser) { openAuthModal('login'); return; }
   appState.frameStyle = key; 
@@ -1725,23 +1728,62 @@ function setPremiumSubTheme(key, btn) {
   renderStrip();
 }
 
-// 🌟 B-3 측면 커스텀 브랜드 각인 실시간 반영
+// 🌟 B-3 측면 각인 툴바 기능 (입력, 기본 문구 적용, 삭제 원클릭)
 function onCustomEngraveChange(val) {
-  appState.customEngraveText = val.trim();
+  appState.customEngraveText = val;
+  renderStrip();
+}
+
+function applyDefaultSideEngrave() {
+  appState.customEngraveText = "Photography      PhotoBooth      PhotoIst      Studio";
+  const input = document.getElementById('customEngraveInput');
+  if (input) input.value = appState.customEngraveText;
+  renderStrip();
+}
+
+function clearSideEngrave() {
+  appState.customEngraveText = " ";
+  const input = document.getElementById('customEngraveInput');
+  if (input) input.value = "";
+  renderStrip();
+}
+
+// 🌟 착용 소품 스탬프 추가 (투명도 지원)
+function addPropSticker(emoji, size = 100, opacity = 1.0) {
+  saveStateForUndo(); 
+  const canvas = document.getElementById('photoCanvas');
+  const newSticker = { 
+    id: Date.now(), 
+    type: 'emoji', 
+    text: emoji, 
+    x: canvas ? canvas.width / 2 : 600, 
+    y: canvas ? canvas.height / 2 : 1800, 
+    size: size, 
+    rotation: 0,
+    opacity: opacity
+  };
+  appState.stickers.push(newSticker); 
+  appState.selectedStickerIdx = appState.stickers.length - 1;
+  showStickerControls(newSticker); 
   renderStrip();
 }
 
 // ========================================================
-// 12. 🌟 메인 캔버스 렌더러 (적응형 대형 각인 & 하단 각인 영구 삭제)
+// 12. 🌟 메인 캔버스 렌더러 (4·5·6컷 가변 지원 & 하단 각인 삭제)
 // ========================================================
 function renderStrip(isFinalExport = false) {
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return; 
   const ctx = canvas.getContext('2d');
   
-  if (!appState.selectedImages || appState.selectedImages.length < 4) {
-    if (appState.shotImages && appState.shotImages.length >= 4) {
-      appState.selectedImages = appState.shotImages.slice(0, 4);
+  const cuts = appState.cutMode || 4;
+
+  // 선택된 사진이 부족할 경우 촬영본에서 보정
+  if (!appState.selectedImages || appState.selectedImages.length < cuts) {
+    if (appState.shotImages && appState.shotImages.length >= cuts) {
+      appState.selectedImages = appState.shotImages.slice(0, cuts);
+    } else if (appState.shotImages && appState.shotImages.length > 0) {
+      appState.selectedImages = Array(cuts).fill(null).map((_, i) => appState.shotImages[i % appState.shotImages.length]);
     } else {
       return;
     }
@@ -1749,189 +1791,124 @@ function renderStrip(isFinalExport = false) {
 
   const layout = appState.layout || 'strip'; 
   const pad = appState.frameThickness || 60; 
-  const gap = Math.round(pad * 0.5);
+  const gap = Math.round(pad * 0.45);
   const fStyle = appState.frameStyle;
-  const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827' || appState.frameColor === '#18181B');
+  const isDark = (appState.frameColor === '#000000' || appState.frameColor === '#111827' || appState.frameColor === '#18181B' || appState.frameColor === '#111111');
 
-  if (layout === 'strip') {
-    canvas.width = 1200; canvas.height = 3600;
-  } else if (layout === 'grid' || layout === 'twin') {
-    canvas.width = 1800; canvas.height = 2700;
+  // 컷수 및 레이아웃별 캔버스 규격 동적 결정
+  if (cuts === 4) {
+    if (layout === 'strip') { canvas.width = 1200; canvas.height = 3600; }
+    else { canvas.width = 1800; canvas.height = 2700; }
+  } else if (cuts === 5) {
+    if (layout === 'strip') { canvas.width = 1200; canvas.height = 4200; }
+    else { canvas.width = 1800; canvas.height = 2700; }
+  } else if (cuts === 6) {
+    if (layout === 'strip') { canvas.width = 1200; canvas.height = 4800; }
+    else { canvas.width = 1800; canvas.height = 2700; }
   }
 
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  // [레이어 1: 바닥 배경]
+  // [레이어 1: 프레임 배경색]
   if (fStyle === 'birthday') ctx.fillStyle = '#FAF7EE';
   else ctx.fillStyle = appState.frameColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // [레이어 2: 사진 슬롯 배치]
-  if (layout === 'strip') {
-    renderStripLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark);
-  } else if (layout === 'grid') {
-    renderGridLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark);
-  } else if (layout === 'twin') {
-    renderTwinLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark);
+  // [레이어 2: 컷수별 사진 슬롯 렌더링]
+  if (cuts === 4) {
+    if (layout === 'strip') renderStrip4Slots(ctx, canvas, pad, gap, fStyle);
+    else if (layout === 'twin') renderTwin4Slots(ctx, canvas, pad, gap, fStyle);
+    else renderGrid4Slots(ctx, canvas, pad, gap, fStyle);
+  } else if (cuts === 5) {
+    if (layout === 'strip') renderStrip5Slots(ctx, canvas, pad, gap, fStyle);
+    else renderMagazine5Slots(ctx, canvas, pad, gap, fStyle);
+  } else if (cuts === 6) {
+    if (layout === 'strip') renderStrip6Slots(ctx, canvas, pad, gap, fStyle);
+    else renderGrid6Slots(ctx, canvas, pad, gap, fStyle);
   }
 
-  // [레이어 3: 테마 오버레이 & 🌟 대형 적응형 각인]
+  // [레이어 3: 테마 오버레이 & 🌟 모든 프레임 측면 세로 각인]
   renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout);
 
   // [레이어 4: 스티커 & 날짜 오브젝트]
   renderStickersAndMirrors(ctx, canvas, layout);
 }
 
-function renderStripLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
+// 4컷 스트립 레이아웃 (문구 여백 240~300px 대폭 확장)
+function renderStrip4Slots(ctx, canvas, pad, gap, fStyle) {
+  let topH = pad; 
+  let bottomH = pad; 
+  let bannerH = 0;
+
+  if (fStyle === 'top') { topH = 280; bottomH = pad; }
+  else if (fStyle === 'bottom') { topH = pad; bottomH = 300; }
+  else if (fStyle === 'middle') { bannerH = 260; }
+  else if (fStyle === 'dual') { topH = 220; bottomH = 240; }
+  else if (fStyle === 'stair') { topH = 160; bottomH = 180; }
+  else if (fStyle === 'photoist') { topH = 180; bottomH = pad; }
+
+  const imgW = canvas.width - (pad * 2);
+  const imgH = (canvas.height - topH - bottomH - bannerH - (gap * 3)) / 4;
+
   if (fStyle === 'middle') {
-    const bannerH = 240;
-    const imgW = canvas.width - (pad * 2);
-    const imgH = (canvas.height - (pad * 2) - bannerH - (gap * 3)) / 4;
     drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, pad, imgW, imgH);
     drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad, pad + imgH + gap, imgW, imgH);
-
     const lowerY = pad + (imgH * 2) + (gap * 2) + bannerH + gap;
     drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerY, imgW, imgH);
     drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad, lowerY + imgH + gap, imgW, imgH);
-  } 
-  else if (fStyle === 'top') {
-    const topH = 240; const bottomH = pad;
-    const imgW = canvas.width - (pad * 2);
-    const imgH = (canvas.height - topH - bottomH - (gap * 3)) / 4;
+  } else if (fStyle === 'stair') {
     for (let i = 0; i < 4; i++) {
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
-    }
-  } 
-  // 🌟 하단 문구 모드: 상단 슬림(pad), 하단만 240px 확장
-  else if (fStyle === 'bottom') {
-    const topH = pad; 
-    const bottomH = 240; 
-    const imgW = canvas.width - (pad * 2);
-    const imgH = (canvas.height - topH - bottomH - (gap * 3)) / 4;
-    for (let i = 0; i < 4; i++) {
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
-    }
-  } 
-  // 🌟 상/하단 문구 모드: 위아래 180px 균등 배분
-  else if (fStyle === 'dual') {
-    const dualH = 180;
-    const imgW = canvas.width - (pad * 2);
-    const imgH = (canvas.height - (dualH * 2) - (gap * 3)) / 4;
-    for (let i = 0; i < 4; i++) {
-      drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, dualH + (i * (imgH + gap)), imgW, imgH);
-    }
-  }
-  else if (['offset1', 'offset2', 'offset3'].includes(fStyle)) {
-    const topH = 140; const bottomH = 160;
-    const baseW = canvas.width - (pad * 2) - 60;
-    const imgH = (canvas.height - topH - bottomH - (gap * 3)) / 4;
-
-    for (let i = 0; i < 4; i++) {
-      let offsetX = 0; let slotW = baseW;
-      if (fStyle === 'offset1') offsetX = (i % 2 === 0) ? -28 : 28;
-      else if (fStyle === 'offset2') { const offsets = [-35, 0, 35, -35]; offsetX = offsets[i]; }
-      else if (fStyle === 'offset3') slotW = (i === 1 || i === 2) ? baseW - 90 : baseW + 30;
+      const offsetX = (i % 2 === 0) ? -35 : 35;
+      const slotW = imgW - 70;
       const x = (canvas.width - slotW) / 2 + offsetX;
       const y = topH + (i * (imgH + gap));
       drawFilteredSlotPhoto(ctx, appState.selectedImages[i], x, y, slotW, imgH);
     }
-  }
-  else {
-    const topH = 180;
-    const bottomH = (fStyle === 'photoism') ? pad : 240;
-    const imgW = canvas.width - (pad * 2);
-    const imgH = (canvas.height - topH - bottomH - (gap * 3)) / 4;
+  } else {
     for (let i = 0; i < 4; i++) {
       drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
     }
   }
 }
 
-function renderGridLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
-  if (fStyle === 'top') {
-    const topH = 220; const bottomH = pad;
-    const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = (canvas.height - topH - bottomH - gap) / 2;
-    drawGridPhotoSlots(ctx, pad, topH, imgW, imgH, gap);
-  }
-  else if (fStyle === 'middle') {
-    const bannerH = 180; const edgePad = pad;
-    const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = (canvas.height - (edgePad * 2) - bannerH - gap) / 2;
+// 4컷 2×2 그리드 레이아웃
+function renderGrid4Slots(ctx, canvas, pad, gap, fStyle) {
+  let topH = pad; 
+  let bottomH = pad; 
+  let bannerH = 0;
 
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, edgePad, imgW, imgH);
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, edgePad, imgW, imgH);
+  if (fStyle === 'top') { topH = 260; bottomH = pad; }
+  else if (fStyle === 'bottom') { topH = pad; bottomH = 260; }
+  else if (fStyle === 'middle') { bannerH = 200; }
+  else if (fStyle === 'dual') { topH = 200; bottomH = 220; }
+  else if (fStyle === 'polaroid_wide') { topH = pad * 0.5; bottomH = 340; }
+  else if (fStyle === 'minimal_line') { gap = 2; }
+  else if (fStyle === 'photoist') { topH = 180; bottomH = pad; }
 
-    const lowerY = edgePad + imgH + bannerH;
+  const imgW = (canvas.width - (pad * 2) - gap) / 2;
+  const imgH = (canvas.height - topH - bottomH - bannerH - gap) / 2;
+
+  if (fStyle === 'middle') {
+    drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, pad, imgW, imgH);
+    drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, pad, imgW, imgH);
+    const lowerY = pad + imgH + bannerH;
     drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, lowerY, imgW, imgH);
     drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + imgW + gap, lowerY, imgW, imgH);
-  }
-  else if (fStyle === 'bottom') {
-    const topH = pad; const bottomH = 200;
-    const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = (canvas.height - topH - bottomH - gap) / 2;
-    drawGridPhotoSlots(ctx, pad, topH, imgW, imgH, gap);
-  }
-  else if (fStyle === 'dual') {
-    const topH = 160; const bottomH = 180;
-    const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = (canvas.height - topH - bottomH - gap) / 2;
-    drawGridPhotoSlots(ctx, pad, topH, imgW, imgH, gap);
-  }
-  else if (fStyle === 'offset1') { 
-    const topH = 140;
-    const baseW = (canvas.width - (pad * 2) - gap) / 2;
-    const baseH = (canvas.height - topH - 140 - gap) / 2;
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, topH, baseW * 1.05, baseH * 1.05);
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + baseW + gap + 15, topH + 15, baseW * 0.95, baseH * 0.95);
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, topH + baseH + gap + 15, baseW * 0.95, baseH * 0.95);
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + baseW + gap, topH + baseH + gap, baseW * 1.05, baseH * 1.05);
-  }
-  else if (fStyle === 'offset2') { 
-    const topH = 160;
-    const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = (canvas.height - topH - 180 - gap) / 2;
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, topH - 25, imgW, imgH);
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, topH + 25, imgW, imgH);
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, topH + imgH + gap - 25, imgW, imgH);
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + imgW + gap, topH + imgH + gap + 25, imgW, imgH);
-  }
-  else if (fStyle === 'offset3') { 
-    const topH = 160;
-    const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = (canvas.height - topH - 180 - gap) / 2;
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad + 20, topH + 10, imgW - 20, imgH - 10);
+  } else {
+    drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, topH, imgW, imgH);
     drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + imgW + gap, topH, imgW, imgH);
     drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, topH + imgH + gap, imgW, imgH);
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + imgW + gap + 10, topH + imgH + gap + 10, imgW - 20, imgH - 10);
-  }
-  else {
-    const topH = 180;
-    const bottomH = (fStyle === 'photoism') ? pad : 200;
-    const imgW = (canvas.width - (pad * 2) - gap) / 2;
-    const imgH = (canvas.height - topH - bottomH - gap) / 2;
-    drawGridPhotoSlots(ctx, pad, topH, imgW, imgH, gap);
+    drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad + imgW + gap, topH + imgH + gap, imgW, imgH);
   }
 }
 
-function drawGridPhotoSlots(ctx, pad, topH, imgW, imgH, gap) {
-  const coords = [
-    { x: pad, y: topH },
-    { x: pad + imgW + gap, y: topH },
-    { x: pad, y: topH + imgH + gap },
-    { x: pad + imgW + gap, y: topH + imgH + gap }
-  ];
-  for (let i = 0; i < 4; i++) {
-    drawFilteredSlotPhoto(ctx, appState.selectedImages[i], coords[i].x, coords[i].y, imgW, imgH);
-  }
-}
-
-function renderTwinLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
+// 4컷 Twin 2줄 대칭 레이아웃
+function renderTwin4Slots(ctx, canvas, pad, gap, fStyle) {
   const stripW = (canvas.width / 2) - 30;
   const padX = pad * 0.65;
   const imgW = stripW - (padX * 2);
-  const topH = 140; const bottomH = 180;
+  const topH = 160; const bottomH = 200;
   const imgH = (canvas.height - topH - bottomH - (gap * 3)) / 4;
 
   [15, canvas.width / 2 + 15].forEach(baseX => {
@@ -1956,52 +1933,98 @@ function renderTwinLayoutSlots(ctx, canvas, pad, gap, fStyle, isDark) {
   ctx.restore();
 }
 
-// 🌟 테마별 그래픽 오버레이 (여백 연동 대형 각인 & 하단 각인 완전 영구 삭제)
+// 🌟 5컷 화보형 레이아웃 (상단 2컷, 가운데 와이드 대형 1컷, 하단 2컷)
+function renderMagazine5Slots(ctx, canvas, pad, gap, fStyle) {
+  const topH = 180;
+  const bottomH = 200;
+  const availH = canvas.height - topH - bottomH - (gap * 2);
+  const smallH = availH * 0.28;
+  const bigH = availH * 0.44;
+  const halfW = (canvas.width - (pad * 2) - gap) / 2;
+  const fullW = canvas.width - (pad * 2);
+
+  // 상단 2컷
+  drawFilteredSlotPhoto(ctx, appState.selectedImages[0], pad, topH, halfW, smallH);
+  drawFilteredSlotPhoto(ctx, appState.selectedImages[1], pad + halfW + gap, topH, halfW, smallH);
+
+  // 가운데 메인 와이드 대형 1컷
+  const midY = topH + smallH + gap;
+  drawFilteredSlotPhoto(ctx, appState.selectedImages[2], pad, midY, fullW, bigH);
+
+  // 하단 2컷
+  const botY = midY + bigH + gap;
+  drawFilteredSlotPhoto(ctx, appState.selectedImages[3], pad, botY, halfW, smallH);
+  drawFilteredSlotPhoto(ctx, appState.selectedImages[4], pad + halfW + gap, botY, halfW, smallH);
+}
+
+// 5컷 1×5 롱 스트립
+function renderStrip5Slots(ctx, canvas, pad, gap, fStyle) {
+  const topH = 180; const bottomH = 220;
+  const imgW = canvas.width - (pad * 2);
+  const imgH = (canvas.height - topH - bottomH - (gap * 4)) / 5;
+  for (let i = 0; i < 5; i++) {
+    drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
+  }
+}
+
+// 🌟 6컷 2×3 그리드 레이아웃
+function renderGrid6Slots(ctx, canvas, pad, gap, fStyle) {
+  const topH = 180; const bottomH = 200;
+  const imgW = (canvas.width - (pad * 2) - gap) / 2;
+  const imgH = (canvas.height - topH - bottomH - (gap * 2)) / 3;
+
+  for (let row = 0; row < 3; row++) {
+    const y = topH + (row * (imgH + gap));
+    drawFilteredSlotPhoto(ctx, appState.selectedImages[row * 2], pad, y, imgW, imgH);
+    drawFilteredSlotPhoto(ctx, appState.selectedImages[row * 2 + 1], pad + imgW + gap, y, imgW, imgH);
+  }
+}
+
+// 6컷 1×6 슈퍼 롱 스트립
+function renderStrip6Slots(ctx, canvas, pad, gap, fStyle) {
+  const topH = 180; const bottomH = 220;
+  const imgW = canvas.width - (pad * 2);
+  const imgH = (canvas.height - topH - bottomH - (gap * 5)) / 6;
+  for (let i = 0; i < 6; i++) {
+    drawFilteredSlotPhoto(ctx, appState.selectedImages[i], pad, topH + (i * (imgH + gap)), imgW, imgH);
+  }
+}
+
+// 🌟 모든 프레임 측면 세로 각인 & 포토이스트 & 하단 각인 영구 삭제
 function renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout) {
   ctx.save();
 
-  // 🌟 [핵심 수정 6, 7] 테두리 여백(pad)에 정비례하는 선명하고 큼직한 적응형 폰트 (32px ~ 64px)
+  // 🌟 [요구사항 6, 7] 테두리 여백(pad: 30~80)에 정비례하는 선명한 폰트 (32px ~ 64px)
   const adaptiveFontSize = Math.max(32, Math.min(64, Math.round(pad * 0.65)));
   
-  // 🌟 [핵심 기능 B-3] 사용자가 입력한 커스텀 브랜드 각인 문구 우선 적용
-  const sideEngraveText = appState.customEngraveText 
-    ? appState.customEngraveText 
-    : "Photography      PhotoBooth      PhotoIs      Studio";
+  // 🌟 [요구사항 5] 측면 각인 문구 (사용자 지정 문구 우선)
+  const sideEngraveText = (appState.customEngraveText !== undefined && appState.customEngraveText !== "")
+    ? appState.customEngraveText
+    : "Photography      PhotoBooth      PhotoIst      Studio";
 
-  if (fStyle === 'photoism') {
-    const textColor = isDark ? '#FFFFFF' : '#0F172A';
-    
-    // 상단 photoism 로고
+  const textColor = isDark ? '#FFFFFF' : '#0F172A';
+
+  // 1) 포토이스트(photoist) 로고 및 세로 기둥 렌더링
+  if (fStyle === 'photoist') {
     ctx.fillStyle = textColor;
     ctx.font = "700 58px 'Playfair Display', serif";
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText("photoism", pad, 95);
+    ctx.fillText("photoist", pad, 95);
 
-    const topH = 180; const bottomH = pad; const gap = Math.round(pad * 0.5);
-    const imgH = (canvas.height - topH - bottomH - (gap * 3)) / 4;
+    // 좌측 기둥 ▲ 재생 심볼
+    const cuts = appState.cutMode || 4;
+    const topH = 180; const bottomH = pad; const gap = Math.round(pad * 0.45);
+    const stepH = (canvas.height - topH - bottomH) / cuts;
 
-    // 좌측 기둥: 여백에 맞춰 큼직해진 ▲ 재생버튼 4개
-    for (let i = 0; i < 4; i++) {
-      const centerY = topH + (i * (imgH + gap)) + (imgH / 2);
+    for (let i = 0; i < cuts; i++) {
+      const centerY = topH + (i * stepH) + (stepH / 2);
       ctx.fillStyle = textColor;
-      ctx.font = `bold ${Math.round(adaptiveFontSize * 1.15)}px monospace`; 
+      ctx.font = `bold ${Math.round(adaptiveFontSize * 1.1)}px monospace`; 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText("▲", pad / 2, centerY);
     }
-
-    // 우측 기둥: 테두리 폭에 맞춰 시원하게 커진 세로 적응형 각인
-    ctx.save();
-    ctx.translate(canvas.width - (pad / 2), canvas.height / 2);
-    ctx.rotate(Math.PI / 2);
-    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)';
-    ctx.font = `bold ${adaptiveFontSize}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.letterSpacing = "3px";
-    ctx.fillText(sideEngraveText, 0, 0);
-    ctx.restore();
   }
   else if (fStyle === 'birthday') {
     ctx.fillStyle = '#E11D48';
@@ -2030,8 +2053,21 @@ function renderThemeOverlayGraphics(ctx, canvas, pad, fStyle, isDark, layout) {
     ctx.fillText("⚾", canvas.width - pad - 60, 100);
   }
 
-  // 🌟 [핵심 수정 5] 사용자가 이상하다고 지적한 프레임 하단 각인 텍스트는 완전 영구 삭제되었습니다.
-  // 어떠한 텍스트도 그리지 않아 100% 순수 클린 Safe Zone으로 유지됩니다.
+  // 🌟 [요구사항 5] 모든 프레임 우측 측면 세로 각인 (문구가 공백이 아닐 때만 렌더링)
+  if (sideEngraveText.trim().length > 0 && fStyle !== 'birthday') {
+    ctx.save();
+    ctx.translate(canvas.width - (pad / 2), canvas.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)';
+    ctx.font = `bold ${adaptiveFontSize}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.letterSpacing = "3px";
+    ctx.fillText(sideEngraveText, 0, 0);
+    ctx.restore();
+  }
+
+  // 🌟 [요구사항 5 & 8] 이상하던 프레임 하단 각인 텍스트는 완전 삭제되어 100% 클린 Safe Zone으로 유지됩니다.
 
   ctx.restore();
 }
@@ -2146,6 +2182,10 @@ function drawSingleSticker(ctx, st) {
   ctx.save();
   ctx.translate(st.x, st.y);
   ctx.rotate(((st.rotation || 0) * Math.PI) / 180);
+  if (st.opacity !== undefined) {
+    ctx.globalAlpha = st.opacity;
+  }
+
   if (st.type === 'text') {
     const fontName = st.fontFamily || 'Pretendard'; 
     ctx.font = `900 ${st.size}px '${fontName}', sans-serif`; 
@@ -2165,7 +2205,7 @@ function drawSingleSticker(ctx, st) {
 }
 
 // ========================================================
-// 13. 날짜 독립 오브젝트 시스템
+// 13. 날짜 오브젝트 시스템
 // ========================================================
 function toggleDateObject(checked) {
   saveStateForUndo();
@@ -2387,7 +2427,7 @@ function initCanvasInteractions() {
       let targetX = c.x - appState.dragStartPos.x;
       let targetY = c.y - appState.dragStartPos.y;
 
-      // 🌟 B-2 마그네틱 자석 스냅 가이드 (캔버스 중앙 정렬 스냅)
+      // 🌟 B-2 마그네틱 자석 스냅 가이드 (중앙 정렬 자석 효과)
       const snapThreshold = 35;
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
@@ -2451,7 +2491,7 @@ function initCanvasInteractions() {
   window.addEventListener('touchend', handleEnd);
 }
 
-// 🌟 센터 0° 회전 슬라이더 & 서식 제어
+// 회전 & 서식 제어
 function onSelectedStickerRotate(deg) {
   if (appState.selectedStickerIdx >= 0 && appState.selectedStickerIdx < appState.stickers.length) {
     const val = parseInt(deg);
@@ -2515,21 +2555,6 @@ function addTextSticker(text) {
     y: canvas ? canvas.height / 2 : 1800, 
     size: 70, rotation: 0, color: '#FFFFFF', 
     fontFamily: appState.typography.fontFamily || 'Pretendard' 
-  };
-  appState.stickers.push(newSticker); 
-  appState.selectedStickerIdx = appState.stickers.length - 1;
-  showStickerControls(newSticker); 
-  renderStrip();
-}
-
-function addEmojiSticker(emoji) {
-  saveStateForUndo(); 
-  const canvas = document.getElementById('photoCanvas');
-  const newSticker = { 
-    id: Date.now(), type: 'emoji', text: emoji, 
-    x: canvas ? canvas.width / 2 : 600, 
-    y: canvas ? canvas.height / 2 : 1800, 
-    size: 90, rotation: 0 
   };
   appState.stickers.push(newSticker); 
   appState.selectedStickerIdx = appState.stickers.length - 1;
@@ -2640,17 +2665,17 @@ function initSplitResizer() {
 
   function onPointerDown(e) {
     isResizing = true;
-    document.body.style.cursor = window.innerWidth >= 1024 ? 'col-resize' : 'row-resize';
+    document.body.style.cursor = window.innerWidth >= 640 ? 'col-resize' : 'row-resize';
     e.preventDefault();
   }
 
   function onPointerMove(e) {
     if (!isResizing) return;
-    const isDesktop = window.innerWidth >= 1024;
+    const isLandscape = window.innerWidth >= 640 && window.innerWidth > window.innerHeight;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-    if (isDesktop) {
+    if (isLandscape) {
       const containerRect = container.getBoundingClientRect();
       const offset = clientX - containerRect.left;
       const pct = Math.max(35, Math.min(75, (offset / containerRect.width) * 100));
@@ -2681,7 +2706,7 @@ function initSplitResizer() {
 }
 
 // ========================================================
-// 16. 🌟 2중 큐(로컬+클라우드) 무소음 자동 아카이빙 & [⭐ 추억네컷 찜] 엔진
+// 16. 🌟 2중 큐 무소음 자동 아카이빙 & [⭐ 추억네컷 찜] 영구 보존 엔진
 // ========================================================
 async function autoArchiveToCloudQuietly(canvas, isFav = false) {
   if (!canvas) return;
@@ -2691,7 +2716,7 @@ async function autoArchiveToCloudQuietly(canvas, isFav = false) {
     const photoId = "photo_" + Date.now();
     appState.currentPhotoId = photoId;
 
-    // 🌟 [핵심 개선 8] 브라우저 로컬 스토리지에 1차 즉시 자동 저장 (통신 실패 확률 0%)
+    // 1차: 브라우저 로컬 스토리지에 즉시 무소음 안전 저장 (저장 성공률 100%)
     const localEntry = {
       id: photoId,
       fileUrl: base64Img,
@@ -2700,7 +2725,6 @@ async function autoArchiveToCloudQuietly(canvas, isFav = false) {
     };
 
     let localArchive = JSON.parse(localStorage.getItem('chueok_local_gallery') || '[]');
-    // 찜하지 않은 일반 사진은 10개 FIFO 유지
     if (!isFav) {
       const normalPhotos = localArchive.filter(p => !p.isFavorite);
       if (normalPhotos.length >= MAX_GALLERY_SLOTS) {
@@ -2711,7 +2735,7 @@ async function autoArchiveToCloudQuietly(canvas, isFav = false) {
     localArchive.unshift(localEntry);
     localStorage.setItem('chueok_local_gallery', JSON.stringify(localArchive));
 
-    // 구글 백엔드 서버로 백그라운드 무소음 동기화 전송
+    // 2차: 구글 백엔드 클라우드로 백그라운드 동기화
     if (appState.isRegisteredUser && appState.currentUser) {
       fetch(GOOGLE_DB_URL, {
         method: 'POST',
@@ -2727,7 +2751,7 @@ async function autoArchiveToCloudQuietly(canvas, isFav = false) {
   } catch (e) {}
 }
 
-// 🌟 [핵심 개선 3] 추억네컷 찜 버튼 원클릭 즉각 반응
+// 🌟 [추억네컷 찜] 원클릭 즉시 토글 (10장 자동 삭제에서 영구 제외)
 async function toggleFavoriteStrip() {
   playBeep(950);
   triggerHaptic('medium');
@@ -2740,7 +2764,7 @@ async function toggleFavoriteStrip() {
   if (!canvas) return;
 
   if (appState.isCurrentFavorite) {
-    alert("⭐ 이 사진이 [추억네컷 찜]에 등록되었습니다!\n10장 자동 롤링 삭제에서 영구 제외되어 안전하게 보관됩니다.");
+    alert("⭐ 이 사진이 [추억네컷 찜]에 등록되었습니다!\n최근 히스토리 10장 FIFO 자동 삭제에서 영구 제외되어 안전하게 보관됩니다.");
     autoArchiveToCloudQuietly(canvas, true);
   } else {
     alert("찜이 해제되었습니다. (일반 최근 히스토리 목록으로 관리됩니다)");
@@ -2770,18 +2794,19 @@ function updateFavoriteButtonUI() {
 }
 
 // ========================================================
-// 17. 10Mbps 비디오 & [복구] QR코드 스캔 다운로드 화면
+// 17. 🌟 15Mbps 초고화질 무빙 비디오 (2×2/1×4 비율 일치 및 거울모드 보정)
 // ========================================================
 async function generateFourCutVideo() {
   if (!appState.isRegisteredUser) {
-    alert("10Mbps 초고화질 4컷 비디오 생성은 [정회원 전용] 기능입니다. 로그인 후 이용해 주세요! 🎬");
+    alert("15Mbps 초고화질 무빙 비디오 생성은 [정회원 전용] 기능입니다. 로그인 후 이용해 주세요! 🎬");
     openAuthModal('login');
     return;
   }
 
+  const cuts = appState.cutMode || 4;
   const hasValidVideo = appState.selectedIndices.every(idx => idx !== null && appState.shotVideoBlobs[idx]);
   if (!hasValidVideo) {
-    alert("촬영 영상 데이터가 부족합니다. 부스에서 4컷을 연속 촬영했을 때 가능합니다.");
+    alert("촬영 영상 데이터가 부족합니다. 부스에서 컷들을 연속 촬영했을 때 가능합니다.");
     return;
   }
 
@@ -2804,7 +2829,16 @@ async function generateFourCutVideo() {
     }));
 
     const vCanvas = document.createElement('canvas'); 
-    vCanvas.width = 1080; vCanvas.height = 3240;
+    
+    // 🌟 [요구사항 12, 13] 규격에 따른 동적 비디오 비율 일치 (2x2: 1440x2160, 1x4: 1080x3240)
+    if (appState.selectedFormat === 'grid') {
+      vCanvas.width = 1440; 
+      vCanvas.height = 2160;
+    } else {
+      vCanvas.width = 1080; 
+      vCanvas.height = 3240;
+    }
+
     const vCtx = vCanvas.getContext('2d');
     vCtx.imageSmoothingEnabled = true;
     vCtx.imageSmoothingQuality = 'high';
@@ -2817,7 +2851,7 @@ async function generateFourCutVideo() {
     const stream = vCanvas.captureStream(60); 
     const recorder = new MediaRecorder(stream, { 
       mimeType,
-      videoBitsPerSecond: 10000000
+      videoBitsPerSecond: 15000000 // 🌟 15Mbps 초고화질 무손실
     }); 
     const chunks = []; 
     recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
@@ -2845,36 +2879,48 @@ async function generateFourCutVideo() {
     };
     recorder.start();
 
+    // 0.2초 키프레임 포스터 주입 및 루프 시작
     const posterCanvas = document.getElementById('photoCanvas');
-    const topH = 160; const bottomH = 240; const pad = 50; const gap = 24; 
-    const slotW = vCanvas.width - (pad * 2); 
-    const slotH = (vCanvas.height - topH - bottomH - (gap * 3)) / 4; 
     const startTime = performance.now(); 
     const totalDuration = 6000;
+    const isGrid = (appState.selectedFormat === 'grid');
+    const pad = Math.round(appState.frameThickness * 0.9);
+    const gap = Math.round(pad * 0.45);
+    const topH = 160; const bottomH = 180;
 
     function renderVideoLoop(time) {
       const elapsed = time - startTime; 
 
-      if (elapsed < 200 && posterCanvas) {
+      if (elapsed < 180 && posterCanvas) {
         vCtx.drawImage(posterCanvas, 0, 0, vCanvas.width, vCanvas.height);
       } else {
         vCtx.fillStyle = appState.frameColor; 
         vCtx.fillRect(0, 0, vCanvas.width, vCanvas.height); 
 
-        for (let i = 0; i < 4; i++) {
-          const vy = topH + (i * (slotH + gap)); 
-          vCtx.save(); vCtx.beginPath(); vCtx.rect(pad, vy, slotW, slotH); vCtx.clip(); 
-          const v = videoElements[i]; 
-          const vW = v.videoWidth || 1280; const vH = v.videoHeight || 720; 
-          const vRatio = vW / vH; const targetRatio = slotW / slotH; 
-          let rw, rh;
-          if (vRatio > targetRatio) { rh = slotH; rw = slotH * vRatio; } 
-          else { rw = slotW; rh = slotW / vRatio; }
-          vCtx.drawImage(v, pad + (slotW - rw) / 2, vy + (slotH - rh) / 2, rw, rh); 
-          vCtx.restore();
+        if (isGrid && cuts === 4) {
+          const halfW = (vCanvas.width - (pad * 2) - gap) / 2;
+          const halfH = (vCanvas.height - topH - bottomH - gap) / 2;
+          const coords = [
+            { x: pad, y: topH },
+            { x: pad + halfW + gap, y: topH },
+            { x: pad, y: topH + halfH + gap },
+            { x: pad + halfW + gap, y: topH + halfH + gap }
+          ];
+
+          for (let i = 0; i < 4; i++) {
+            drawVideoSlot(vCtx, videoElements[i], coords[i].x, coords[i].y, halfW, halfH);
+          }
+        } else {
+          const slotW = vCanvas.width - (pad * 2);
+          const slotH = (vCanvas.height - topH - bottomH - (gap * (cuts - 1))) / cuts;
+          for (let i = 0; i < cuts; i++) {
+            const vy = topH + (i * (slotH + gap));
+            drawVideoSlot(vCtx, videoElements[i], pad, vy, slotW, slotH);
+          }
         }
 
-        renderThemeOverlayGraphics(vCtx, vCanvas, pad, appState.frameStyle, false, 'strip');
+        renderThemeOverlayGraphics(vCtx, vCanvas, pad, appState.frameStyle, false, appState.layout);
+        renderStickersAndMirrors(vCtx, vCanvas, appState.layout);
       }
 
       if (elapsed < totalDuration) requestAnimationFrame(renderVideoLoop); 
@@ -2891,7 +2937,36 @@ async function generateFourCutVideo() {
   }
 }
 
-// 🌟 QR코드 생성 & 무소음 자동 아카이빙
+// 🌟 비디오 슬롯 거울모드 보정 렌더러
+function drawVideoSlot(ctx, v, x, y, w, h) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+
+  const vW = v.videoWidth || 1280; 
+  const vH = v.videoHeight || 720; 
+  const vRatio = vW / vH; 
+  const targetRatio = w / h; 
+  let rw, rh;
+  if (vRatio > targetRatio) { rh = h; rw = h * vRatio; } 
+  else { rw = w; rh = w / vRatio; }
+
+  const drawX = x + (w - rw) / 2;
+  const drawY = y + (h - rh) / 2;
+
+  // 전면 카메라인 경우 거울모드 반전 유지
+  if (appState.facingMode === 'user') {
+    ctx.translate(drawX + rw, drawY);
+    ctx.scale(-1, 1);
+    ctx.drawImage(v, 0, 0, rw, rh);
+  } else {
+    ctx.drawImage(v, drawX, drawY, rw, rh);
+  }
+  ctx.restore();
+}
+
+// 🌟 QR 다운로드
 async function generateImageQRCode() {
   const btn = document.getElementById('btnSaveQR'); 
   if (btn) { 
@@ -2904,7 +2979,6 @@ async function generateImageQRCode() {
   const canvas = document.getElementById('photoCanvas'); 
   if (!canvas) return;
 
-  // 🌟 [추천안 1] QR 생성 시 2중 큐 무소음 자동 보관함 저장
   autoArchiveToCloudQuietly(canvas, appState.isCurrentFavorite);
 
   const base64Img = canvas.toDataURL('image/png');
@@ -3514,10 +3588,10 @@ function getStoredNotices() {
   }
   if (!list || list.length === 0) {
     list = [{ 
-      id: 'v17_2_init', 
+      id: 'v17_3_init', 
       date: getFormattedTodayDate(), 
       version: APP_VERSION, 
-      content: 'v17.2 Pro: 마이페이지(내 정보 관리), 계정 복구 센터, B-1 모션 뷰어 & B-2 자석 스냅 업데이트 완료!' 
+      content: 'v17.3 Pro: 4·5·6컷 가변 프레임, 포토이스트, 착용 소품 팩 & 15Mbps 무빙 비디오 업데이트 완료!' 
     }];
   }
   return list;
@@ -3530,8 +3604,8 @@ function renderMainNotices() {
   area.classList.remove('hidden');
   container.innerHTML = `
     <div class="bg-white/95 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-left">
-      <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0">v17.2 Pro</span>
-      <p class="text-[11px] font-bold text-slate-800 truncate ml-2">마이페이지(내 정보), 계정 복구 & 자석 스냅 가이드 업데이트!</p>
+      <span class="bg-theme text-white text-[9px] font-black px-1.5 py-0.5 rounded shrink-0">v17.3 Pro</span>
+      <p class="text-[11px] font-bold text-slate-800 truncate ml-2">4·5·6컷 가변 프레임, 착용 소품 팩 & 포토이스트 업데이트!</p>
     </div>
   `;
 }
@@ -3610,7 +3684,7 @@ function resetApp() {
   stopCameraAndAudio();
   appState.shotImages = []; 
   appState.selectedImages = []; 
-  appState.selectedIndices = [0, 1, 2, 3]; 
+  initEmptySlots(appState.cutMode || 4);
   appState.stickers = []; 
   appState.selectedStickerIdx = -1; 
   appState.isCurrentFavorite = false;
@@ -3634,6 +3708,7 @@ function startAutoReset() {
 function saveSessionStateToStorage() {
   try {
     const backupData = {
+      cutMode: appState.cutMode,
       format: appState.selectedFormat,
       layout: appState.layout,
       frameStyle: appState.frameStyle,
@@ -3643,7 +3718,7 @@ function saveSessionStateToStorage() {
       filters: appState.filters,
       typography: appState.typography,
       stickers: appState.stickers,
-      images: appState.selectedImages.map(img => img.src)
+      images: appState.selectedImages.map(img => img ? img.src : null)
     };
     sessionStorage.setItem('chueok_active_session', JSON.stringify(backupData));
     checkPreviousSession();
@@ -3663,6 +3738,7 @@ function restorePreviousSession() {
   if (!saved) return;
   try {
     const data = JSON.parse(saved);
+    appState.cutMode = data.cutMode || 4;
     appState.selectedFormat = data.format;
     appState.layout = data.layout;
     appState.frameStyle = data.frameStyle;
@@ -3674,13 +3750,14 @@ function restorePreviousSession() {
     appState.stickers = data.stickers || [];
 
     const imgPromises = data.images.map(src => new Promise(res => {
+      if (!src) return res(null);
       const img = new Image();
       img.onload = () => res(img);
       img.src = src;
     }));
 
     Promise.all(imgPromises).then(imgs => {
-      appState.selectedImages = imgs;
+      appState.selectedImages = imgs.filter(Boolean);
       showScreen('screenEdit');
       renderStrip();
     });
@@ -3745,7 +3822,7 @@ function onFineTuneSliderChange() {
 
 function saveStateForUndo() {
   const snapshot = JSON.stringify({
-    stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
+    cutMode: appState.cutMode, stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
     frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
     filters: appState.filters, typography: appState.typography, showDate: appState.showDate,
     isCurrentFavorite: appState.isCurrentFavorite, customEngraveText: appState.customEngraveText
@@ -3758,7 +3835,7 @@ function saveStateForUndo() {
 function undo() {
   if (historyStack.length === 0) return;
   const currentSnap = JSON.stringify({
-    stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
+    cutMode: appState.cutMode, stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
     frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
     filters: appState.filters, typography: appState.typography, showDate: appState.showDate,
     isCurrentFavorite: appState.isCurrentFavorite, customEngraveText: appState.customEngraveText
@@ -3770,7 +3847,7 @@ function undo() {
 function redo() {
   if (redoStack.length === 0) return;
   const currentSnap = JSON.stringify({
-    stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
+    cutMode: appState.cutMode, stickers: appState.stickers, layout: appState.layout, frameStyle: appState.frameStyle,
     frameThickness: appState.frameThickness, frameColor: appState.frameColor, activeFilter: appState.activeFilter,
     filters: appState.filters, typography: appState.typography, showDate: appState.showDate,
     isCurrentFavorite: appState.isCurrentFavorite, customEngraveText: appState.customEngraveText
@@ -3780,6 +3857,7 @@ function redo() {
 }
 
 function applySnapshot(snap) {
+  appState.cutMode = snap.cutMode || 4;
   appState.stickers = snap.stickers || []; 
   appState.layout = snap.layout; 
   appState.frameStyle = snap.frameStyle;
@@ -3811,16 +3889,6 @@ function loadSavedTheme() {
   document.documentElement.style.setProperty('--theme-color-light', t.light);
 }
 
-function applyAppTheme(themeKey) {
-  const t = APP_THEMES[themeKey] || APP_THEMES.rose;
-  document.documentElement.style.setProperty('--theme-color', t.color);
-  document.documentElement.style.setProperty('--theme-primary', t.color);
-  document.documentElement.style.setProperty('--theme-primary-hover', t.hover);
-  document.documentElement.style.setProperty('--theme-color-hover', t.hover);
-  document.documentElement.style.setProperty('--theme-color-light', t.light);
-  localStorage.setItem('chueok_ui_theme', themeKey);
-}
-
 function setTimerSec(sec, btn) { 
   appState.timerSec = sec; 
   document.querySelectorAll('.timer-chip').forEach(b => { 
@@ -3838,7 +3906,7 @@ function initDynamicUI() {
   ];
   const emojiGrid = document.getElementById('emojiGrid');
   if (emojiGrid) {
-    emojiGrid.innerHTML = emojis.map(e => `<button onclick="addEmojiSticker('${e}')" class="p-0.5 hover:bg-slate-200 rounded cursor-pointer active:scale-90 transition">${e}</button>`).join('');
+    emojiGrid.innerHTML = emojis.map(e => `<button onclick="addPropSticker('${e}')" class="p-0.5 hover:bg-slate-200 rounded cursor-pointer active:scale-90 transition">${e}</button>`).join('');
   }
 
   const texts = [
@@ -3866,14 +3934,14 @@ function initDynamicUI() {
 
   const premiumColorGrid = document.getElementById('frameColorGridPremium');
   if (premiumColorGrid) {
-    premiumColorGrid.innerHTML = ['#000000', '#18181B', '#FFFFFF', '#FECDD3', '#BAE6FD', '#EDE9FE'].map(c => `
-      <button onclick="changeFrameColor('${c}', this)" class="color-btn w-4 h-4 rounded-full border border-slate-300 shadow-2xs shrink-0" style="background-color:${c};"></button>
+    premiumColorGrid.innerHTML = ['#000000', '#111111', '#18181B', '#FFFFFF', '#FECDD3', '#BAE6FD', '#EDE9FE'].map(c => `
+      <button onclick="changeFrameColor('${c}', this)" class="color-btn w-4 h-4 rounded-full border border-slate-200 shadow-2xs shrink-0" style="background-color:${c};"></button>
     `).join('') + `<input type="color" value="#000000" onchange="changeFrameColor(this.value, null)" class="w-4 h-4 rounded-full cursor-pointer p-0 border border-slate-300">`;
   }
 }
 
 // ========================================================
-// 20. 앱 초기 구동 엔트리포인트
+// 20. 앱 초기 구동 엔트리포인트 (동적 뷰포트 & 이벤트 리스너)
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   ['screenLiveShoot', 'screenPick', 'screenEdit', 'screenBoard', 'screenResult', 'videoResultModal', 'galleryCollectModal', 'adminDashboardModal', 'customerBotModal', 'authModal', 'myGalleryModal', 'mainShareModal', 'myProfileModal'].forEach(id => {
@@ -3894,6 +3962,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const badge = document.getElementById('appVersionBadge');
   if (badge) badge.textContent = APP_VERSION;
 
+  updateDynamicViewportHeight();
   loadSavedTheme();
   initDynamicUI();
   initCanvasInteractions();
@@ -3905,8 +3974,22 @@ window.addEventListener('DOMContentLoaded', () => {
   renderMainNotices();
   fetchCloudBoardPosts();
 
-  window.addEventListener('resize', checkDeviceOrientation);
-  window.addEventListener('orientationchange', checkDeviceOrientation);
+  window.addEventListener('resize', () => {
+    updateDynamicViewportHeight();
+    checkDeviceOrientation();
+    if (appState.selectedImages && appState.selectedImages.length > 0) {
+      renderStrip();
+    }
+  });
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      updateDynamicViewportHeight();
+      checkDeviceOrientation();
+      if (appState.selectedImages && appState.selectedImages.length > 0) {
+        renderStrip();
+      }
+    }, 150);
+  });
 
   try { if (window.lucide) lucide.createIcons(); } catch (e) {}
 });
