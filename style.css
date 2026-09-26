@@ -6,6 +6,7 @@
   --theme-primary-hover: #e11d48;
   --theme-color-hover: #e11d48;
   --theme-color-light: #fff1f2;
+  --app-vh: 100vh;
 }
 
 * {
@@ -18,9 +19,11 @@ body {
   touch-action: manipulation;
   background-color: #f8fafc;
   color: #1e293b;
+  height: var(--app-vh);
+  width: 100vw;
 }
 
-/* 카메라 거울 모드 */
+/* 카메라 좌우 반전 거울 모드 */
 .mirror {
   transform: scaleX(-1) !important;
 }
@@ -79,27 +82,27 @@ body {
   transition: all 0.15s ease;
 }
 
-/* Y2K 데코 스탬프 칩 스타일 */
-.deco-chip {
+/* 🌟 착용 소품 칩 스타일 */
+.prop-chip {
   background-color: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #fecdd3;
   color: #1e293b;
   font-size: 10px;
   font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 8px;
+  padding: 3px 8px;
+  border-radius: 9999px;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
-.deco-chip:hover {
-  background-color: #f1f5f9;
+.prop-chip:hover {
+  background-color: #fff1f2;
   border-color: var(--theme-color);
 }
 
-.deco-chip:active {
+.prop-chip:active {
   transform: scale(0.95);
 }
 
@@ -136,29 +139,6 @@ body {
   cursor: grabbing;
 }
 
-/* 간편 PIN 키패드 버튼 스타일 */
-.pin-key {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 9px 0;
-  font-size: 15px;
-  font-weight: 800;
-  color: #1e293b;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: all 0.1s;
-}
-
-.pin-key:active {
-  background-color: #e2e8f0;
-  transform: scale(0.95);
-}
-
-.pin-dot.filled {
-  background-color: var(--theme-color) !important;
-  border-color: var(--theme-color) !important;
-}
-
 /* 챗봇 말풍선 */
 .chat-bubble-user {
   background-color: var(--theme-color);
@@ -175,4 +155,41 @@ body {
 /* 숨김 레이어 클릭 가로채기 차단 강제 규칙 */
 .hidden, [hidden] {
   display: none !important;
+}
+
+/* ========================================================
+   🌟 14, 15. 스마트폰 가로모드 5:5 스플릿 & 아이패드 중앙 정렬
+======================================================== */
+@media (min-width: 640px) and (orientation: landscape) {
+  .responsive-editor-layout {
+    flex-direction: row !important;
+  }
+  .editor-canvas-pane {
+    width: 50% !important;
+    height: 100% !important;
+  }
+  .editor-split-resizer {
+    width: 14px !important;
+    height: 100% !important;
+    cursor: col-resize !important;
+  }
+  .resizer-bar-indicator {
+    width: 4px !important;
+    height: 32px !important;
+  }
+  .editor-control-pane {
+    width: 50% !important;
+    height: 100% !important;
+  }
+  .responsive-canvas-height {
+    max-height: 84vh !important;
+  }
+}
+
+/* 아이패드 세로모드 중앙정렬 */
+@media (min-width: 768px) and (orientation: portrait) {
+  #screenEdit, #screenPick, #screenHome {
+    justify-content: center;
+    align-items: center;
+  }
 }
