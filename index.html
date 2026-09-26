@@ -2,8 +2,8 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>추억의 네컷 Studio Pro v17.2 Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>추억의 네컷 Studio Pro v17.3 Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -15,19 +15,22 @@
   <!-- 파일 업로드 인풋 -->
   <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
-  <!-- 디바이스 가로/세로 촬영 방향 감지 안내 오버레이 -->
-  <div id="orientationWarningOverlay" class="hidden fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center text-white">
-    <div class="w-16 h-16 rounded-full bg-rose-500/20 flex items-center justify-center mb-4 animate-bounce">
+  <!-- 🌟 1. 카메라 회전 안내 오버레이 (반투명 카메라 비침 & 우측 상단 X 닫기 버튼) -->
+  <div id="orientationWarningOverlay" class="hidden fixed inset-0 z-[100] bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center text-white">
+    <button onclick="dismissOrientationWarning()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center active:scale-90 transition">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+    <div class="w-16 h-16 rounded-full bg-rose-500/30 flex items-center justify-center mb-4 animate-bounce border border-rose-400">
       <i id="orientationIcon" data-lucide="rotate-ccw" class="w-8 h-8 text-theme"></i>
     </div>
-    <h3 id="orientationTitle" class="text-lg font-black tracking-tight mb-1">카메라를 돌려주세요!</h3>
-    <p id="orientationDesc" class="text-xs text-slate-300 leading-relaxed max-w-xs">
-      현재 선택하신 규격에 맞게 기기를 회전하시면 카운트다운이 자동으로 재개됩니다.
+    <h3 id="orientationTitle" class="text-lg font-black tracking-tight mb-1 drop-shadow">카메라를 돌려주세요!</h3>
+    <p id="orientationDesc" class="text-xs text-slate-100 leading-relaxed max-w-xs drop-shadow">
+      선택하신 규격에 맞게 기기를 회전하시면 카운트다운이 자동으로 재개됩니다.
     </p>
   </div>
 
   <!-- ========================================================
-        화면 1: 메인 홈 화면
+        화면 1: 메인 홈 화면 (상단 딤드 그라데이션 제거)
   ======================================================== -->
   <main id="screenHome" class="absolute inset-0 z-10 w-full flex flex-col bg-white overflow-hidden">
     <div class="max-w-md w-full mx-auto flex flex-col h-full px-4 py-3 justify-between relative">
@@ -39,7 +42,7 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-xl font-black tracking-tight text-slate-900">추억의 네컷</span>
             <span class="bg-rose-500 text-white text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm">Pro</span>
-            <span id="appVersionBadge" class="text-xs text-theme font-extrabold tracking-tighter">v17.2 Pro</span>
+            <span id="appVersionBadge" class="text-xs text-theme font-extrabold tracking-tighter">v17.3 Pro</span>
           </div>
         </div>
 
@@ -54,7 +57,7 @@
               <span>회원가입</span>
             </button>
 
-            <!-- 🌟 정회원 로그인 후 배지 (터치 시 마이페이지 내 정보 관리 오픈) -->
+            <!-- 정회원 로그인 후 배지 (터치 시 마이페이지 내 정보 관리 오픈) -->
             <div id="userProfileBadge" class="hidden items-center space-x-1 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full cursor-pointer hover:bg-rose-100 active:scale-95 transition" onclick="openMyProfileModal()">
               <span class="w-1.5 h-1.5 rounded-full bg-theme animate-ping"></span>
               <span id="userProfileName" class="text-[10px] font-black text-theme truncate max-w-[65px]">회원</span>
@@ -79,7 +82,7 @@
         </button>
       </div>
 
-      <!-- 실시간 공지사항 (v17.2 릴리즈) -->
+      <!-- 실시간 공지사항 (v17.3 릴리즈) -->
       <div id="mainNoticeArea" class="shrink-0 mt-2 hidden bg-theme-light border border-rose-200 rounded-2xl p-2.5 shadow-sm">
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-xs font-black text-theme flex items-center">
@@ -130,7 +133,7 @@
         <div class="flex items-center justify-between gap-2 pt-1 w-full">
           <button onclick="triggerGalleryUpload()" class="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 py-2.5 px-3 rounded-2xl flex items-center justify-center space-x-2 text-xs font-bold active:scale-95 transition shadow-2xs">
             <i data-lucide="folder-open" class="w-4 h-4 text-theme"></i>
-            <span>앨범 사진 4장 선택</span>
+            <span>앨범 사진 4~6장 선택</span>
           </button>
 
           <div class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-2xl flex items-center space-x-1.5 text-xs">
@@ -168,7 +171,6 @@
             </div>
           </button>
 
-          <!-- 🌟 초기화면 통합 멀티 공유 센터 버튼 -->
           <button onclick="openMainShareModal()" id="btnMainShare" class="w-12 h-[46px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-xs active:scale-95 transition" title="앱 공유 센터">
             <i data-lucide="share-2" class="w-4 h-4 text-theme mb-0.5"></i>
             <span class="text-[8px] font-black text-slate-600">공유</span>
@@ -176,16 +178,16 @@
         </div>
 
         <footer class="text-center text-[10px] text-slate-400 pb-0.5">
-          추억의 네컷 Studio Pro v17.2 Pro
+          추억의 네컷 Studio Pro v17.3 Pro
         </footer>
       </div>
     </div>
   </main>
 
   <!-- ========================================================
-        화면 2: 촬영 화면 (2x2 풀화면 고정 & 축소 방지)
+        화면 2: 촬영 화면 (🌟 2. 뷰포트 절대고정 & 화면 축소 방지)
   ======================================================== -->
-  <section id="screenLiveShoot" class="hidden absolute inset-0 bg-black flex flex-col items-center justify-center z-50 overflow-hidden">
+  <section id="screenLiveShoot" class="hidden fixed inset-0 w-screen h-screen bg-black flex flex-col items-center justify-center z-50 overflow-hidden">
     <div id="flashOverlay" class="hidden absolute inset-0 bg-white z-[60] pointer-events-none"></div>
     <video id="liveWebcamVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover mirror z-0"></video>
     
@@ -200,8 +202,8 @@
       </div>
     </div>
 
-    <!-- 상단 바 -->
-    <div class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent pb-8">
+    <!-- 상단 바 (뿌연 그라데이션 제거) -->
+    <div class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 pb-6">
       <div class="flex items-center space-x-2">
         <span id="liveProgressBadge" class="bg-theme text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg">구도 대기실</span>
         <span id="liveFormatBadge" class="bg-black/60 text-white font-bold text-[10px] px-2 py-1 rounded-full border border-white/20">1×4 스트립</span>
@@ -251,15 +253,25 @@
   </section>
 
   <!-- ========================================================
-        화면 3: 사진 선택 화면 (screenPick)
+        화면 3: 사진 선택 화면 (🌟 3. 포토이스트 매트블랙 통일 & 4. 초기 슬롯 비우기 & 7. 4·5·6컷 선택)
   ======================================================== -->
   <section id="screenPick" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row items-center justify-between p-3 sm:p-5 gap-4 bg-white text-slate-900 overflow-y-auto touch-scroll">
     <div class="w-full lg:w-5/12 flex flex-col items-center justify-center shrink-0">
-      <div class="w-full max-w-xs mb-2 text-center">
-        <h3 class="text-sm font-black text-slate-800">프레임에 담길 사진 배치 (1~4번)</h3>
-        <p class="text-[11px] text-slate-400 mt-0.5">슬롯을 탭하거나 사진을 끌어다 놓으세요</p>
+      
+      <!-- 🌟 7. 프레임 컷 수 선택 탭 (4컷 / 5컷 / 6컷) -->
+      <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-2xl mb-2.5 shadow-2xs">
+        <button onclick="changeFrameCutMode(4)" id="btnCutMode4" class="px-3 py-1 rounded-xl text-xs font-black bg-white text-slate-900 shadow-xs">4컷</button>
+        <button onclick="changeFrameCutMode(5)" id="btnCutMode5" class="px-3 py-1 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900">5컷 (화보형)</button>
+        <button onclick="changeFrameCutMode(6)" id="btnCutMode6" class="px-3 py-1 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900">6컷 (풀)</button>
       </div>
-      <div id="pickMiniFramePreview" class="bg-black p-3.5 shadow-2xl flex flex-col border-2 border-slate-300 rounded-2xl transition-all duration-300"></div>
+
+      <div class="w-full max-w-xs mb-1.5 text-center">
+        <h3 class="text-xs font-black text-slate-800">프레임에 담을 사진을 직접 넣어주세요</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5">슬롯을 누르거나 사진을 끌어다 놓으세요</p>
+      </div>
+
+      <!-- 포토이스트 매트 블랙 프레임 프리뷰 컨테이너 -->
+      <div id="pickMiniFramePreview" class="bg-[#111111] p-3 shadow-2xl flex flex-col border border-slate-700 rounded-2xl transition-all duration-300"></div>
     </div>
 
     <div class="w-full lg:w-7/12 flex flex-col max-w-lg mx-auto space-y-2.5">
@@ -271,9 +283,9 @@
         <span id="currentActiveSlotBadge" class="bg-rose-50 text-theme font-black text-xs px-2.5 py-1 rounded-lg border border-rose-200 animate-pulse">1번 슬롯 채우는 중</span>
       </div>
 
-      <div class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center p-2 min-h-[400px] lg:min-h-[500px]">
+      <div class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center p-2 min-h-[380px] lg:min-h-[460px]">
         <div id="carouselImageWrapper" class="w-full h-full flex items-center justify-center touch-pan-y cursor-grab select-none">
-          <img id="carouselCurrentImg" src="" draggable="true" class="max-h-[390px] lg:max-h-[480px] w-auto object-contain rounded-xl shadow-2xl transition-transform duration-200 cursor-grab">
+          <img id="carouselCurrentImg" src="" draggable="true" class="max-h-[370px] lg:max-h-[440px] w-auto object-contain rounded-xl shadow-2xl transition-transform duration-200 cursor-grab">
         </div>
 
         <div id="carouselCutBadge" class="absolute top-3 left-3 bg-black/80 backdrop-blur text-white text-xs font-black px-2.5 py-1 rounded-lg border border-white/20">
@@ -308,13 +320,13 @@
   </section>
 
   <!-- ========================================================
-        화면 4: 스튜디오 에디터 (screenEdit)
+        화면 4: 스튜디오 에디터 (🌟 14. 모바일 가로모드 5:5 뷰포트 & 15. 아이패드 중앙정렬)
   ======================================================== -->
-  <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col lg:flex-row bg-white overflow-hidden pointer-events-auto">
+  <section id="screenEdit" class="hidden absolute inset-0 z-30 w-full flex flex-col responsive-editor-layout bg-white overflow-hidden pointer-events-auto">
     
     <!-- 캔버스 작업대 -->
-    <div id="editorCanvasPane" class="w-full h-[52%] lg:h-full lg:w-[50%] flex flex-col bg-[#F6F3EC] relative z-10 shrink-0 overflow-hidden">
-      <!-- 줌 툴바 & 🌟 [◀ 사진 다시 고르기] 네비게이션 버튼 -->
+    <div id="editorCanvasPane" class="w-full h-[52%] editor-canvas-pane flex flex-col bg-[#F6F3EC] relative z-10 shrink-0 overflow-hidden">
+      <!-- 줌 툴바 & [◀ 사진 다시 고르기] 네비게이션 버튼 -->
       <div class="absolute top-2 left-2 z-20 flex items-center space-x-1.5">
         <button onclick="returnToPickScreen()" id="btnReturnToPick" class="bg-white/95 backdrop-blur-md hover:bg-white text-slate-800 text-[11px] font-black px-2.5 py-1 rounded-xl shadow-sm border border-slate-200 flex items-center space-x-1 active:scale-95 transition" title="사진 재선택">
           <i data-lucide="arrow-left" class="w-3.5 h-3.5 text-theme"></i>
@@ -330,9 +342,9 @@
 
       <div id="canvasViewport" class="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-3 touch-none select-none relative">
         <div id="canvasScaleWrapper" class="flex items-center justify-center relative">
-          <canvas id="photoCanvas" class="max-h-[46vh] lg:max-h-[82vh] w-auto h-auto object-contain shadow-2xl bg-white"></canvas>
+          <canvas id="photoCanvas" class="max-h-[46vh] responsive-canvas-height w-auto h-auto object-contain shadow-2xl bg-white"></canvas>
           
-          <!-- 🌟 B-2 마그네틱 자석 스냅 가이드라인 -->
+          <!-- 마그네틱 자석 스냅 가이드라인 -->
           <div id="magneticGuideX" class="hidden absolute left-0 right-0 border-t-2 border-theme border-dashed pointer-events-none z-30"></div>
           <div id="magneticGuideY" class="hidden absolute top-0 bottom-0 border-l-2 border-theme border-dashed pointer-events-none z-30"></div>
         </div>
@@ -349,12 +361,12 @@
     </div>
 
     <!-- 가변 스플릿 리사이저 바 -->
-    <div id="editorSplitResizer" class="h-3.5 w-full lg:w-3.5 lg:h-full bg-slate-200 hover:bg-theme/40 active:bg-theme transition-colors flex items-center justify-center cursor-row-resize lg:cursor-col-resize shrink-0 z-30 select-none shadow-xs">
-      <div class="w-8 h-1 lg:w-1 lg:h-8 bg-slate-400 rounded-full"></div>
+    <div id="editorSplitResizer" class="h-3.5 w-full editor-split-resizer bg-slate-200 hover:bg-theme/40 active:bg-theme transition-colors flex items-center justify-center shrink-0 z-30 select-none shadow-xs">
+      <div class="w-8 h-1 resizer-bar-indicator bg-slate-400 rounded-full"></div>
     </div>
 
     <!-- 에디터 컨트롤 패널 -->
-    <div id="editorControlPane" class="flex-1 h-[48%] lg:h-full flex flex-col bg-white overflow-hidden relative z-0">
+    <div id="editorControlPane" class="flex-1 h-[48%] editor-control-pane flex flex-col bg-white overflow-hidden relative z-0">
       <div class="flex items-center justify-between px-4 py-2 border-b border-slate-100 shrink-0 bg-white z-20 shadow-2xs">
         <div class="flex items-center space-x-2">
           <h2 class="text-xs font-black text-slate-900 flex items-center">
@@ -380,7 +392,7 @@
           </div>
         </div>
 
-        <!-- 3대 테마 분류 시스템 -->
+        <!-- 3대 테마 분류 시스템 (🌟 11. photoist 포토이스트 탑재 & 9. 심플 테마 전면 리뉴얼) -->
         <div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-[11px] font-bold text-slate-700">🎨 테마 선택</label>
@@ -391,13 +403,14 @@
             </div>
           </div>
 
-          <!-- 1. 기본 테마: 상단 / 중간 / 하단(상단 60px / 하단 240px) / 상·하단(위아래 180px 균등) -->
+          <!-- 1. 기본 테마: 상단 / 중간 / 하단 / 상·하단 / 계단형(지그재그) (여백 대폭 확장) -->
           <div id="themeSubPanelBasic" class="space-y-1.5">
-            <div class="grid grid-cols-4 gap-1 text-[10px] font-bold">
+            <div class="grid grid-cols-5 gap-1 text-[9px] font-bold">
               <button onclick="setBasicTextPosition('top', this)" class="basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg">상단문구</button>
               <button onclick="setBasicTextPosition('middle', this)" class="basic-pos-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black shadow-2xs">중간문구</button>
               <button onclick="setBasicTextPosition('bottom', this)" class="basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg">하단문구</button>
-              <button onclick="setBasicTextPosition('dual', this)" class="basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg">상/하단문구</button>
+              <button onclick="setBasicTextPosition('dual', this)" class="basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg">상/하단</button>
+              <button onclick="setBasicTextPosition('stair', this)" class="basic-pos-btn p-1.5 bg-white border border-slate-200 rounded-lg">계단형</button>
             </div>
             <div class="flex items-center justify-between pt-1">
               <span class="text-[10px] font-bold text-slate-500">프레임 색상:</span>
@@ -405,12 +418,12 @@
             </div>
           </div>
 
-          <!-- 2. 심플 테마: 1x4 & 2x2 비대칭 오프셋 3종 -->
+          <!-- 2. 심플 테마 (신규 3종: 미니멀 라인, 폴라로이드 와이드, 인셋 매거진) -->
           <div id="themeSubPanelSimple" class="hidden space-y-1.5">
             <div class="grid grid-cols-3 gap-1 text-[10px] font-bold">
-              <button onclick="setSimpleOffsetLayout('offset1', this)" class="simple-theme-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black truncate">지그재그/다이애그널</button>
-              <button onclick="setSimpleOffsetLayout('offset2', this)" class="simple-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">계단형/스태거드</button>
-              <button onclick="setSimpleOffsetLayout('offset3', this)" class="simple-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">와이드/인셋윈도우</button>
+              <button onclick="setSimpleOffsetLayout('minimal_line', this)" class="simple-theme-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black truncate">미니멀 라인</button>
+              <button onclick="setSimpleOffsetLayout('polaroid_wide', this)" class="simple-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">폴라로이드 와이드</button>
+              <button onclick="setSimpleOffsetLayout('inset_mag', this)" class="simple-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">인셋 매거진</button>
             </div>
             <div class="flex items-center justify-between pt-1">
               <span class="text-[10px] font-bold text-slate-500">어반 색상:</span>
@@ -418,26 +431,32 @@
             </div>
           </div>
 
-          <!-- 3. 프리미엄 테마: 생일, 야구, 포토이즘 -->
+          <!-- 3. 프리미엄 테마 (생일, 야구, 🌟 포토이스트 photoist) -->
           <div id="themeSubPanelPremium" class="hidden space-y-1.5">
             <div class="grid grid-cols-3 gap-1 text-[10px] font-bold">
               <button onclick="setPremiumSubTheme('birthday', this)" class="premium-theme-btn p-1.5 bg-theme text-white border border-theme rounded-lg font-black truncate">🎂생일파티</button>
               <button onclick="setPremiumSubTheme('baseball', this)" class="premium-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">⚾야구빈티지</button>
-              <button onclick="setPremiumSubTheme('photoism', this)" class="premium-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">📸포토이즘</button>
+              <button onclick="setPremiumSubTheme('photoist', this)" class="premium-theme-btn p-1.5 bg-white border border-slate-200 rounded-lg truncate">📸포토이스트</button>
             </div>
             <div class="flex items-center justify-between pt-1">
-              <span class="text-[10px] font-bold text-slate-500">포토이즘 색상:</span>
+              <span class="text-[10px] font-bold text-slate-500">포토이스트 색상:</span>
               <div id="frameColorGridPremium" class="flex items-center space-x-1"></div>
             </div>
           </div>
         </div>
 
-        <!-- 🌟 B-3 측면 커스텀 브랜드 각인 문구 설정창 -->
-        <div class="p-2 bg-slate-50 rounded-2xl border border-slate-200 flex items-center space-x-2">
-          <label class="text-[10px] font-bold text-slate-700 shrink-0 flex items-center">
-            <i data-lucide="type" class="w-3 h-3 text-theme mr-1"></i> 측면 각인
-          </label>
-          <input type="text" id="customEngraveInput" placeholder="기본 영문 각인 (비워두면 기본값)" oninput="onCustomEngraveChange(this.value)" class="flex-1 bg-white border border-slate-300 rounded-xl px-2.5 py-1 text-xs outline-none focus:border-theme">
+        <!-- 🌟 5. 모든 프레임 측면 각인 툴바 (입력, 기본문구 원클릭, 삭제 원클릭) -->
+        <div class="p-2 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-[10px] font-bold text-slate-700 flex items-center">
+              <i data-lucide="type" class="w-3 h-3 text-theme mr-1"></i> 측면 세로 각인
+            </label>
+            <div class="flex items-center space-x-1">
+              <button onclick="applyDefaultSideEngrave()" class="text-[9px] bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-1.5 py-0.5 rounded">기본 문구</button>
+              <button onclick="clearSideEngrave()" class="text-[9px] bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold px-1.5 py-0.5 rounded">삭제(X)</button>
+            </div>
+          </div>
+          <input type="text" id="customEngraveInput" placeholder="측면 세로 각인 문구 입력" oninput="onCustomEngraveChange(this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1 text-xs outline-none focus:border-theme">
         </div>
 
         <!-- 감성 필터 15종 -->
@@ -470,10 +489,10 @@
           </div>
         </div>
 
-        <!-- 프레임 여백 및 날짜 오브젝트 체크 -->
+        <!-- 프레임 여백 및 날짜 오브젝트 체크 (여백 비례 32~64px 자동 스케일링 연동) -->
         <div class="flex items-center justify-between space-x-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
           <div class="flex items-center space-x-1.5 shrink-0">
-            <span class="text-[10px] font-bold text-slate-600">여백 (각인연동)</span>
+            <span class="text-[10px] font-bold text-slate-600">여백 (각인크기 연동)</span>
             <input type="range" id="sliderThickness" min="30" max="80" value="60" oninput="onThicknessChange(this.value)" class="w-20 accent-theme h-1 bg-slate-200 rounded">
           </div>
           <label class="flex items-center space-x-1.5 cursor-pointer text-[10px] font-bold text-slate-700 bg-white px-2 py-1 rounded-lg border border-slate-200">
@@ -482,11 +501,24 @@
           </label>
         </div>
 
-        <!-- 통합 텍스트 삽입 & 스티커 & 🌟 A-2 Y2K 데코 스탬프 팩 -->
+        <!-- 🌟 6. 착용형 소품 스탬프 & 반투명 하트 & 이모티콘 팩 -->
         <div>
           <div class="flex justify-between items-center mb-1">
-            <label class="text-[10px] font-bold text-slate-700">✍️ 텍스트 / 스탬프 / 스티커</label>
+            <label class="text-[10px] font-bold text-slate-700">🎭 착용 소품 & 스티커</label>
             <button onclick="clearAllStickers()" class="text-[9px] text-theme hover:underline">전체 비우기</button>
+          </div>
+
+          <!-- 착용형 소품 스탬프 바 (머리띠, 토끼귀, 고양이수염, 선글라스, 안경, 반투명하트) -->
+          <div class="mb-1.5 p-1.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
+            <span class="text-[9px] font-black text-theme shrink-0">착용 소품:</span>
+            <button onclick="addPropSticker('🐰', 110)" class="prop-chip">🐰 토끼귀</button>
+            <button onclick="addPropSticker('🎀', 90)" class="prop-chip">🎀 머리띠</button>
+            <button onclick="addPropSticker('🐱', 85)" class="prop-chip">🐱 고양이수염</button>
+            <button onclick="addPropSticker('🕶️', 100)" class="prop-chip">🕶️ 힙스터선글라스</button>
+            <button onclick="addPropSticker('👓', 95)" class="prop-chip">👓 긱시크안경</button>
+            <button onclick="addPropSticker('👑', 90)" class="prop-chip">👑 왕관</button>
+            <button onclick="addPropSticker('💖', 120, 0.45)" class="prop-chip text-rose-500 font-black">💖 반투명하트</button>
+            <button onclick="addPropSticker('🤍', 120, 0.45)" class="prop-chip text-slate-400 font-black">🤍 반투명화이트</button>
           </div>
 
           <div class="flex items-center space-x-1.5 mb-1.5">
@@ -494,17 +526,6 @@
             <button onclick="addDirectTextSticker()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs active:scale-95 transition shrink-0">
               + 삽입
             </button>
-          </div>
-
-          <!-- 🌟 A-2 Y2K & 레트로 포토부스 데코 스탬프 바 -->
-          <div class="mb-1.5 p-1.5 bg-slate-100 rounded-xl flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
-            <span class="text-[9px] font-black text-slate-500 shrink-0">Y2K 스탬프:</span>
-            <button onclick="addTextSticker('❚❙❘❙❚ 789456')" class="deco-chip">❚❙❘ 바코드</button>
-            <button onclick="addTextSticker('● REC 00:00:24')" class="deco-chip text-rose-500">● REC</button>
-            <button onclick="addTextSticker('★ ORIGINAL ★')" class="deco-chip">★ORIGINAL★</button>
-            <button onclick="addTextSticker('#01 FIRST CUT')" class="deco-chip">#01 FIRST</button>
-            <button onclick="addTextSticker('LIMITED EDITION')" class="deco-chip">LIMITED</button>
-            <button onclick="addTextSticker('🎞️ 35mm FILM')" class="deco-chip">🎞️ FILM</button>
           </div>
 
           <div id="textStickerGrid" class="flex items-center space-x-1 overflow-x-auto pb-1 no-scrollbar"></div>
@@ -547,7 +568,7 @@
           </div>
         </div>
 
-        <!-- 🌟 하단 액션 바: [⭐ 추억네컷 찜] + 자동 아카이빙 -->
+        <!-- 하단 액션 바: [⭐ 추억네컷 찜] + 자동 아카이빙 -->
         <div class="pt-2 border-t border-slate-200">
           <div class="grid grid-cols-5 gap-1">
             <button onclick="toggleFavoriteStrip()" id="btnFavoriteStrip" class="bg-rose-500 hover:bg-rose-600 text-white font-black py-2.5 rounded-xl text-[9px] flex flex-col items-center justify-center space-y-0.5 shadow active:scale-95 transition">
@@ -577,7 +598,7 @@
   </section>
 
   <!-- ========================================================
-        모달 1: 🌟 마이페이지 (내 정보 관리 센터)
+        모달 1: 🌟 16. 마이페이지 (내 정보 관리 - PIN 삭제 & 전체 UI 10종 테마 선택 탑재)
   ======================================================== -->
   <div id="myProfileModal" class="hidden fixed inset-0 z-[75] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl space-y-4">
@@ -600,27 +621,24 @@
         </div>
       </div>
 
-      <!-- 1. 간편 PIN 번호 설정/재설정 -->
-      <div class="space-y-1.5 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-        <label class="text-[11px] font-bold text-slate-700 block">🔒 4자리 간편 PIN 번호 관리</label>
-        <div class="flex space-x-1.5">
-          <input type="password" id="inputProfilePin" maxlength="4" placeholder="새 숫자 4자리" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme">
-          <button onclick="submitNewProfilePin()" class="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black px-3 py-1.5 rounded-xl active:scale-95 shrink-0">
-            PIN 저장
-          </button>
-        </div>
-        <p class="text-[9px] text-slate-400">현장에서 1초 만에 로그인할 수 있는 비밀번호입니다.</p>
-      </div>
-
-      <!-- 2. 나만의 시그니처 테마 색상 기본값 저장 -->
-      <div class="space-y-1.5 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+      <!-- 🌟 프로그램 전체 UI 10종 메인 테마 색상 선택기 -->
+      <div class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
         <div class="flex items-center justify-between">
-          <label class="text-[11px] font-bold text-slate-700">🎨 나만의 시그니처 프레임 색상</label>
-          <input type="color" id="profileSignatureColor" value="#000000" class="w-6 h-6 rounded cursor-pointer border border-slate-300">
+          <label class="text-[11px] font-bold text-slate-700">🎨 앱 전체 UI 테마 색상</label>
+          <span id="profileCurrentThemeName" class="text-[10px] font-black text-theme">로즈 핑크</span>
         </div>
-        <button onclick="saveMySignatureThemeFromProfile()" class="w-full bg-theme text-white text-[11px] font-black py-2 rounded-xl active:scale-95 shadow-xs">
-          현재 테마를 내 시그니처로 고정 저장
-        </button>
+        <div class="grid grid-cols-5 gap-2 pt-1" id="profileThemePickerGrid">
+          <button onclick="applyAppTheme('rose')" class="w-7 h-7 rounded-full bg-[#f43f5e] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="로즈 핑크"></button>
+          <button onclick="applyAppTheme('black')" class="w-7 h-7 rounded-full bg-[#0f172a] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="모던 블랙"></button>
+          <button onclick="applyAppTheme('blue')" class="w-7 h-7 rounded-full bg-[#0284c7] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="오션 블루"></button>
+          <button onclick="applyAppTheme('purple')" class="w-7 h-7 rounded-full bg-[#9333ea] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="라벤더 퍼플"></button>
+          <button onclick="applyAppTheme('green')" class="w-7 h-7 rounded-full bg-[#059669] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="포레스트 그린"></button>
+          <button onclick="applyAppTheme('orange')" class="w-7 h-7 rounded-full bg-[#f97316] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="선셋 오렌지"></button>
+          <button onclick="applyAppTheme('yellow')" class="w-7 h-7 rounded-full bg-[#eab308] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="선샤인 옐로우"></button>
+          <button onclick="applyAppTheme('navy')" class="w-7 h-7 rounded-full bg-[#1e1b4b] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="미드나잇 네이비"></button>
+          <button onclick="applyAppTheme('coral')" class="w-7 h-7 rounded-full bg-[#fb7185] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="벚꽃 코랄"></button>
+          <button onclick="applyAppTheme('mint')" class="w-7 h-7 rounded-full bg-[#14b8a6] shadow-xs mx-auto border-2 border-white hover:scale-110 active:scale-95 transition" title="민트 브리즈"></button>
+        </div>
       </div>
 
       <div class="pt-1 flex items-center justify-between">
@@ -631,7 +649,7 @@
   </div>
 
   <!-- ========================================================
-        모달 2: 🌟 통합 멀티 채널 공유 센터
+        모달 2: 통합 멀티 채널 공유 센터
   ======================================================== -->
   <div id="mainShareModal" class="hidden fixed inset-0 z-[70] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl space-y-4 text-center">
@@ -661,20 +679,20 @@
   </div>
 
   <!-- ========================================================
-        모달 3: 회원가입 / 로그인 / 간편 PIN & 🌟 계정 찾기 탭
+        모달 3: 🌟 17. 4자리 PIN 로그인 완전 삭제 & 18. 회원가입 유효성/비밀번호 확인/계정찾기
   ======================================================== -->
   <div id="authModal" class="hidden fixed inset-0 z-[75] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2">
         <div class="flex space-x-1 bg-slate-100 p-1 rounded-xl text-xs font-black">
-          <button onclick="switchAuthTab('login')" id="tabModalLogin" class="px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-xs">로그인</button>
-          <button onclick="switchAuthTab('register')" id="tabModalRegister" class="px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-900">회원가입</button>
+          <button onclick="switchAuthTab('login')" id="tabModalLogin" class="px-3 py-1 rounded-lg bg-white text-slate-900 shadow-xs">로그인</button>
+          <button onclick="switchAuthTab('register')" id="tabModalRegister" class="px-3 py-1 rounded-lg text-slate-500 hover:text-slate-900">회원가입</button>
           <button onclick="switchAuthTab('find')" id="tabModalFind" class="px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-900">계정찾기</button>
         </div>
         <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <!-- A. 로그인 폼 -->
+      <!-- A. 로그인 폼 (PIN 삭제, 아이디/비번 단일화) -->
       <div id="authFormLogin" class="space-y-3">
         <div>
           <label class="text-[10px] font-bold text-slate-500">아이디</label>
@@ -687,14 +705,21 @@
 
         <button onclick="processLogin()" class="w-full bg-theme text-white font-black py-3 rounded-xl text-xs shadow-md active:scale-95 transition">로그인</button>
         
-        <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-          <button onclick="switchAuthTab('pin')" class="hover:text-theme font-bold">4자리 PIN 로그인</button>
-          <button onclick="switchAuthTab('find')" class="hover:underline">아이디/비번 찾기</button>
+        <div class="text-center text-[11px] text-slate-500 pt-1">
+          <button onclick="switchAuthTab('find')" class="hover:underline">아이디 또는 비밀번호를 잊으셨나요?</button>
         </div>
       </div>
 
-      <!-- B. 회원가입 폼 -->
-      <div id="authFormRegister" class="hidden space-y-2.5">
+      <!-- B. 🌟 18. 회원가입 폼 (이름, 아이디, 비밀번호, 비밀번호 확인, 생년월일 6자리, 이메일) -->
+      <div id="authFormRegister" class="hidden space-y-2">
+        <div>
+          <label class="text-[10px] font-bold text-slate-500">이름</label>
+          <input type="text" id="regUserName" placeholder="실명 입력" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-slate-500">생년월일 6자리</label>
+          <input type="text" id="regUserDob" maxlength="6" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
+        </div>
         <div>
           <label class="text-[10px] font-bold text-slate-500">아이디 (영문/숫자 4~12자)</label>
           <div class="flex space-x-1.5 mt-0.5">
@@ -707,60 +732,34 @@
           <input type="password" id="regUserPw" placeholder="비밀번호" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
         </div>
         <div>
-          <label class="text-[10px] font-bold text-slate-500">생년월일 (8자리: 예 19980521)</label>
-          <input type="text" id="regUserDob" maxlength="8" placeholder="YYYYMMDD" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
+          <label class="text-[10px] font-bold text-slate-500">비밀번호 확인</label>
+          <input type="password" id="regUserPwConfirm" placeholder="비밀번호 재입력" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
         </div>
         <div>
-          <label class="text-[10px] font-bold text-slate-500">이메일 주소 (임시비번 수신용)</label>
+          <label class="text-[10px] font-bold text-slate-500">이메일 주소</label>
           <input type="email" id="regUserEmail" placeholder="example@email.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
         </div>
 
-        <button onclick="processRegister()" class="w-full bg-theme text-white font-black py-3 rounded-xl text-xs shadow-md active:scale-95 transition mt-2">✨ 3초 만에 가입 완료하기</button>
+        <button onclick="processRegister()" class="w-full bg-theme text-white font-black py-2.5 rounded-xl text-xs shadow-md active:scale-95 transition mt-1.5">가입 완료하기</button>
       </div>
 
-      <!-- C. 4자리 간편 PIN 로그인 -->
-      <div id="authFormPin" class="hidden space-y-3 text-center">
-        <p class="text-xs text-slate-600 font-bold">등록하신 4자리 간편 PIN 번호를 입력하세요</p>
-        <div id="pinDotsDisplay" class="flex justify-center space-x-3 py-2">
-          <div class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-300"></div>
-          <div class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-300"></div>
-          <div class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-300"></div>
-          <div class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-300"></div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2 max-w-[220px] mx-auto pt-1">
-          <button onclick="pressPinKey('1')" class="pin-key">1</button>
-          <button onclick="pressPinKey('2')" class="pin-key">2</button>
-          <button onclick="pressPinKey('3')" class="pin-key">3</button>
-          <button onclick="pressPinKey('4')" class="pin-key">4</button>
-          <button onclick="pressPinKey('5')" class="pin-key">5</button>
-          <button onclick="pressPinKey('6')" class="pin-key">6</button>
-          <button onclick="pressPinKey('7')" class="pin-key">7</button>
-          <button onclick="pressPinKey('8')" class="pin-key">8</button>
-          <button onclick="pressPinKey('9')" class="pin-key">9</button>
-          <button onclick="clearPinInput()" class="pin-key text-xs font-normal">지움</button>
-          <button onclick="pressPinKey('0')" class="pin-key">0</button>
-          <button onclick="backspacePinKey()" class="pin-key text-xs font-normal">←</button>
-        </div>
-      </div>
-
-      <!-- D. 🌟 계정 및 비밀번호 찾기 폼 -->
+      <!-- C. 계정 및 비밀번호 찾기 폼 -->
       <div id="authFormFind" class="hidden space-y-2.5">
         <div>
-          <label class="text-[10px] font-bold text-slate-500">가입 아이디 (비밀번호 찾기 시 필수)</label>
-          <input type="text" id="findUserId" placeholder="아이디 입력" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
+          <label class="text-[10px] font-bold text-slate-500">가입자 이름</label>
+          <input type="text" id="findUserName" placeholder="이름" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-slate-500">생년월일 6자리</label>
+          <input type="text" id="findUserDob" maxlength="6" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
         </div>
         <div>
           <label class="text-[10px] font-bold text-slate-500">가입 이메일 주소</label>
-          <input type="email" id="findUserEmail" placeholder="가입 시 기재한 이메일" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
-        </div>
-        <div>
-          <label class="text-[10px] font-bold text-slate-500">생년월일 (8자리)</label>
-          <input type="text" id="findUserDob" maxlength="8" placeholder="YYYYMMDD" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
+          <input type="email" id="findUserEmail" placeholder="이메일 입력" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-theme mt-0.5">
         </div>
 
-        <button onclick="processFindPassword()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl text-xs shadow-md active:scale-95 transition mt-2">
-          임시 비밀번호 무료 발송
+        <button onclick="processFindAccount()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl text-xs shadow-md active:scale-95 transition mt-2">
+          계정 확인 및 임시비밀번호 전송
         </button>
       </div>
     </div>
@@ -787,7 +786,7 @@
             최근 히스토리 (10)
           </button>
           <button onclick="switchGalleryTab('favorites')" id="tabGalleryFavorites" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900">
-            ⭐ 찜한 인생네컷
+            ⭐ 찜한 추억네컷
           </button>
         </div>
       </div>
@@ -887,7 +886,7 @@
     <div class="bg-white rounded-3xl p-4 sm:p-5 max-w-md w-full shadow-2xl flex flex-col items-center space-y-3">
       <div class="flex items-center justify-between w-full border-b border-slate-100 pb-2">
         <h3 class="font-black text-sm text-slate-900 flex items-center">
-          <i data-lucide="video" class="w-4 h-4 text-theme mr-1"></i> 4컷 비디오 합성 완료
+          <i data-lucide="video" class="w-4 h-4 text-theme mr-1"></i> 무빙 비디오 합성 완료 (15Mbps 고화질)
         </h3>
         <button onclick="closeVideoResultModal()" class="text-slate-400 hover:text-slate-700 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
@@ -899,7 +898,7 @@
       <div class="grid grid-cols-2 gap-2 w-full pt-1">
         <button onclick="downloadCurrentVideoFile()" class="bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
           <i data-lucide="download" class="w-3.5 h-3.5"></i>
-          <span>파일 저장</span>
+          <span>비디오 저장</span>
         </button>
         <button onclick="shareCurrentVideoFile()" class="bg-theme hover:bg-theme text-white font-black py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition">
           <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
@@ -954,7 +953,7 @@
   <div id="galleryCollectModal" class="hidden absolute inset-0 z-50 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center space-y-4">
       <div class="w-10 h-10 bg-theme-light text-theme rounded-full flex items-center justify-center mx-auto"><i data-lucide="image-plus" class="w-5 h-5"></i></div>
-      <div><h3 class="font-black text-base text-slate-900" id="collectModalTitle">사진 수집 중 ( 0 / 4 )</h3><p class="text-xs text-slate-500 mt-1">4장이 채워지면 바로 배치 화면으로 이동합니다</p></div>
+      <div><h3 class="font-black text-base text-slate-900" id="collectModalTitle">사진 수집 중</h3><p class="text-xs text-slate-500 mt-1">지정한 컷 수가 채워지면 바로 배치 화면으로 이동합니다</p></div>
       <div id="collectThumbGrid" class="flex justify-center space-x-2 py-1"></div>
       <div class="space-y-2 pt-2">
         <button onclick="triggerGalleryUpload()" class="w-full bg-theme text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition"><i data-lucide="camera" class="w-4 h-4"></i><span>➕ 다음 사진 선택하기</span></button>
