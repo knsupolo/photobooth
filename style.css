@@ -1,53 +1,199 @@
-@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Jua&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Pretendard:wght@400;600;700;900&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Jua&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Sunflower:wght@700&family=Montserrat:wght@400;700;900&display=swap');
 
+/* 1. 기본 환경 및 동적 뷰포트 (100dvh & Safe Area 완벽 방어) */
 :root {
-  --theme-color: #f43f5e;
+  --app-vh: 1vh;
   --theme-primary: #f43f5e;
   --theme-primary-hover: #e11d48;
-  --theme-color-hover: #e11d48;
-  --theme-color-light: #fff1f2;
-  --app-vh: 100vh;
+  --theme-bg: #0d0d0d;
+  --surface-matte: #111111;
+  --surface-card: #181818;
+  --surface-border: rgba(255, 255, 255, 0.08);
 }
 
 * {
-  box-sizing: border-box;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
-body {
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
+  background-color: var(--theme-bg);
+  color: #f8fafc;
+  overflow: hidden;
   touch-action: manipulation;
-  background-color: #f8fafc;
-  color: #1e293b;
-  height: var(--app-vh);
-  width: 100vw;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
 }
 
-/* 카메라 좌우 반전 거울 모드 */
+/* 2. 아이패드/아이폰 하단 Safe Area 및 여백 클래스 */
+.safe-bottom-padding {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 24px)) !important;
+}
+
+.safe-top-padding {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 12px)) !important;
+}
+
+/* 3. 상단 딤드/블러 완전 제거: 쨍하고 또렷한 뷰파인더 */
+.clear-header {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+/* 4. 카메라 뷰파인더 고정 컨테이너 (촬영 시 화면 축소 버그 원천 차단) */
+.camera-fixed-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #000000;
+}
+
+.camera-stream-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
 .mirror {
-  transform: scaleX(-1) !important;
+  transform: scaleX(-1);
 }
 
-/* 반투명 카운트다운 네온 텍스트 */
-.stroke-countdown-translucent {
-  color: rgba(255, 255, 255, 0.25);
-  -webkit-text-stroke: 3px rgba(255, 255, 255, 0.85);
-  text-shadow: 0 0 20px rgba(244, 63, 94, 0.6), 0 4px 16px rgba(0, 0, 0, 0.7);
-  letter-spacing: -2px;
-}
-
-/* 실감형 플래시 효과 */
-@keyframes flashAnimation {
-  0% { opacity: 0; }
-  30% { opacity: 0.95; }
+/* 5. 플래시 셔터 애니메이션 */
+@keyframes studioFlash {
+  0% { opacity: 0.95; }
   100% { opacity: 0; }
 }
 
-.flash-effect {
-  animation: flashAnimation 0.38s ease-out forwards;
+.flash-active {
+  animation: studioFlash 0.38s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
 }
 
-/* 스크롤바 숨김 유틸리티 */
+/* 6. 카운트다운 스트로크 텍스트 */
+.stroke-countdown {
+  color: #ffffff;
+  text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 4px 12px rgba(0, 0, 0, 0.8);
+  -webkit-text-stroke: 4px rgba(0, 0, 0, 0.7);
+}
+
+/* 7. 에디터 스튜디오 듀얼 스플릿 레이아웃 & 터치 리사이저 */
+.split-editor-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 1023px) {
+  /* 태블릿/모바일 세로 모드: 상하 분할 */
+  .split-editor-container {
+    flex-direction: column;
+  }
+  .split-pane-canvas {
+    flex: 0 0 48%;
+    width: 100%;
+    min-height: 200px;
+    max-height: 75%;
+  }
+  .split-pane-controls {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+  }
+  .split-resizer-bar {
+    width: 100%;
+    height: 12px;
+    cursor: row-resize;
+    touch-action: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* PC/아이패드 가로 모드: 좌우 분할 */
+  .split-editor-container {
+    flex-direction: row;
+  }
+  .split-pane-canvas {
+    flex: 0 0 52%;
+    height: 100%;
+    min-width: 320px;
+    max-width: 75%;
+  }
+  .split-pane-controls {
+    flex: 1;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .split-resizer-bar {
+    width: 12px;
+    height: 100%;
+    cursor: col-resize;
+    touch-action: none;
+  }
+}
+
+/* 8. 캔버스 뷰포트 인터랙션 및 중앙 정렬 */
+#canvasViewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #080808;
+  overflow: hidden;
+  touch-action: none;
+}
+
+#canvasScaleWrapper {
+  transform-origin: center center;
+  transition: transform 0.05s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#photoCanvas {
+  max-width: 100%;
+  max-height: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* 9. 포토이스트 매트 블랙 슬롯 카드 스타일링 */
+.slot-matte-card {
+  background-color: #161616;
+  border: 1.5px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slot-matte-card.slot-filled {
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.slot-matte-card.slot-active {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 2px var(--theme-primary), 0 0 20px rgba(244, 63, 94, 0.25);
+}
+
+/* 10. 스크롤바 숨김 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -55,141 +201,24 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.touch-scroll {
-  -webkit-overflow-scrolling: touch;
-}
 
-/* 동적 테마 색상 클래스 */
-.bg-theme { background-color: var(--theme-color) !important; }
-.bg-theme-hover:hover { background-color: var(--theme-color-hover) !important; }
-.bg-theme-light { background-color: var(--theme-color-light) !important; }
-.text-theme { color: var(--theme-color) !important; }
-.border-theme { border-color: var(--theme-color) !important; }
-
-/* 2단계 플로팅 돋보기 */
-#floatingLoupe {
-  pointer-events: none;
-  transform: translate(-50%, -125%);
-  box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.1);
-  transition: opacity 0.15s ease, transform 0.05s ease-out;
-}
-
-/* 슬롯 드래그 하이라이트 */
-.slot-dragover {
-  border-color: #10b981 !important;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4) !important;
-  transform: scale(1.04);
-  transition: all 0.15s ease;
-}
-
-/* 🌟 착용 소품 칩 스타일 */
-.prop-chip {
-  background-color: #ffffff;
-  border: 1px solid #fecdd3;
-  color: #1e293b;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 3px 8px;
+/* 11. 커스텀 레인지 슬라이더 */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #262626;
+  height: 6px;
   border-radius: 9999px;
-  white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+  outline: none;
 }
-
-.prop-chip:hover {
-  background-color: #fff1f2;
-  border-color: var(--theme-color);
-}
-
-.prop-chip:active {
-  transform: scale(0.95);
-}
-
-/* 15열 이모티콘 그리드 */
-.emoji-grid-15 {
-  display: grid !important;
-  grid-template-columns: repeat(15, minmax(0, 1fr)) !important;
-  gap: 2px !important;
-}
-
-.emoji-grid-15 button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  padding: 3px 0;
-  border-radius: 6px;
-  transition: transform 0.1s, background-color 0.15s;
-}
-
-.emoji-grid-15 button:active {
-  transform: scale(1.2);
-  background-color: #e2e8f0;
-}
-
-/* 캔버스 스케일 패닝 래퍼 */
-#canvasScaleWrapper {
-  transform-origin: center center;
-  transition: transform 0.04s ease-out;
-  cursor: grab;
-}
-
-#canvasScaleWrapper:active {
-  cursor: grabbing;
-}
-
-/* 챗봇 말풍선 */
-.chat-bubble-user {
-  background-color: var(--theme-color);
-  color: white;
-  border-radius: 16px 16px 4px 16px;
-}
-
-.chat-bubble-ai {
-  background-color: #f1f5f9;
-  color: #1e293b;
-  border-radius: 16px 16px 16px 4px;
-}
-
-/* 숨김 레이어 클릭 가로채기 차단 강제 규칙 */
-.hidden, [hidden] {
-  display: none !important;
-}
-
-/* ========================================================
-   🌟 14, 15. 스마트폰 가로모드 5:5 스플릿 & 아이패드 중앙 정렬
-======================================================== */
-@media (min-width: 640px) and (orientation: landscape) {
-  .responsive-editor-layout {
-    flex-direction: row !important;
-  }
-  .editor-canvas-pane {
-    width: 50% !important;
-    height: 100% !important;
-  }
-  .editor-split-resizer {
-    width: 14px !important;
-    height: 100% !important;
-    cursor: col-resize !important;
-  }
-  .resizer-bar-indicator {
-    width: 4px !important;
-    height: 32px !important;
-  }
-  .editor-control-pane {
-    width: 50% !important;
-    height: 100% !important;
-  }
-  .responsive-canvas-height {
-    max-height: 84vh !important;
-  }
-}
-
-/* 아이패드 세로모드 중앙정렬 */
-@media (min-width: 768px) and (orientation: portrait) {
-  #screenEdit, #screenPick, #screenHome {
-    justify-content: center;
-    align-items: center;
-  }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--theme-primary);
 }
