@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>추억의 네컷 Studio Pro v17.3 Pro</title>
+  <title>Photoist Pro v1.0</title>
   
   <!-- TailwindCSS & Icons & Libraries -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,35 +14,36 @@
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#0d0d0d] text-slate-100 flex flex-col h-[100dvh] overflow-hidden antialiased">
+<body class="bg-[#F8FAFC] text-slate-900 flex flex-col h-[100dvh] overflow-hidden antialiased">
 
   <!-- ========================================== -->
-  <!-- 글로벌 헤더 (상단 블러/딤드 제거, 선명한 투명 UI) -->
+  <!-- 글로벌 헤더 (클린 화이트 & 심플 배지) -->
   <!-- ========================================== -->
-  <header id="mainHeader" class="clear-header shrink-0 z-40 px-4 py-2 flex items-center justify-between border-b border-white/5 safe-top-padding">
+  <header id="mainHeader" class="shrink-0 z-40 px-4 py-2.5 flex items-center justify-between bg-white border-b border-slate-200/80 safe-top-padding shadow-xs">
     <div class="flex items-center space-x-2">
-      <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-      <h1 class="text-sm md:text-base font-black tracking-tight text-white flex items-center gap-1.5">
-        <span>photoist</span>
-        <span class="text-[10px] bg-rose-500/20 text-rose-400 font-extrabold px-1.5 py-0.5 rounded border border-rose-500/30">v17.3 Pro</span>
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+      <h1 class="text-sm md:text-base font-black tracking-tight text-slate-900 flex items-center gap-1.5">
+        <span class="tracking-tighter">photoist</span>
+        <span class="text-rose-500 font-black">PRO</span>
+        <span class="text-[10px] bg-slate-900 text-white font-extrabold px-1.5 py-0.5 rounded">v1.0</span>
       </h1>
     </div>
     
     <div class="flex items-center space-x-2">
-      <!-- 로그인 사용자 뱃지 -->
-      <span id="headerUserBadge" class="hidden text-xs bg-white/10 text-white font-bold px-2.5 py-1 rounded-full border border-white/15"></span>
+      <!-- 로그인 사용자 배지 -->
+      <span id="headerUserBadge" class="hidden text-xs bg-slate-100 text-slate-800 font-bold px-2.5 py-1 rounded-full border border-slate-200"></span>
       <!-- 로그인 버튼 -->
-      <button id="headerBtnLogin" onclick="openLoginModal()" class="text-xs bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-lg border border-white/15 transition flex items-center gap-1">
+      <button id="headerBtnLogin" onclick="openLoginModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1">
         <i data-lucide="log-in" class="w-3.5 h-3.5"></i>
         <span>로그인</span>
       </button>
-      <!-- 마이페이지 버튼 -->
-      <button id="headerBtnMyPage" onclick="openMyPageModal()" class="hidden text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1">
+      <!-- 내 정보 버튼 -->
+      <button id="headerBtnMyPage" onclick="openMyPageModal()" class="hidden text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1">
         <i data-lucide="user" class="w-3.5 h-3.5"></i>
         <span>내 정보</span>
       </button>
-      <!-- 고객소리함/공지사항 버튼 -->
-      <button onclick="openNoticeBoardModal()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition" title="공지 및 고객의 소리">
+      <!-- 고객소리함 버튼 -->
+      <button onclick="openNoticeBoardModal()" class="p-1.5 text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition" title="공지 및 고객의 소리">
         <i data-lucide="message-square" class="w-4 h-4"></i>
       </button>
     </div>
@@ -52,78 +53,72 @@
   <!-- 1. 메인 홈 화면 (Screen 1: screenHome) -->
   <!-- ========================================== -->
   <main id="screenHome" class="flex-1 flex flex-col justify-between p-4 md:p-6 max-w-xl mx-auto w-full overflow-y-auto no-scrollbar safe-bottom-padding">
-    <div class="text-center pt-2 pb-4">
-      <p class="text-xs uppercase tracking-widest text-rose-500 font-extrabold mb-1">Authentic Booth Studio</p>
-      <h2 class="text-2xl md:text-3xl font-black text-white tracking-tight">추억을 가장 선명하게 남기는 순간</h2>
-      <p class="text-xs text-slate-400 mt-1">포토이스트 감성의 고화질 무빙 영상과 네컷 프레임을 완성해 보세요.</p>
+    <!-- 타이틀 영역 -->
+    <div class="text-center pt-2 pb-3">
+      <span class="text-[11px] uppercase tracking-widest text-rose-500 font-extrabold mb-1 block">Authentic Moving Studio</span>
+      <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Photoist Pro (포토이스트 프로)</h2>
+      <p class="text-xs text-slate-500 mt-1 font-medium">빛나는 지금, 우리만의 시선으로 기록하는 감성 무빙 스튜디오</p>
     </div>
 
-    <!-- 규격 및 설정 카드 -->
-    <div class="space-y-4 bg-[#141414] p-4 rounded-2xl border border-white/10">
-      <!-- 컷수 선택: 4컷 / 5컷(화보형) / 6컷 -->
-      <div>
-        <label class="block text-xs font-bold text-slate-300 mb-2 flex items-center gap-1">
-          <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-rose-400"></i>
-          <span>사진 컷수 선택</span>
-        </label>
-        <div class="grid grid-cols-3 gap-2">
-          <button type="button" onclick="selectCutCount(4, this)" class="cut-mode-btn bg-white text-black font-black py-2.5 rounded-xl text-xs border border-white transition shadow-sm">4컷 클래식</button>
-          <button type="button" onclick="selectCutCount(5, this)" class="cut-mode-btn bg-[#202020] text-slate-300 font-bold py-2.5 rounded-xl text-xs border border-white/10 hover:border-white/20 transition">5컷 화보형</button>
-          <button type="button" onclick="selectCutCount(6, this)" class="cut-mode-btn bg-[#202020] text-slate-300 font-bold py-2.5 rounded-xl text-xs border border-white/10 hover:border-white/20 transition">6컷 프리미엄</button>
+    <!-- 4대 핵심 기능 카드 그리드 -->
+    <div class="grid grid-cols-2 gap-3 my-auto">
+      <!-- 1) 1×4 가로 촬영 모드 카드 -->
+      <button type="button" onclick="selectShootingMode('strip')" class="flex flex-col items-center justify-center p-5 bg-white rounded-3xl border-2 border-slate-200/90 hover:border-rose-500 active:scale-98 shadow-sm hover:shadow-md transition text-center group">
+        <div class="w-13 h-13 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+          <i data-lucide="maximize" class="w-6 h-6 rotate-90"></i>
         </div>
-      </div>
-
-      <!-- 레이아웃 형태: 1줄 스트립 / 그리드 엽서형 / 2줄 인쇄용 (Twin) -->
-      <div>
-        <label class="block text-xs font-bold text-slate-300 mb-2 flex items-center gap-1">
-          <i data-lucide="columns" class="w-3.5 h-3.5 text-rose-400"></i>
-          <span>출력 레이아웃 선택 (전 규격 2줄 인쇄 지원)</span>
-        </label>
-        <div class="grid grid-cols-3 gap-2">
-          <button type="button" onclick="selectHomeLayout('strip', this)" class="home-layout-btn bg-white text-black font-black py-2.5 rounded-xl text-xs border border-white transition shadow-sm">1줄 스트립</button>
-          <button type="button" onclick="selectHomeLayout('grid', this)" class="home-layout-btn bg-[#202020] text-slate-300 font-bold py-2.5 rounded-xl text-xs border border-white/10 hover:border-white/20 transition">격자/화보 엽서</button>
-          <button type="button" onclick="selectHomeLayout('twin', this)" class="home-layout-btn bg-[#202020] text-slate-300 font-bold py-2.5 rounded-xl text-xs border border-white/10 hover:border-white/20 transition">2줄 인쇄용(Twin)</button>
-        </div>
-      </div>
-
-      <!-- 촬영 타이머 간격 -->
-      <div>
-        <label class="block text-xs font-bold text-slate-300 mb-2 flex items-center gap-1">
-          <i data-lucide="timer" class="w-3.5 h-3.5 text-rose-400"></i>
-          <span>촬영 셔터 간격</span>
-        </label>
-        <div class="grid grid-cols-4 gap-2">
-          <button type="button" onclick="selectInterval(3, this)" class="interval-btn bg-[#202020] text-slate-300 font-bold py-2 rounded-xl text-xs border border-white/10 transition">3초</button>
-          <button type="button" onclick="selectInterval(5, this)" class="interval-btn bg-white text-black font-black py-2 rounded-xl text-xs border border-white transition shadow-sm">5초</button>
-          <button type="button" onclick="selectInterval(7, this)" class="interval-btn bg-[#202020] text-slate-300 font-bold py-2 rounded-xl text-xs border border-white/10 transition">7초</button>
-          <button type="button" onclick="selectInterval(10, this)" class="interval-btn bg-[#202020] text-slate-300 font-bold py-2 rounded-xl text-xs border border-white/10 transition">10초</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 시작 액션 버튼군 (아이패드/아이폰 하단 잘림 방지 안전 패딩) -->
-    <div class="space-y-2.5 pt-4">
-      <button type="button" id="btnStartBooth" onclick="startCameraSession()" class="w-full bg-rose-600 hover:bg-rose-500 active:scale-[0.98] text-white font-black py-4 px-6 rounded-2xl shadow-lg shadow-rose-600/30 text-base md:text-lg flex items-center justify-center gap-2 transition">
-        <i data-lucide="camera" class="w-5 h-5"></i>
-        <span>지금 촬영 시작하기</span>
+        <span class="text-sm font-black text-slate-900">1×4 가로 모드</span>
+        <span class="text-[11px] text-slate-400 mt-0.5">와이드 스트립 촬영</span>
       </button>
 
-      <div class="flex items-center gap-2">
-        <label class="flex-1 bg-[#1a1a1a] hover:bg-[#222222] active:scale-[0.98] text-slate-300 font-bold py-3 px-4 rounded-xl border border-white/10 text-xs flex items-center justify-center gap-2 cursor-pointer transition">
-          <i data-lucide="image-plus" class="w-4 h-4 text-rose-400"></i>
-          <span>앨범에서 사진 불러오기</span>
-          <input type="file" id="albumFileInput" accept="image/*" multiple class="hidden" onchange="handleAlbumUpload(event)">
-        </label>
+      <!-- 2) 2×2 세로 촬영 모드 카드 -->
+      <button type="button" onclick="selectShootingMode('grid')" class="flex flex-col items-center justify-center p-5 bg-white rounded-3xl border-2 border-slate-200/90 hover:border-rose-500 active:scale-98 shadow-sm hover:shadow-md transition text-center group">
+        <div class="w-13 h-13 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+          <i data-lucide="layout-grid" class="w-6 h-6"></i>
+        </div>
+        <span class="text-sm font-black text-slate-900">2×2 세로 모드</span>
+        <span class="text-[11px] text-slate-400 mt-0.5">쿼터 엽서형 촬영</span>
+      </button>
+
+      <!-- 3) 앨범 사진 불러오기 카드 -->
+      <label class="flex flex-col items-center justify-center p-5 bg-white rounded-3xl border-2 border-slate-200/90 hover:border-slate-400 active:scale-98 shadow-sm hover:shadow-md transition text-center cursor-pointer group">
+        <div class="w-13 h-13 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+          <i data-lucide="image-plus" class="w-6 h-6"></i>
+        </div>
+        <span class="text-sm font-black text-slate-900">앨범 사진</span>
+        <span class="text-[11px] text-slate-400 mt-0.5">내 사진으로 프레임 제작</span>
+        <input type="file" id="albumFileInput" accept="image/*" multiple class="hidden" onchange="handleAlbumUpload(event)">
+      </label>
+
+      <!-- 4) 촬영 셔터 간격 설정 카드 -->
+      <div class="flex flex-col items-center justify-center p-4 bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm text-center">
+        <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
+          <i data-lucide="timer" class="w-5 h-5"></i>
+        </div>
+        <span class="text-xs font-black text-slate-900 mb-2">셔터 간격</span>
+        <div class="flex items-center gap-1 w-full">
+          <button type="button" onclick="selectInterval(4, this)" class="interval-chip flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 transition">4초</button>
+          <button type="button" onclick="selectInterval(6, this)" class="interval-chip flex-1 py-1.5 rounded-lg text-xs font-black bg-slate-900 text-white shadow-xs transition">6초</button>
+          <button type="button" onclick="selectInterval(8, this)" class="interval-chip flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 transition">8초</button>
+        </div>
       </div>
+    </div>
+
+    <!-- 하단 지금 촬영 시작 버튼 -->
+    <div class="pt-4">
+      <button type="button" id="btnStartCapture" onclick="startCameraSession()" class="w-full bg-rose-600 hover:bg-rose-500 active:scale-98 text-white font-black py-4 px-6 rounded-2xl shadow-lg shadow-rose-600/25 text-base flex items-center justify-center gap-2 transition">
+        <i data-lucide="camera" class="w-5 h-5"></i>
+        <span id="btnStartText">1×4 가로 모드로 촬영 시작</span>
+      </button>
     </div>
   </main>
 
   <!-- ========================================== -->
-  <!-- 2. 카메라 촬영 화면 (Screen 2: screenCapture) -->
+  <!-- 2. 풀스크린 카메라 촬영 화면 (Screen 2: screenCapture) -->
   <!-- ========================================== -->
   <section id="screenCapture" class="hidden flex-1 relative w-full h-full overflow-hidden bg-black flex flex-col items-center justify-between">
-    <!-- 고정 뷰파인더 래퍼 (촬영 시 화면 축소 방지) -->
-    <div class="camera-fixed-viewport">
+    <!-- 풀스크린 뷰파인더 래퍼 -->
+    <div class="camera-fullscreen-viewport">
       <video id="cameraVideo" autoplay playsinline muted class="camera-stream-video mirror"></video>
       <canvas id="hiddenCaptureCanvas" class="hidden"></canvas>
       
@@ -132,44 +127,42 @@
 
       <!-- 카운트다운 오버레이 -->
       <div id="countdownBox" class="hidden absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-        <span id="countdownText" class="text-8xl md:text-9xl font-black stroke-countdown">5</span>
+        <span id="countdownText" class="text-8xl md:text-9xl font-black stroke-countdown">6</span>
       </div>
 
       <!-- 포즈 추천 플로팅 칩 -->
       <div class="absolute top-4 left-4 right-4 flex justify-center z-10 pointer-events-none">
-        <span id="poseRecommendBadge" class="bg-black/60 text-white/90 text-xs md:text-sm font-bold px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm shadow-md">
+        <span id="poseRecommendBadge" class="bg-black/60 text-white/90 text-xs font-bold px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm shadow-md">
           ✌️ 볼 옆에 브이하고 활짝 웃어보세요!
         </span>
       </div>
 
-      <!-- 카메라 방향 회전 안내 오버레이 (반투명 + 우측상단 닫기 X 버튼) -->
-      <div id="cameraRotationOverlay" class="hidden absolute inset-0 bg-black/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center p-6 text-center">
-        <button id="btnCloseRotationOverlay" type="button" class="absolute top-4 right-4 p-2.5 rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/80 transition" title="안내 닫기">
-          <i data-lucide="x" class="w-6 h-6"></i>
-        </button>
-        <div class="p-4 rounded-full bg-rose-500/20 text-rose-400 mb-3 animate-bounce">
-          <i data-lucide="screen-share" class="w-8 h-8"></i>
+      <!-- 자이로 방향 경고 오버레이 (1x4 세로 파지 시 / 2x2 가로 파지 시 호출) -->
+      <div id="gyroOrientationWarning" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center text-white">
+        <div id="gyroIconBox" class="p-5 rounded-full bg-rose-500/20 text-rose-500 mb-4 animate-bounce">
+          <i id="gyroIcon" data-lucide="smartphone" class="w-10 h-10 rotate-90"></i>
         </div>
-        <h3 class="text-base font-black text-white">기기를 가로로 회전하시면 더욱 넓게 촬영됩니다</h3>
-        <p class="text-xs text-slate-300 mt-1 max-w-xs">원하는 구도에 맞춰 스마트폰/태블릿을 자유롭게 회전하여 촬영해 보세요.</p>
+        <h3 id="gyroWarningTitle" class="text-lg font-black">기기를 가로로 회전해 주세요!</h3>
+        <p id="gyroWarningDesc" class="text-xs text-slate-300 mt-1.5 max-w-xs">1×4 모드는 가로 촬영 전용입니다. 기기를 가로로 돌리시면 촬영이 자동으로 이어집니다.</p>
       </div>
     </div>
 
-    <!-- 하단 셔터 및 진행 상태 컨트롤러 (iPad/iPhone 잘림 방지) -->
-    <div class="shrink-0 w-full z-20 bg-gradient-to-t from-black via-black/80 to-transparent p-4 safe-bottom-padding flex flex-col items-center">
-      <div class="text-xs font-bold text-slate-300 mb-3 flex items-center gap-2">
-        <span id="captureCountBadge" class="bg-rose-500 text-white px-2 py-0.5 rounded-md font-black">1 / 8</span>
+    <!-- 하단 셔터 및 진행 상태 컨트롤러 (플로팅 오버레이) -->
+    <div class="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 safe-bottom-padding flex flex-col items-center">
+      <div class="text-xs font-bold text-white/90 mb-3 flex items-center gap-2">
+        <span id="captureCountBadge" class="bg-rose-500 text-white px-2 py-0.5 rounded-md font-black">1 / 6</span>
         <span>장의 사진을 연속으로 촬영합니다</span>
       </div>
 
       <div class="flex items-center justify-center gap-6">
-        <button type="button" onclick="cancelSession()" class="text-xs bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl border border-white/15 transition">
+        <button type="button" onclick="cancelSession()" class="text-xs bg-white/15 hover:bg-white/25 text-white px-4 py-2.5 rounded-xl border border-white/20 transition">
           촬영 취소
         </button>
         <button type="button" id="btnManualShutter" onclick="triggerImmediateShot()" class="w-16 h-16 rounded-full border-4 border-white bg-rose-600 hover:bg-rose-500 active:scale-95 transition shadow-lg flex items-center justify-center">
-          <div class="w-12 h-12 rounded-full bg-white/20"></div>
+          <div class="w-12 h-12 rounded-full bg-white/30"></div>
         </button>
-        <button type="button" onclick="toggleCameraFacing()" class="text-xs bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl border border-white/15 transition flex items-center gap-1">
+        <!-- 카메라 전환 버튼: 촬영 중 눌러도 회차 리셋 없이 스트림만 교체 -->
+        <button type="button" onclick="flipCameraFacingPreserve()" class="text-xs bg-white/15 hover:bg-white/25 text-white px-4 py-2.5 rounded-xl border border-white/20 transition flex items-center gap-1">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           <span>전/후면</span>
         </button>
@@ -178,39 +171,43 @@
   </section>
 
   <!-- ========================================== -->
-  <!-- 3. 사진 배치 화면 (Screen 3: screenPick, 매트 블랙 #111111) -->
+  <!-- 3. 사진 배치 화면 (Screen 3: screenPick) -->
   <!-- ========================================== -->
-  <section id="screenPick" class="hidden flex-1 flex flex-col justify-between bg-[#111111] p-4 md:p-6 overflow-hidden safe-bottom-padding">
-    <div class="text-center pt-1 pb-3 shrink-0">
-      <span class="text-[11px] text-rose-400 font-black tracking-widest uppercase">Pick Your Best Moments</span>
-      <h2 class="text-lg md:text-xl font-black text-white">원하는 프레임 슬롯에 사진을 배치해 주세요</h2>
-      <p class="text-xs text-slate-400 mt-0.5">상단 슬롯을 터치한 후 하단 촬영 컷에서 원하는 사진을 선택하세요.</p>
-    </div>
-
-    <!-- 상단 빈 슬롯(Empty Slots) 컨테이너 (4·5·6컷 가변 렌더링) -->
-    <div class="flex-1 w-full max-w-4xl mx-auto flex items-center justify-center p-2 min-h-0">
-      <div id="pickSlotsContainer" class="w-full h-full max-h-[460px] grid gap-2.5 p-2 bg-[#181818] rounded-2xl border border-white/10 overflow-y-auto no-scrollbar">
-        <!-- JS 동적 생성 -->
+  <section id="screenPick" class="hidden flex-1 flex flex-col justify-between bg-white p-4 md:p-6 overflow-hidden safe-bottom-padding">
+    <div class="text-center pt-1 pb-2 shrink-0">
+      <span class="text-[11px] text-rose-500 font-black tracking-widest uppercase">Pick Your Cut</span>
+      <h2 class="text-lg md:text-xl font-black text-slate-900">프레임 컷수를 선택하고 사진을 배치해 주세요</h2>
+      
+      <!-- 컷수 가변 선택 탭 (1x4 or 2x2 모드별 동적 표출) -->
+      <div id="pickCutModeTabs" class="flex justify-center gap-2 mt-2.5">
+        <!-- JS 동적 생성: 4장 / 5장 / 6장 -->
       </div>
     </div>
 
-    <!-- 하단 촬영 컷 캐러셀 및 진입 액션 -->
-    <div class="shrink-0 w-full max-w-4xl mx-auto pt-3 space-y-3">
+    <!-- 상단 빈 슬롯(Empty Slots) 컨테이너 -->
+    <div class="flex-1 w-full max-w-3xl mx-auto flex items-center justify-center p-2 min-h-0">
+      <div id="pickSlotsContainer" class="w-full h-full max-h-[440px] p-3 bg-slate-50 rounded-2xl border border-slate-200 overflow-y-auto no-scrollbar">
+        <!-- JS 동적 슬롯 렌더링 -->
+      </div>
+    </div>
+
+    <!-- 하단 6컷 촬영 결과 캐러셀 및 에디터 진입 액션 -->
+    <div class="shrink-0 w-full max-w-3xl mx-auto pt-2 space-y-3">
       <div>
-        <div class="flex items-center justify-between text-xs text-slate-400 font-bold px-1 mb-1.5">
-          <span>촬영된 사진 목록</span>
-          <span id="pickProgressText" class="text-rose-400">0 / 4 슬롯 배치 완료</span>
+        <div class="flex items-center justify-between text-xs text-slate-500 font-bold px-1 mb-1.5">
+          <span>촬영된 6컷 사진</span>
+          <span id="pickProgressText" class="text-rose-600 font-black">0 / 4 슬롯 배치 완료</span>
         </div>
         <div id="pickCarouselContainer" class="flex gap-2 overflow-x-auto no-scrollbar py-1">
-          <!-- JS 동적 썸네일 생성 -->
+          <!-- JS 썸네일 생성 -->
         </div>
       </div>
 
       <div class="flex items-center gap-2">
-        <button type="button" onclick="cancelSession()" class="flex-1 bg-[#222222] hover:bg-[#2a2a2a] text-slate-300 font-bold py-3.5 px-4 rounded-xl border border-white/10 text-xs transition">
+        <button type="button" onclick="cancelSession()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-4 rounded-xl border border-slate-200 text-xs transition">
           다시 촬영하기
         </button>
-        <button type="button" id="btnGoToStudio" onclick="proceedToEditor()" class="flex-[2] bg-rose-600 hover:bg-rose-500 active:scale-[0.98] text-white font-black py-3.5 px-4 rounded-xl shadow-lg shadow-rose-600/30 text-xs md:text-sm flex items-center justify-center gap-1.5 transition">
+        <button type="button" id="btnGoToStudio" onclick="proceedToEditor()" class="flex-[2] bg-rose-600 hover:bg-rose-500 active:scale-98 text-white font-black py-3.5 px-4 rounded-xl shadow-md text-xs md:text-sm flex items-center justify-center gap-1.5 transition">
           <span>스튜디오 꾸미기 시작</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -221,23 +218,31 @@
   <!-- ========================================== -->
   <!-- 4. 에디터 스튜디오 화면 (Screen 4: screenEdit) -->
   <!-- ========================================== -->
-  <section id="screenEdit" class="hidden flex-1 w-full h-full overflow-hidden">
+  <section id="screenEdit" class="hidden flex-1 w-full h-full overflow-hidden bg-slate-100">
     <div class="split-editor-container">
       
-      <!-- [좌/상단] 캔버스 뷰포트 영역 (중앙 정렬 & 핀치 줌 / 패닝) -->
+      <!-- [좌/상단] 캔버스 뷰포트 영역 (소프트 그레이 작업대 + 입체 섀도우) -->
       <div id="splitCanvasPane" class="split-pane-canvas relative flex flex-col items-center justify-center">
-        <!-- 뷰포트 상단 미니 툴바 (줌 & 실행취소) -->
+        <!-- 뷰포트 상단 미니 툴바 (줌 & 실행취소 & 사진 다시 선택 버튼) -->
         <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
-          <div class="flex items-center space-x-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/15 pointer-events-auto">
-            <button type="button" onclick="zoomCanvas(-0.1)" class="p-1 text-slate-300 hover:text-white"><i data-lucide="zoom-out" class="w-3.5 h-3.5"></i></button>
-            <span id="canvasZoomLabel" class="text-[11px] font-black text-white px-1">100%</span>
-            <button type="button" onclick="zoomCanvas(0.1)" class="p-1 text-slate-300 hover:text-white"><i data-lucide="zoom-in" class="w-3.5 h-3.5"></i></button>
-            <button type="button" onclick="resetCanvasZoom()" class="text-[10px] bg-white/15 px-1.5 py-0.5 rounded text-slate-300 hover:text-white font-bold ml-1">초기화</button>
+          <div class="flex items-center space-x-1.5 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200 shadow-sm pointer-events-auto">
+            <button type="button" onclick="zoomCanvas(-0.1)" class="p-1 text-slate-700 hover:text-black"><i data-lucide="zoom-out" class="w-3.5 h-3.5"></i></button>
+            <span id="canvasZoomLabel" class="text-[11px] font-black text-slate-900 px-1">100%</span>
+            <button type="button" onclick="zoomCanvas(0.1)" class="p-1 text-slate-700 hover:text-black"><i data-lucide="zoom-in" class="w-3.5 h-3.5"></i></button>
+            <button type="button" onclick="resetCanvasZoom()" class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold ml-1">초기화</button>
           </div>
 
-          <div class="flex items-center space-x-1 bg-black/70 backdrop-blur-md p-1 rounded-xl border border-white/15 pointer-events-auto">
-            <button type="button" onclick="undo()" class="p-1.5 text-slate-300 hover:text-white" title="실행 취소"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i></button>
-            <button type="button" onclick="redo()" class="p-1.5 text-slate-300 hover:text-white" title="다시 실행"><i data-lucide="redo-2" class="w-3.5 h-3.5"></i></button>
+          <div class="flex items-center space-x-1.5 pointer-events-auto">
+            <!-- 사진 다시 선택하기 버튼 -->
+            <button type="button" onclick="returnToPickScreen()" class="bg-white/90 backdrop-blur-md hover:bg-white text-slate-800 text-[11px] font-black px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-1 transition">
+              <i data-lucide="rotate-ccw" class="w-3 h-3 text-rose-500"></i>
+              <span>사진 다시 선택</span>
+            </button>
+
+            <div class="flex items-center space-x-1 bg-white/90 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-sm">
+              <button type="button" onclick="undo()" class="p-1.5 text-slate-700 hover:text-black" title="실행 취소"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i></button>
+              <button type="button" onclick="redo()" class="p-1.5 text-slate-700 hover:text-black" title="다시 실행"><i data-lucide="redo-2" class="w-3.5 h-3.5"></i></button>
+            </div>
           </div>
         </div>
 
@@ -249,224 +254,230 @@
         </div>
       </div>
 
-      <!-- [중앙 분할 리사이저 바] (터치 드래그로 캔버스/컨트롤러 비율 조절) -->
-      <div id="editorSplitResizer" class="split-resizer-bar bg-[#222222] hover:bg-rose-500/60 active:bg-rose-500 flex items-center justify-center transition-colors">
-        <div class="w-6 h-1 bg-white/30 rounded-full lg:w-1 lg:h-6"></div>
+      <!-- [중앙 분할 리사이저 바] -->
+      <div id="editorSplitResizer" class="split-resizer-bar bg-slate-300 hover:bg-rose-400 active:bg-rose-500 flex items-center justify-center transition-colors">
+        <div class="w-6 h-1 bg-slate-500 rounded-full lg:w-1 lg:h-6"></div>
       </div>
 
-      <!-- [우/하단] 에디터 스튜디오 컨트롤 패널 -->
-      <div id="splitControlPane" class="split-pane-controls bg-[#111111] border-l border-white/5 p-4 space-y-5 safe-bottom-padding no-scrollbar">
+      <!-- [우/하단] 에디터 스튜디오 컨트롤 패널 (클린 화이트) -->
+      <div id="splitControlPane" class="split-pane-controls bg-white border-l border-slate-200 p-4 space-y-4 safe-bottom-padding no-scrollbar">
         
-        <!-- 1) 레이아웃 포맷 탭 (전 규격 2줄 인쇄 Twin 상시 지원) -->
-        <div>
-          <label class="block text-xs font-bold text-slate-300 mb-2">프레임 규격 포맷</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button type="button" onclick="changeEditorLayout('strip', this)" class="editor-layout-btn bg-white text-black font-black py-2 rounded-xl text-xs border border-white transition shadow-sm">1줄 스트립</button>
-            <button type="button" onclick="changeEditorLayout('grid', this)" class="editor-layout-btn bg-[#181818] text-slate-300 font-bold py-2 rounded-xl text-xs border border-white/10 hover:border-white/20 transition">격자/엽서</button>
-            <button type="button" onclick="changeEditorLayout('twin', this)" class="editor-layout-btn bg-[#181818] text-slate-300 font-bold py-2 rounded-xl text-xs border border-white/10 hover:border-white/20 transition">2줄 인쇄(Twin)</button>
-          </div>
-        </div>
-
-        <!-- 2) 프레임 테마 분류 선택 (기본 / 심플 / 프리미엄) -->
+        <!-- 1) 프레임 테마 분류 탭 (기본 / 심플 / 프리미엄) -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <label class="text-xs font-bold text-slate-300">프레임 테마 스타일</label>
-            <div class="flex bg-[#1a1a1a] p-0.5 rounded-lg border border-white/10 w-48">
-              <button type="button" onclick="setFrameThemeCategory('basic', this)" class="theme-tab-btn flex-1 py-1 bg-[#222222] text-white font-black text-[11px] rounded transition">기본</button>
-              <button type="button" onclick="setFrameThemeCategory('simple', this)" class="theme-tab-btn flex-1 py-1 text-slate-400 font-bold text-[11px] rounded transition">심플</button>
-              <button type="button" onclick="setFrameThemeCategory('premium', this)" class="theme-tab-btn flex-1 py-1 text-slate-400 font-bold text-[11px] rounded transition">스페셜</button>
+            <label class="text-xs font-black text-slate-900">프레임 테마</label>
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 w-48">
+              <button type="button" onclick="setFrameThemeCategory('basic', this)" class="theme-tab-btn flex-1 py-1 bg-white text-slate-900 font-black text-[11px] rounded-lg shadow-xs transition">기본</button>
+              <button type="button" onclick="setFrameThemeCategory('simple', this)" class="theme-tab-btn flex-1 py-1 text-slate-500 font-bold text-[11px] rounded-lg transition">심플</button>
+              <button type="button" onclick="setFrameThemeCategory('premium', this)" class="theme-tab-btn flex-1 py-1 text-slate-500 font-bold text-[11px] rounded-lg transition">프리미엄</button>
             </div>
           </div>
 
-          <!-- 기본 테마 패널 -->
-          <div id="themeGroupBasic" class="grid grid-cols-3 gap-2">
-            <button type="button" onclick="setFrameStyle('basic_top', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">상단 문구</button>
-            <button type="button" onclick="setFrameStyle('basic_middle', this)" class="style-btn bg-white text-black font-black py-2 px-2 rounded-xl border border-white text-xs">중간 문구</button>
-            <button type="button" onclick="setFrameStyle('basic_bottom', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">하단 문구</button>
-            <button type="button" onclick="setFrameStyle('basic_stepped', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">계단형</button>
-            <button type="button" onclick="setFrameStyle('basic_clean', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">클린 무각인</button>
+          <!-- 기본 테마 패널 (지그재그 Zig-Zag 편입) -->
+          <div id="themeGroupBasic" class="grid grid-cols-3 gap-1.5">
+            <button type="button" onclick="setFrameStyle('basic_middle', this)" class="style-btn bg-slate-900 text-white font-black py-2 rounded-xl text-xs shadow-xs">중간 문구</button>
+            <button type="button" onclick="setFrameStyle('basic_top', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">상단 문구</button>
+            <button type="button" onclick="setFrameStyle('basic_bottom', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">하단 문구</button>
+            <button type="button" onclick="setFrameStyle('basic_zigzag', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">지그재그</button>
+            <button type="button" onclick="setFrameStyle('basic_clean', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">클린 무각인</button>
           </div>
 
-          <!-- 심플 테마 패널 (미니멀 보더, 슬림 아웃라인, 와이드 폴라로이드) -->
-          <div id="themeGroupSimple" class="hidden grid grid-cols-3 gap-2">
-            <button type="button" onclick="setFrameStyle('simple_minimal_line', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">미니멀 라인</button>
-            <button type="button" onclick="setFrameStyle('simple_polaroid_wide', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">와이드 폴라</button>
-            <button type="button" onclick="setFrameStyle('simple_inset_magazine', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">인셋 매거진</button>
+          <!-- 심플 테마 패널 (보더리스, 아날로그 필름, 슬림 폴라) -->
+          <div id="themeGroupSimple" class="hidden grid grid-cols-3 gap-1.5">
+            <button type="button" onclick="setFrameStyle('simple_borderless', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">보더리스 미니멀</button>
+            <button type="button" onclick="setFrameStyle('simple_film', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">아날로그 필름</button>
+            <button type="button" onclick="setFrameStyle('simple_polaroid', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">슬림 폴라로이드</button>
           </div>
 
           <!-- 프리미엄 스페셜 테마 패널 -->
-          <div id="themeGroupPremium" class="hidden grid grid-cols-3 gap-2">
-            <button type="button" onclick="setFrameStyle('photoist', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">photoist</button>
-            <button type="button" onclick="setFrameStyle('birthday', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">생일 축하 🎂</button>
-            <button type="button" onclick="setFrameStyle('baseball', this)" class="style-btn bg-[#1a1a1a] text-slate-300 font-bold py-2 px-2 rounded-xl border border-white/10 text-xs">베이스볼 ⚾</button>
+          <div id="themeGroupPremium" class="hidden grid grid-cols-3 gap-1.5">
+            <button type="button" onclick="setFrameStyle('photoist_signature', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">photoist 시그니처</button>
+            <button type="button" onclick="setFrameStyle('magazine_issue', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">매거진 에디토리얼</button>
+            <button type="button" onclick="setFrameStyle('noir_monochrome', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">누아르 모노크롬</button>
           </div>
         </div>
 
-        <!-- 3) 측면 세로 각인 툴바 & 슬롯 1:1 매칭 태그 칩 바 -->
-        <div class="bg-[#161616] p-3 rounded-2xl border border-white/10 space-y-2.5">
+        <!-- 2) 측면 세로 각인 (슬롯별 1:1 매칭 & 동적 비례 폰트 확대) -->
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2.5">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-              <i data-lucide="align-vertical-space-around" class="w-3.5 h-3.5 text-rose-400"></i>
-              <span>측면 세로 각인 (슬롯별 1:1 매칭)</span>
+            <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="align-vertical-space-around" class="w-3.5 h-3.5 text-rose-500"></i>
+              <span>측면 세로 각인 (슬롯 1:1 매칭)</span>
             </label>
-            <input type="checkbox" id="sideEngravingToggle" onchange="toggleSideEngraving(this.checked)" class="w-4 h-4 accent-rose-500 rounded cursor-pointer">
+            <input type="checkbox" id="sideEngravingToggle" onchange="toggleSideEngraving(this.checked)" class="w-4 h-4 accent-rose-600 rounded cursor-pointer">
           </div>
 
           <div id="sideEngravingConfigPanel" class="space-y-2">
-            <!-- 단어별 원클릭 퀵 칩 바 -->
+            <!-- 퀵 태그 칩 바 -->
             <div class="flex flex-wrap gap-1.5">
-              <button type="button" onclick="setSideEngravingText('#PHOTOIST')" class="text-[10px] bg-[#222222] hover:bg-white hover:text-black text-slate-300 font-bold px-2 py-1 rounded-lg border border-white/10 transition">#PHOTOIST</button>
-              <button type="button" onclick="setSideEngravingText('#OUR_MOMENT')" class="text-[10px] bg-[#222222] hover:bg-white hover:text-black text-slate-300 font-bold px-2 py-1 rounded-lg border border-white/10 transition">#OUR_MOMENT</button>
-              <button type="button" onclick="setSideEngravingText('#MEMORIES')" class="text-[10px] bg-[#222222] hover:bg-white hover:text-black text-slate-300 font-bold px-2 py-1 rounded-lg border border-white/10 transition">#MEMORIES</button>
-              <button type="button" onclick="setSideEngravingText('#YOUTH_TODAY')" class="text-[10px] bg-[#222222] hover:bg-white hover:text-black text-slate-300 font-bold px-2 py-1 rounded-lg border border-white/10 transition">#YOUTH_TODAY</button>
-              <button type="button" onclick="setSideEngravingText('#DAILY_LIFE')" class="text-[10px] bg-[#222222] hover:bg-white hover:text-black text-slate-300 font-bold px-2 py-1 rounded-lg border border-white/10 transition">#DAILY_LIFE</button>
+              <button type="button" onclick="setSideEngravingText('#PHOTOIST')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-700 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#PHOTOIST</button>
+              <button type="button" onclick="setSideEngravingText('#OUR_MOMENT')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-700 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#OUR_MOMENT</button>
+              <button type="button" onclick="setSideEngravingText('#MEMORIES')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-700 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#MEMORIES</button>
+              <button type="button" onclick="setSideEngravingText('#YOUTH_TODAY')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-700 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#YOUTH_TODAY</button>
             </div>
 
-            <!-- 자유 문구 입력창 & 액션 툴바 -->
+            <!-- 각인 입력창 & 복원/삭제 -->
             <div class="flex items-center gap-1.5">
-              <input type="text" id="sideEngravingInput" placeholder="측면 세로 각인 문구 직접 입력" oninput="setSideEngravingText(this.value)" class="flex-1 bg-[#111111] text-xs text-white px-3 py-2 rounded-xl border border-white/15 outline-none focus:border-rose-500">
-              <button type="button" onclick="applyDefaultSideEngraving()" class="text-[11px] bg-[#222222] text-slate-300 font-bold px-2.5 py-2 rounded-xl border border-white/15 hover:bg-white/10 transition whitespace-nowrap">기본값</button>
-              <button type="button" onclick="removeSideEngraving()" class="text-[11px] bg-rose-950/40 text-rose-300 font-bold px-2 py-2 rounded-xl border border-rose-500/30 hover:bg-rose-900/50 transition">삭제(X)</button>
+              <input type="text" id="sideEngravingInput" placeholder="각인 문구 입력" oninput="setSideEngravingText(this.value)" class="flex-1 bg-white text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
+              <button type="button" onclick="applyDefaultSideEngraving()" class="text-[11px] bg-slate-200 text-slate-700 font-bold px-2.5 py-2 rounded-xl hover:bg-slate-300 transition">기본값</button>
+              <button type="button" onclick="removeSideEngraving()" class="text-[11px] bg-rose-100 text-rose-700 font-bold px-2.5 py-2 rounded-xl hover:bg-rose-200 transition">삭제(X)</button>
             </div>
           </div>
         </div>
 
-        <!-- 4) 프레임 배경 색상 & 테두리 두께 -->
-        <div id="frameColorPickerWrapper" class="space-y-3">
+        <!-- 3) 프레임 색상 & 여백 두께 (글자색 자동 명도 반전) -->
+        <div id="frameColorPickerWrapper" class="space-y-2.5">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-bold text-slate-300">프레임 색상</label>
+            <label class="text-xs font-black text-slate-900">프레임 색상</label>
             <div class="flex items-center space-x-1.5">
-              <button type="button" onclick="changeFrameColor('#000000', this)" class="color-btn w-6 h-6 rounded-full bg-black ring-2 ring-white scale-110 border border-white/20"></button>
-              <button type="button" onclick="changeFrameColor('#111827', this)" class="color-btn w-6 h-6 rounded-full bg-slate-900 border border-white/20"></button>
-              <button type="button" onclick="changeFrameColor('#FFFFFF', this)" class="color-btn w-6 h-6 rounded-full bg-white border border-white/20"></button>
-              <button type="button" onclick="changeFrameColor('#F43F5E', this)" class="color-btn w-6 h-6 rounded-full bg-rose-500 border border-white/20"></button>
-              <button type="button" onclick="changeFrameColor('#3B82F6', this)" class="color-btn w-6 h-6 rounded-full bg-blue-500 border border-white/20"></button>
-              <button type="button" onclick="changeFrameColor('#FAF7EE', this)" class="color-btn w-6 h-6 rounded-full bg-[#FAF7EE] border border-white/20"></button>
+              <button type="button" onclick="changeFrameColor('#000000', this)" class="color-btn w-6 h-6 rounded-full bg-black ring-2 ring-slate-900 scale-110 border border-slate-300"></button>
+              <button type="button" onclick="changeFrameColor('#1E293B', this)" class="color-btn w-6 h-6 rounded-full bg-slate-800 border border-slate-300"></button>
+              <button type="button" onclick="changeFrameColor('#FFFFFF', this)" class="color-btn w-6 h-6 rounded-full bg-white border border-slate-300"></button>
+              <button type="button" onclick="changeFrameColor('#FAF7EE', this)" class="color-btn w-6 h-6 rounded-full bg-[#FAF7EE] border border-slate-300"></button>
+              <button type="button" onclick="changeFrameColor('#F43F5E', this)" class="color-btn w-6 h-6 rounded-full bg-rose-500 border border-slate-300"></button>
+              <button type="button" onclick="changeFrameColor('#3B82F6', this)" class="color-btn w-6 h-6 rounded-full bg-blue-500 border border-slate-300"></button>
               <input type="color" onchange="changeFrameColor(this.value, null)" class="w-6 h-6 rounded-full bg-transparent border-0 cursor-pointer p-0">
             </div>
           </div>
 
-          <div class="flex items-center justify-between text-xs text-slate-300">
+          <div class="flex items-center justify-between text-xs text-slate-700">
             <span class="font-bold">테두리 여백 두께</span>
-            <div class="flex items-center space-x-3 w-48">
+            <div class="flex items-center space-x-2.5 w-44">
               <input type="range" min="15" max="80" value="40" oninput="onThicknessChange(this.value)" class="w-full">
-              <span id="valThickness" class="font-mono text-[11px] w-8 text-right">40px</span>
+              <span id="valThickness" class="font-mono text-[11px] w-8 text-right font-black">40px</span>
             </div>
           </div>
         </div>
 
-        <!-- 5) 프레임 각인 문구 & 폰트 커스텀 -->
-        <div class="space-y-2.5">
+        <!-- 4) 대표 각인 문구 & 날짜 토글 -->
+        <div class="space-y-1.5">
           <div class="flex items-center justify-between">
-            <label id="labelCustomText" class="text-xs font-bold text-slate-300">프레임 대표 각인 문구</label>
-            <label class="flex items-center space-x-1.5 text-xs text-slate-400 font-bold cursor-pointer">
-              <input type="checkbox" id="checkShowDate" checked onchange="toggleShowDate(this.checked)" class="w-3.5 h-3.5 accent-rose-500 rounded">
+            <label class="text-xs font-black text-slate-900">프레임 대표 각인 문구</label>
+            <label class="flex items-center space-x-1.5 text-xs text-slate-500 font-bold cursor-pointer">
+              <input type="checkbox" id="checkShowDate" checked onchange="toggleShowDate(this.checked)" class="w-3.5 h-3.5 accent-rose-600 rounded">
               <span>오늘 날짜 포함</span>
             </label>
           </div>
-          <input type="text" id="frameSignatureInput" value="photoist Studio" oninput="renderStrip()" class="w-full bg-[#161616] text-xs text-white px-3 py-2.5 rounded-xl border border-white/10 outline-none focus:border-rose-500">
+          <input type="text" id="frameSignatureInput" value="photoist Studio" oninput="renderStrip()" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
 
-        <!-- 6) 착용형 그래픽 소품 & 스티커 스튜디오 팩 -->
-        <div class="bg-[#161616] p-3 rounded-2xl border border-white/10 space-y-3">
+        <!-- 5) 데코레이션 스튜디오: [이모티콘] & [감성 글자] 팩 -->
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-3">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-bold text-slate-200 flex items-center gap-1">
-              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-rose-400"></i>
-              <span>착용형 소품 스튜디오 팩 (얼굴 자석 스냅 지원)</span>
-            </label>
-            <button type="button" onclick="clearAllStickers()" class="text-[10px] text-rose-400 font-bold hover:underline">전체 삭제</button>
+            <div class="flex bg-slate-200/80 p-0.5 rounded-lg border border-slate-300">
+              <button type="button" onclick="switchStickerTab('emoji', this)" class="sticker-tab-btn px-2.5 py-1 bg-white text-slate-900 font-black text-[11px] rounded shadow-xs transition">이모티콘</button>
+              <button type="button" onclick="switchStickerTab('word', this)" class="sticker-tab-btn px-2.5 py-1 text-slate-500 font-bold text-[11px] rounded transition">감성 글자</button>
+            </div>
+            <button type="button" onclick="clearAllStickers()" class="text-[10px] text-rose-600 font-bold hover:underline">전체 삭제</button>
           </div>
 
-          <!-- 소품 카테고리별 그리드 -->
-          <div class="grid grid-cols-4 sm:grid-cols-7 gap-2">
-            <button type="button" onclick="addWearableProp('rabbit_ears')" class="flex flex-col items-center justify-center p-2 bg-[#222222] hover:bg-[#2c2c2c] rounded-xl border border-white/10 transition group">
-              <span class="text-2xl group-hover:scale-110 transition">🐰</span>
-              <span class="text-[9px] text-slate-400 font-bold mt-1">토끼귀</span>
-            </button>
-            <button type="button" onclick="addWearableProp('headband')" class="flex flex-col items-center justify-center p-2 bg-[#222222] hover:bg-[#2c2c2c] rounded-xl border border-white/10 transition group">
-              <span class="text-2xl group-hover:scale-110 transition">🎀</span>
-              <span class="text-[9px] text-slate-400 font-bold mt-1">머리띠</span>
-            </button>
-            <button type="button" onclick="addWearableProp('cat_whiskers')" class="flex flex-col items-center justify-center p-2 bg-[#222222] hover:bg-[#2c2c2c] rounded-xl border border-white/10 transition group">
-              <span class="text-2xl group-hover:scale-110 transition">🐱</span>
-              <span class="text-[9px] text-slate-400 font-bold mt-1">고양이수염</span>
-            </button>
-            <button type="button" onclick="addWearableProp('hipster_sunglasses')" class="flex flex-col items-center justify-center p-2 bg-[#222222] hover:bg-[#2c2c2c] rounded-xl border border-white/10 transition group">
-              <span class="text-2xl group-hover:scale-110 transition">🕶️</span>
-              <span class="text-[9px] text-slate-400 font-bold mt-1">힙스터선글</span>
-            </button>
-            <button type="button" onclick="addWearableProp('geek_chic_glasses')" class="flex flex-col items-center justify-center p-2 bg-[#222222] hover:bg-[#2c2c2c] rounded-xl border border-white/10 transition group">
-              <span class="text-2xl group-hover:scale-110 transition">👓</span>
-              <span class="text-[9px] text-slate-400 font-bold mt-1">긱시크안경</span>
-            </button>
-            <button type="button" onclick="addWearableProp('crown')" class="flex flex-col items-center justify-center p-2 bg-[#222222] hover:bg-[#2c2c2c] rounded-xl border border-white/10 transition group">
-              <span class="text-2xl group-hover:scale-110 transition">👑</span>
-              <span class="text-[9px] text-slate-400 font-bold mt-1">왕관</span>
-            </button>
-            <button type="button" onclick="addWearableProp('heart_overlay')" class="flex flex-col items-center justify-center p-2 bg-[#222222] hover:bg-[#2c2c2c] rounded-xl border border-white/10 transition group">
-              <span class="text-2xl group-hover:scale-110 transition">💖</span>
-              <span class="text-[9px] text-slate-400 font-bold mt-1">하트오버레이</span>
-            </button>
+          <!-- [이모티콘 패널] (안경, 선글라스, 머리띠, 왕관, 페이스, 하트 등 대량 탑재) -->
+          <div id="decoPanelEmoji" class="space-y-2">
+            <div class="grid grid-cols-8 gap-1.5 max-h-32 overflow-y-auto no-scrollbar p-1 bg-white rounded-xl border border-slate-200 text-xl text-center">
+              <button type="button" onclick="addEmojiSticker('🕶️')" class="hover:scale-125 transition">🕶️</button>
+              <button type="button" onclick="addEmojiSticker('👓')" class="hover:scale-125 transition">👓</button>
+              <button type="button" onclick="addEmojiSticker('🥽')" class="hover:scale-125 transition">🥽</button>
+              <button type="button" onclick="addEmojiSticker('🎀')" class="hover:scale-125 transition">🎀</button>
+              <button type="button" onclick="addEmojiSticker('👑')" class="hover:scale-125 transition">👑</button>
+              <button type="button" onclick="addEmojiSticker('🥳')" class="hover:scale-125 transition">🥳</button>
+              <button type="button" onclick="addEmojiSticker('🐰')" class="hover:scale-125 transition">🐰</button>
+              <button type="button" onclick="addEmojiSticker('🐱')" class="hover:scale-125 transition">🐱</button>
+              <button type="button" onclick="addEmojiSticker('🐻')" class="hover:scale-125 transition">🐻</button>
+              <button type="button" onclick="addEmojiSticker('🐶')" class="hover:scale-125 transition">🐶</button>
+              <button type="button" onclick="addEmojiSticker('💖')" class="hover:scale-125 transition">💖</button>
+              <button type="button" onclick="addEmojiSticker('✨')" class="hover:scale-125 transition">✨</button>
+              <button type="button" onclick="addEmojiSticker('🌸')" class="hover:scale-125 transition">🌸</button>
+              <button type="button" onclick="addEmojiSticker('🍀')" class="hover:scale-125 transition">🍀</button>
+              <button type="button" onclick="addEmojiSticker('🍒')" class="hover:scale-125 transition">🍒</button>
+              <button type="button" onclick="addEmojiSticker('⭐')" class="hover:scale-125 transition">⭐</button>
+              <button type="button" onclick="addEmojiSticker('🔥')" class="hover:scale-125 transition">🔥</button>
+              <button type="button" onclick="addEmojiSticker('💯')" class="hover:scale-125 transition">💯</button>
+              <button type="button" onclick="addEmojiSticker('🩹')" class="hover:scale-125 transition">🩹</button>
+              <button type="button" onclick="addEmojiSticker('💋')" class="hover:scale-125 transition">💋</button>
+              <button type="button" onclick="addEmojiSticker('✌️')" class="hover:scale-125 transition">✌️</button>
+              <button type="button" onclick="addEmojiSticker('🫶')" class="hover:scale-125 transition">🫶</button>
+              <button type="button" onclick="addEmojiSticker('🧸')" class="hover:scale-125 transition">🧸</button>
+              <button type="button" onclick="addEmojiSticker('🎂')" class="hover:scale-125 transition">🎂</button>
+            </div>
           </div>
 
-          <!-- 커스텀 텍스트 스티커 직접 입력 -->
+          <!-- [감성 글자 패널] (한글/영어 30종 레터링 팩) -->
+          <div id="decoPanelWord" class="hidden space-y-2">
+            <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto no-scrollbar p-1">
+              <!-- 한글 감성 팩 -->
+              <button type="button" onclick="addTextSticker('오늘의 우리')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#오늘의우리</button>
+              <button type="button" onclick="addTextSticker('가장 눈부신 순간')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#가장눈부신순간</button>
+              <button type="button" onclick="addTextSticker('너와 나')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#너와나</button>
+              <button type="button" onclick="addTextSticker('청춘기록')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#청춘기록</button>
+              <button type="button" onclick="addTextSticker('인생네컷')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#인생네컷</button>
+              <button type="button" onclick="addTextSticker('소소한 행복')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#소소한행복</button>
+              <!-- 영문 시그니처 팩 -->
+              <button type="button" onclick="addTextSticker('PHOTOIST')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#PHOTOIST</button>
+              <button type="button" onclick="addTextSticker('MEMORIES')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#MEMORIES</button>
+              <button type="button" onclick="addTextSticker('YOUTH NEVER ENDS')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#YOUTH_NEVER_ENDS</button>
+              <button type="button" onclick="addTextSticker('STAY COOL')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#STAY_COOL</button>
+              <button type="button" onclick="addTextSticker('OUR BEST DAY')" class="text-[10px] bg-white hover:bg-slate-900 hover:text-white text-slate-800 font-bold px-2 py-1 rounded-lg border border-slate-200 transition">#OUR_BEST_DAY</button>
+            </div>
+          </div>
+
+          <!-- 커스텀 텍스트 직접 입력 -->
           <div class="flex items-center gap-1.5 pt-1">
-            <input type="text" id="directTextInput" placeholder="자유 텍스트 스티커 추가" class="flex-1 bg-[#111111] text-xs text-white px-3 py-2 rounded-xl border border-white/15 outline-none focus:border-rose-500">
-            <button type="button" onclick="addDirectTextSticker()" class="text-xs bg-rose-600 hover:bg-rose-500 text-white font-black px-3.5 py-2 rounded-xl transition">추가</button>
+            <input type="text" id="directTextInput" placeholder="자유 텍스트 스티커 추가" class="flex-1 bg-white text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
+            <button type="button" onclick="addDirectTextSticker()" class="text-xs bg-slate-900 hover:bg-black text-white font-black px-3.5 py-2 rounded-xl transition">추가</button>
           </div>
 
           <!-- 선택된 스티커 미세 제어 바 -->
-          <div id="stickerControlBar" class="hidden bg-[#111111] p-2.5 rounded-xl border border-rose-500/40 space-y-2 mt-2">
-            <div class="flex items-center justify-between text-[11px] text-slate-300">
-              <span class="font-bold text-rose-400">선택된 소품/스티커 조절</span>
-              <button type="button" onclick="deleteSelectedSticker()" class="text-rose-400 font-bold hover:underline">선택 삭제</button>
+          <div id="stickerControlBar" class="hidden bg-white p-2.5 rounded-xl border border-rose-300 space-y-2 shadow-xs">
+            <div class="flex items-center justify-between text-[11px] text-slate-700">
+              <span class="font-bold text-rose-600">선택된 스티커 조절</span>
+              <button type="button" onclick="deleteSelectedSticker()" class="text-rose-600 font-bold hover:underline">선택 삭제</button>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div class="flex items-center space-x-2">
-                <span class="text-[10px] text-slate-400">크기</span>
+                <span class="text-[10px] text-slate-500">크기</span>
                 <input type="range" id="stickerSizeSlider" min="40" max="250" value="100" oninput="onSelectedStickerResize(this.value)" class="w-full">
               </div>
               <div class="flex items-center space-x-2">
-                <span class="text-[10px] text-slate-400">회전</span>
+                <span class="text-[10px] text-slate-500">회전</span>
                 <input type="range" id="stickerRotateSlider" min="-180" max="180" value="0" oninput="onSelectedStickerRotate(this.value)" class="w-full">
-                <span id="stickerRotateValText" class="text-[10px] w-6 text-right">0°</span>
+                <span id="stickerRotateValText" class="text-[10px] w-6 text-right font-mono">0°</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 7) 감성 필터 12종 및 미세조정 프리셋 -->
+        <!-- 6) 감성 필터 8종 프리셋 -->
         <div>
-          <div class="flex items-center justify-between mb-2">
-            <label class="text-xs font-bold text-slate-300">감성 필터 프리셋</label>
-            <span id="filterStateBadge" class="text-[11px] text-rose-400 font-bold">원본</span>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-black text-slate-900">감성 필터 프리셋</label>
+            <span id="filterStateBadge" class="text-[11px] text-rose-600 font-bold">원본</span>
           </div>
           <div class="grid grid-cols-4 gap-1.5">
-            <button type="button" onclick="handleFilterClick('normal', this)" class="filter-btn bg-white text-black font-black py-1.5 rounded-lg border border-white text-xs">원본</button>
-            <button type="button" onclick="handleFilterClick('bright', this)" class="filter-btn bg-[#181818] text-slate-300 font-bold py-1.5 rounded-lg border border-white/10 text-xs">뽀샤시</button>
-            <button type="button" onclick="handleFilterClick('radiant', this)" class="filter-btn bg-[#181818] text-slate-300 font-bold py-1.5 rounded-lg border border-white/10 text-xs">화사한</button>
-            <button type="button" onclick="handleFilterClick('warm', this)" class="filter-btn bg-[#181818] text-slate-300 font-bold py-1.5 rounded-lg border border-white/10 text-xs">따뜻한</button>
-            <button type="button" onclick="handleFilterClick('cool', this)" class="filter-btn bg-[#181818] text-slate-300 font-bold py-1.5 rounded-lg border border-white/10 text-xs">차가운</button>
-            <button type="button" onclick="handleFilterClick('mood', this)" class="filter-btn bg-[#181818] text-slate-300 font-bold py-1.5 rounded-lg border border-white/10 text-xs">감성무드</button>
-            <button type="button" onclick="handleFilterClick('retro', this)" class="filter-btn bg-[#181818] text-slate-300 font-bold py-1.5 rounded-lg border border-white/10 text-xs">레트로</button>
-            <button type="button" onclick="handleFilterClick('mono', this)" class="filter-btn bg-[#181818] text-slate-300 font-bold py-1.5 rounded-lg border border-white/10 text-xs">흑백</button>
+            <button type="button" onclick="handleFilterClick('normal', this)" class="filter-btn bg-slate-900 text-white font-black py-1.5 rounded-xl text-xs shadow-xs">원본</button>
+            <button type="button" onclick="handleFilterClick('bright', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-slate-200 text-xs">뽀샤시</button>
+            <button type="button" onclick="handleFilterClick('radiant', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-slate-200 text-xs">화사한</button>
+            <button type="button" onclick="handleFilterClick('warm', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-slate-200 text-xs">따뜻한</button>
+            <button type="button" onclick="handleFilterClick('cool', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-slate-200 text-xs">차가운</button>
+            <button type="button" onclick="handleFilterClick('mood', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-slate-200 text-xs">감성무드</button>
+            <button type="button" onclick="handleFilterClick('retro', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-slate-200 text-xs">레트로</button>
+            <button type="button" onclick="handleFilterClick('mono', this)" class="filter-btn bg-slate-100 text-slate-700 font-bold py-1.5 rounded-xl border border-slate-200 text-xs">흑백</button>
           </div>
         </div>
 
-        <!-- 8) 최종 저장 및 무빙 영상 생성 버튼군 -->
-        <div class="space-y-2 pt-2 border-t border-white/10">
-          <button type="button" id="btnAutoVideo" onclick="generateMovingVideoWithQR()" class="w-full bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 active:scale-[0.98] text-white font-black py-3.5 px-4 rounded-xl shadow-lg text-sm flex items-center justify-center gap-2 transition">
+        <!-- 7) 무빙 영상 생성 및 사진 내보내기 -->
+        <div class="space-y-2 pt-2 border-t border-slate-200">
+          <button type="button" id="btnAutoVideo" onclick="generateMovingVideoWithQR()" class="w-full bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 active:scale-98 text-white font-black py-3.5 px-4 rounded-xl shadow-md text-sm flex items-center justify-center gap-2 transition">
             <i data-lucide="video" class="w-4 h-4"></i>
             <span>🎬 무빙 영상 생성 (15Mbps 초고화질)</span>
           </button>
 
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="sharePhotoDirectly()" class="bg-[#202020] hover:bg-[#282828] text-white font-bold py-3 px-3 rounded-xl border border-white/10 text-xs flex items-center justify-center gap-1.5 transition">
-              <i data-lucide="share-2" class="w-3.5 h-3.5 text-rose-400"></i>
+            <button type="button" onclick="sharePhotoDirectly()" class="bg-white hover:bg-slate-50 text-slate-800 font-bold py-3 px-3 rounded-xl border border-slate-200 text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
+              <i data-lucide="share-2" class="w-3.5 h-3.5 text-rose-500"></i>
               <span>사진 저장 & 공유</span>
             </button>
-            <button type="button" id="btnSaveQR" onclick="saveAndGenerateQR()" class="bg-[#202020] hover:bg-[#282828] text-white font-bold py-3 px-3 rounded-xl border border-white/10 text-xs flex items-center justify-center gap-1.5 transition">
-              <i data-lucide="qr-code" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <button type="button" id="btnSaveQR" onclick="saveAndGenerateQR()" class="bg-white hover:bg-slate-50 text-slate-800 font-bold py-3 px-3 rounded-xl border border-slate-200 text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
+              <i data-lucide="qr-code" class="w-3.5 h-3.5 text-indigo-600"></i>
               <span>스마트폰 QR 전송</span>
             </button>
           </div>
@@ -479,26 +490,26 @@
   <!-- ========================================== -->
   <!-- 5. QR 다운로드 결과 화면 (Screen 5: screenResult) -->
   <!-- ========================================== -->
-  <section id="screenResult" class="hidden flex-1 flex flex-col items-center justify-between p-6 max-w-md mx-auto w-full text-center safe-bottom-padding">
+  <section id="screenResult" class="hidden flex-1 flex flex-col items-center justify-between p-6 max-w-md mx-auto w-full text-center safe-bottom-padding bg-white">
     <div class="pt-4">
-      <div class="inline-block p-3 rounded-full bg-rose-500/20 text-rose-400 mb-2">
+      <div class="inline-block p-3 rounded-full bg-rose-50 text-rose-600 mb-2">
         <i data-lucide="check-circle" class="w-8 h-8"></i>
       </div>
-      <h2 class="text-2xl font-black text-white">추억네컷이 완성되었습니다!</h2>
-      <p class="text-xs text-slate-400 mt-1">스마트폰 기본 카메라로 아래 QR을 비추면 원본 사진을 다운로드할 수 있습니다.</p>
+      <h2 class="text-2xl font-black text-slate-900">추억네컷이 완성되었습니다!</h2>
+      <p class="text-xs text-slate-500 mt-1">스마트폰 기본 카메라로 아래 QR을 비추면 고화질 원본 사진을 다운로드할 수 있습니다.</p>
     </div>
 
     <!-- QR 코드 박스 -->
-    <div class="bg-white p-4 rounded-2xl shadow-2xl flex flex-col items-center">
-      <div id="qrcodeArea" class="w-[180px] h-[180px] flex items-center justify-center"></div>
-      <span class="text-[10px] text-slate-500 font-bold mt-2">유효시간: 120초 후 자동 초기화</span>
+    <div class="bg-slate-50 p-5 rounded-3xl border border-slate-200 shadow-md flex flex-col items-center">
+      <div id="qrcodeArea" class="w-[180px] h-[180px] flex items-center justify-center bg-white p-2 rounded-xl"></div>
+      <span class="text-[10px] text-slate-400 font-bold mt-2.5">유효시간: 120초 후 자동 초기화</span>
     </div>
 
     <div class="w-full space-y-2">
-      <button type="button" onclick="returnToEditor()" class="w-full bg-[#1e1e1e] hover:bg-[#252525] text-white font-bold py-3 rounded-xl border border-white/10 text-xs transition">
+      <button type="button" onclick="returnToEditor()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl border border-slate-200 text-xs transition">
         에디터로 돌아가서 수정하기
       </button>
-      <button type="button" onclick="resetApp()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition">
+      <button type="button" onclick="resetApp()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition shadow-sm">
         새로운 촬영 시작하기 (<span id="resetTimerText">120초</span>)
       </button>
     </div>
@@ -508,109 +519,105 @@
   <!-- [모달 1] 무빙 영상 루프 프리뷰 & QR 사진 다운로드 팝업 -->
   <!-- ========================================== -->
   <div id="movingVideoModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-[#161616] border border-white/15 w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-2xl text-center">
-      <div class="flex items-center justify-between border-b border-white/10 pb-3">
-        <h3 class="text-sm font-black text-white flex items-center gap-1.5">
-          <i data-lucide="film" class="w-4 h-4 text-rose-400"></i>
+    <div class="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-2xl text-center">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="film" class="w-4 h-4 text-rose-500"></i>
           <span>15Mbps 초고화질 무빙 영상</span>
         </h3>
-        <button type="button" onclick="closeMovingVideoModal()" class="text-slate-400 hover:text-white p-1">
+        <button type="button" onclick="closeMovingVideoModal()" class="text-slate-400 hover:text-slate-700 p-1">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
       <!-- 무빙 비디오 루프 미리보기 -->
-      <div class="w-full aspect-[2/3] bg-black rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center">
+      <div class="w-full aspect-[2/3] bg-black rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center">
         <video id="movingVideoModalPreview" autoplay loop muted playsinline class="w-full h-full object-contain"></video>
       </div>
 
-      <p class="text-[11px] text-slate-400">우측 하단에 영상 다운로드 QR이 인쇄된 최종 사진과 비디오를 저장해 보세요.</p>
+      <p class="text-[11px] text-slate-500">우측 하단에 영상 다운로드 QR이 인쇄된 최종 사진과 비디오를 저장해 보세요.</p>
 
       <!-- 액션 버튼군 -->
       <div class="space-y-2">
-        <button type="button" id="btnDownloadMovingVideoFile" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+        <button type="button" id="btnDownloadMovingVideoFile" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-xs">
           <i data-lucide="download" class="w-4 h-4"></i>
           <span>🎬 무빙 영상 비디오 파일 저장</span>
         </button>
-        <button type="button" id="btnDownloadQREmbeddedPhoto" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+        <button type="button" id="btnDownloadQREmbeddedPhoto" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-xs">
           <i data-lucide="image" class="w-4 h-4"></i>
           <span>📷 QR 포함 최종 사진 저장</span>
-        </button>
-        <button type="button" id="btnShareQREmbeddedPhoto" class="w-full bg-[#242424] hover:bg-[#303030] text-slate-200 font-bold py-2.5 rounded-xl border border-white/10 text-xs flex items-center justify-center gap-1.5 transition">
-          <i data-lucide="share" class="w-3.5 h-3.5"></i>
-          <span>📱 QR 포함 사진 공유하기</span>
         </button>
       </div>
     </div>
   </div>
 
   <!-- ========================================== -->
-  <!-- [모달 2] 로그인 모달 (4자리 PIN 완전 삭제) -->
+  <!-- [모달 2] 로그인 모달 -->
   <!-- ========================================== -->
-  <div id="loginModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-[#161616] border border-white/15 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+  <div id="loginModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-black text-white">회원 로그인</h3>
-        <button type="button" onclick="closeLoginModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <h3 class="text-base font-black text-slate-900">회원 로그인</h3>
+        <button type="button" onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
       <form onsubmit="handleLogin(event)" class="space-y-3">
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">아이디</label>
-          <input type="text" id="loginUserId" required placeholder="아이디를 입력하세요" class="w-full bg-[#111111] text-xs text-white px-3 py-2.5 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">아이디</label>
+          <input type="text" id="loginUserId" required placeholder="아이디를 입력하세요" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">비밀번호</label>
-          <input type="password" id="loginUserPw" required placeholder="비밀번호를 입력하세요" class="w-full bg-[#111111] text-xs text-white px-3 py-2.5 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">비밀번호</label>
+          <input type="password" id="loginUserPw" required placeholder="비밀번호를 입력하세요" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
-        <button type="submit" id="btnSubmitLogin" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition shadow-md">
+        <button type="submit" id="btnSubmitLogin" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition shadow-sm">
           로그인
         </button>
       </form>
 
-      <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/10">
-        <button type="button" onclick="openRegisterModal()" class="hover:text-white">회원가입</button>
-        <button type="button" onclick="openAccountRecoveryModal()" class="hover:text-white">아이디/비밀번호 찾기</button>
+      <div class="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+        <button type="button" onclick="openRegisterModal()" class="hover:text-slate-900">회원가입</button>
+        <button type="button" onclick="openAccountRecoveryModal()" class="hover:text-slate-900">아이디/비밀번호 찾기</button>
       </div>
     </div>
   </div>
 
   <!-- ========================================== -->
-  <!-- [모달 3] 회원가입 모달 (비밀번호 확인 & 생년월일 6자리 중복 검증) -->
+  <!-- [모달 3] 회원가입 모달 -->
   <!-- ========================================== -->
-  <div id="registerModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-[#161616] border border-white/15 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+  <div id="registerModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-black text-white">회원가입</h3>
-        <button type="button" onclick="closeRegisterModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <h3 class="text-base font-black text-slate-900">회원가입</h3>
+        <button type="button" onclick="closeRegisterModal()" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
       <form onsubmit="handleRegister(event)" class="space-y-2.5">
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">아이디</label>
-          <input type="text" id="regUserId" required placeholder="영문/숫자 아이디" class="w-full bg-[#111111] text-xs text-white px-3 py-2 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">아이디</label>
+          <input type="text" id="regUserId" required placeholder="영문/숫자 아이디" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">비밀번호</label>
-          <input type="password" id="regUserPw" required placeholder="비밀번호" class="w-full bg-[#111111] text-xs text-white px-3 py-2 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">비밀번호</label>
+          <input type="password" id="regUserPw" required placeholder="비밀번호" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">비밀번호 확인</label>
-          <input type="password" id="regUserPwConfirm" required placeholder="비밀번호 다시 입력" class="w-full bg-[#111111] text-xs text-white px-3 py-2 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">비밀번호 확인</label>
+          <input type="password" id="regUserPwConfirm" required placeholder="비밀번호 다시 입력" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">이름</label>
-          <input type="text" id="regUserName" required placeholder="실명 입력" class="w-full bg-[#111111] text-xs text-white px-3 py-2 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">이름</label>
+          <input type="text" id="regUserName" required placeholder="실명 입력" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">생년월일 (6자리)</label>
-          <input type="text" id="regUserBirth" required maxlength="6" placeholder="예: 050413" class="w-full bg-[#111111] text-xs text-white px-3 py-2 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">생년월일 (6자리)</label>
+          <input type="text" id="regUserBirth" required maxlength="6" placeholder="예: 050413" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">이메일</label>
-          <input type="email" id="regUserEmail" required placeholder="example@gmail.com" class="w-full bg-[#111111] text-xs text-white px-3 py-2 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">이메일</label>
+          <input type="email" id="regUserEmail" required placeholder="example@gmail.com" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
-        <button type="submit" id="btnSubmitRegister" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition shadow-md mt-2">
+        <button type="submit" id="btnSubmitRegister" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition shadow-sm mt-2">
           회원가입 완료
         </button>
       </form>
@@ -618,30 +625,30 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- [모달 4] 계정 복구 센터 (이름+생년월일+이메일 ➔ Gmail 무료 발송) -->
+  <!-- [모달 4] 계정 복구 센터 -->
   <!-- ========================================== -->
-  <div id="accountRecoveryModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-[#161616] border border-white/15 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+  <div id="accountRecoveryModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-black text-white">아이디 / 비밀번호 찾기</h3>
-        <button type="button" onclick="closeAccountRecoveryModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <h3 class="text-base font-black text-slate-900">아이디 / 비밀번호 찾기</h3>
+        <button type="button" onclick="closeAccountRecoveryModal()" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <p class="text-xs text-slate-400">가입 시 입력했던 정보를 대조하여 아이디를 안내해 드리고, 가입 이메일로 임시비밀번호를 무료 발송합니다.</p>
+      <p class="text-xs text-slate-500">가입 정보를 대조하여 아이디를 안내해 드리고, 등록된 이메일로 임시 비밀번호를 무료 발송합니다.</p>
 
       <form onsubmit="handleAccountRecovery(event)" class="space-y-3">
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">이름</label>
-          <input type="text" id="recovUserName" required placeholder="이름을 입력하세요" class="w-full bg-[#111111] text-xs text-white px-3 py-2.5 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">이름</label>
+          <input type="text" id="recovUserName" required placeholder="이름" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">생년월일 (6자리)</label>
-          <input type="text" id="recovUserBirth" required maxlength="6" placeholder="예: 050413" class="w-full bg-[#111111] text-xs text-white px-3 py-2.5 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">생년월일 (6자리)</label>
+          <input type="text" id="recovUserBirth" required maxlength="6" placeholder="예: 050413" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">가입 이메일</label>
-          <input type="email" id="recovUserEmail" required placeholder="가입했던 이메일 주소" class="w-full bg-[#111111] text-xs text-white px-3 py-2.5 rounded-xl border border-white/15 outline-none focus:border-rose-500">
+          <label class="block text-xs font-bold text-slate-700 mb-1">가입 이메일</label>
+          <input type="email" id="recovUserEmail" required placeholder="가입 이메일" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
         </div>
-        <button type="submit" id="btnSubmitRecovery" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition shadow-md">
+        <button type="submit" id="btnSubmitRecovery" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition shadow-sm">
           계정 확인 및 임시비밀번호 받기
         </button>
       </form>
@@ -649,43 +656,25 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- [모달 5] 마이페이지 & 보관함 (UI 테마 10종 & 2중 큐 아카이브) -->
+  <!-- [모달 5] 마이페이지 & 보관함 -->
   <!-- ========================================== -->
-  <div id="myPageModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-[#161616] border border-white/15 w-full max-w-lg rounded-3xl p-6 space-y-5 shadow-2xl max-h-[90dvh] flex flex-col">
-      <div class="flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
+  <div id="myPageModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-lg rounded-3xl p-6 space-y-4 shadow-2xl max-h-[90dvh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
         <div>
-          <h3 id="myPageUserName" class="text-base font-black text-white">마이페이지</h3>
-          <p id="myPageUserId" class="text-xs text-slate-400">사용자 계정 정보</p>
+          <h3 id="myPageUserName" class="text-base font-black text-slate-900">마이페이지</h3>
+          <p id="myPageUserId" class="text-xs text-slate-500">사용자 계정 정보</p>
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" onclick="handleLogout()" class="text-xs text-rose-400 hover:underline">로그아웃</button>
-          <button type="button" onclick="closeMyPageModal()" class="text-slate-400 hover:text-white p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+          <button type="button" onclick="handleLogout()" class="text-xs text-rose-600 hover:underline font-bold">로그아웃</button>
+          <button type="button" onclick="closeMyPageModal()" class="text-slate-400 hover:text-slate-700 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
       </div>
 
       <div class="flex-1 overflow-y-auto no-scrollbar space-y-4">
-        <!-- 10종 UI 컬러 테마 선택기 -->
-        <div>
-          <label class="block text-xs font-bold text-slate-300 mb-2">프로그램 강조 테마 색상</label>
-          <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="applySystemTheme('#F43F5E')" class="w-7 h-7 rounded-full bg-rose-500 ring-2 ring-white"></button>
-            <button type="button" onclick="applySystemTheme('#EC4899')" class="w-7 h-7 rounded-full bg-pink-500"></button>
-            <button type="button" onclick="applySystemTheme('#8B5CF6')" class="w-7 h-7 rounded-full bg-purple-500"></button>
-            <button type="button" onclick="applySystemTheme('#3B82F6')" class="w-7 h-7 rounded-full bg-blue-500"></button>
-            <button type="button" onclick="applySystemTheme('#06B6D4')" class="w-7 h-7 rounded-full bg-cyan-500"></button>
-            <button type="button" onclick="applySystemTheme('#10B981')" class="w-7 h-7 rounded-full bg-emerald-500"></button>
-            <button type="button" onclick="applySystemTheme('#F59E0B')" class="w-7 h-7 rounded-full bg-amber-500"></button>
-            <button type="button" onclick="applySystemTheme('#EF4444')" class="w-7 h-7 rounded-full bg-red-500"></button>
-            <button type="button" onclick="applySystemTheme('#64748B')" class="w-7 h-7 rounded-full bg-slate-500"></button>
-            <button type="button" onclick="applySystemTheme('#FFFFFF')" class="w-7 h-7 rounded-full bg-white"></button>
-          </div>
-        </div>
-
-        <!-- 내 사진 보관함 & 즐겨찾기 아카이브 -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <label class="text-xs font-bold text-slate-300">내 추억네컷 보관함</label>
+            <label class="text-xs font-black text-slate-900">내 추억네컷 보관함</label>
             <span class="text-[10px] text-slate-400">로컬 + 클라우드 2중 백업</span>
           </div>
           <div id="myPageArchivesList" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
