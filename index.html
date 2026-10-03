@@ -17,22 +17,35 @@
 <body class="bg-[#F8FAFC] text-slate-900 flex flex-col h-[100dvh] overflow-hidden antialiased">
 
   <!-- ========================================== -->
-  <!-- 0. 글로벌 헤더 (v1.1 버전 승격 & 상시 홈 버튼) -->
+  <!-- 0. 글로벌 헤더 (선명화 솔리드 화이트 & 롱프레스 관리자 & 설정 아이콘) -->
   <!-- ========================================== -->
-  <header id="mainHeader" class="shrink-0 z-40 px-4 py-2.5 flex items-center justify-between bg-white border-b border-slate-200/80 safe-top-padding shadow-xs">
-    <div class="flex items-center space-x-2">
+  <header id="mainHeader" class="shrink-0 z-40 px-4 py-2.5 flex items-center justify-between safe-top-padding shadow-xs">
+    <!-- 좌측 로고 (5초 길게 누르면 관리자 모드 진입) -->
+    <div id="adminTriggerLogo" class="flex items-center space-x-2 p-1 rounded-xl" title="5초 동안 길게 누르면 관리자 모드로 진입합니다">
+      <div id="adminProgressRing"></div>
       <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-      <h1 class="text-sm md:text-base font-black tracking-tight text-slate-900 flex items-center gap-1.5 cursor-pointer" onclick="returnToHome()">
+      <h1 class="text-sm md:text-base font-black tracking-tight flex items-center gap-1.5 cursor-pointer">
         <span class="tracking-tighter">photoist</span>
         <span class="text-rose-500 font-black">PRO</span>
         <span class="text-[10px] bg-slate-900 text-white font-extrabold px-1.5 py-0.5 rounded">v1.1</span>
       </h1>
     </div>
     
+    <!-- 우측 네비게이션: [홈으로] [후기작성] [설정(톱니바퀴)] -->
     <div class="flex items-center space-x-1.5">
-      <button type="button" onclick="returnToHome()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1">
+      <button type="button" onclick="returnToHome()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1">
         <i data-lucide="home" class="w-3.5 h-3.5"></i>
-        <span>홈으로</span>
+        <span class="hidden sm:inline">홈으로</span>
+      </button>
+
+      <button type="button" onclick="openReviewModal()" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-2.5 py-1.5 rounded-xl border border-rose-200 transition flex items-center gap-1">
+        <i data-lucide="star" class="w-3.5 h-3.5 fill-rose-500"></i>
+        <span>후기</span>
+      </button>
+
+      <!-- 🌟 설정 톱니바퀴 버튼 -->
+      <button type="button" onclick="openSettingsModal()" class="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" title="설정">
+        <i data-lucide="settings" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
@@ -43,36 +56,42 @@
   <main id="screenHome" class="flex-1 flex flex-col justify-between p-4 md:p-6 max-w-xl mx-auto w-full overflow-y-auto no-scrollbar safe-bottom-padding">
     <div class="text-center pt-2 pb-3">
       <span class="text-[11px] uppercase tracking-widest text-rose-500 font-extrabold mb-1 block">Authentic Moving Studio</span>
-      <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Photoist Pro (포토이스트 프로)</h2>
+      <h2 class="text-2xl md:text-3xl font-black tracking-tight">Photoist Pro (포토이스트 프로)</h2>
       <p class="text-xs text-slate-500 mt-1 font-medium">와이드 가로 화각으로 여유롭게 담는 프리미엄 무빙 스튜디오</p>
+      
+      <!-- 상단 등록 공지사항 바 (관리자가 등록/수정 시 표출) -->
+      <div id="homeNoticeBanner" class="hidden mt-3 p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold flex items-center justify-between">
+        <div class="flex items-center gap-2 truncate">
+          <i data-lucide="megaphone" class="w-3.5 h-3.5 shrink-0 text-rose-500"></i>
+          <span id="homeNoticeText" class="truncate">공지사항이 표시됩니다.</span>
+        </div>
+        <button type="button" onclick="dismissHomeNotice()" class="text-rose-400 hover:text-rose-700 p-0.5"><i data-lucide="x" class="w-3 h-3"></i></button>
+      </div>
     </div>
 
-    <!-- 4대 핵심 기능 카드 그리드 -->
+    <!-- 핵심 기능 카드 그리드 -->
     <div class="grid grid-cols-2 gap-3 my-auto">
-      <!-- 1) 가로 촬영 시작 카드 -->
       <button type="button" onclick="startCameraSession()" class="flex flex-col items-center justify-center p-5 bg-white rounded-3xl border-2 border-slate-200/90 hover:border-rose-500 active:scale-98 shadow-sm hover:shadow-md transition text-center group">
         <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3 group-hover:scale-110 transition">
           <i data-lucide="camera" class="w-6 h-6"></i>
         </div>
-        <span class="text-sm font-black text-slate-900">가로 촬영 시작</span>
+        <span class="text-sm font-black">가로 촬영 시작</span>
         <span class="text-[11px] text-slate-400 mt-0.5">대기실에서 구도 확인</span>
       </button>
 
-      <!-- 2) 앨범 사진 불러오기 카드 -->
       <label class="flex flex-col items-center justify-center p-5 bg-white rounded-3xl border-2 border-slate-200/90 hover:border-slate-400 active:scale-98 shadow-sm hover:shadow-md transition text-center cursor-pointer group">
         <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center mb-3 group-hover:scale-110 transition">
           <i data-lucide="image-plus" class="w-6 h-6"></i>
         </div>
-        <span class="text-sm font-black text-slate-900">앨범 사진</span>
+        <span class="text-sm font-black">앨범 사진</span>
         <span class="text-[11px] text-slate-400 mt-0.5">내 사진으로 프레임 제작</span>
         <input type="file" id="albumFileInput" accept="image/*" multiple class="hidden" onchange="handleAlbumUpload(event)">
       </label>
 
-      <!-- 3) 촬영 셔터 간격 카드 (4초/6초/8초) -->
       <div class="col-span-2 flex flex-col items-center justify-center p-4 bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm text-center">
         <div class="flex items-center gap-2 mb-2">
           <i data-lucide="timer" class="w-4 h-4 text-amber-500"></i>
-          <span class="text-xs font-black text-slate-900">촬영 셔터 간격</span>
+          <span class="text-xs font-black">촬영 셔터 간격</span>
         </div>
         <div class="flex items-center gap-2 w-full max-w-xs">
           <button type="button" onclick="selectInterval(4, this)" class="interval-chip flex-1 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 transition">4초</button>
@@ -82,40 +101,52 @@
       </div>
     </div>
 
-    <!-- 하단 지금 촬영 시작 버튼 -->
-    <div class="pt-4">
+    <!-- 하단 고객센터 창구 & 입장 버튼 -->
+    <div class="pt-4 space-y-3">
       <button type="button" onclick="startCameraSession()" class="w-full bg-rose-600 hover:bg-rose-500 active:scale-98 text-white font-black py-4 px-6 rounded-2xl shadow-lg shadow-rose-600/25 text-base flex items-center justify-center gap-2 transition">
         <i data-lucide="video" class="w-5 h-5"></i>
         <span>와이드 스튜디오 입장하기</span>
       </button>
+
+      <!-- 🌟 고객센터 고정 표기 (mailto 링크 연동) -->
+      <footer class="text-center pt-2 border-t border-slate-200/60">
+        <p class="text-[11px] text-slate-400 font-medium">
+          문의 및 피드백 : <a href="mailto:knsupolo@gmail.com" class="text-slate-600 font-bold hover:underline">knsupolo@gmail.com</a>
+        </p>
+      </footer>
     </div>
   </main>
 
   <!-- ========================================== -->
-  <!-- 2. 풀스크린 카메라 촬영 화면 (대기 모드 & 6컷 캡처) -->
+  <!-- 2. 풀스크린 카메라 촬영 화면 (화각 조절 & 6구 슬롯) -->
   <!-- ========================================== -->
   <section id="screenCapture" class="hidden flex-1 relative w-full h-full overflow-hidden bg-black flex flex-col items-center justify-between">
+    <!-- 크리스탈 클리어 뷰파인더 래퍼 -->
     <div class="camera-fullscreen-viewport">
       <video id="cameraVideo" autoplay playsinline muted class="camera-stream-video mirror"></video>
       <canvas id="hiddenCaptureCanvas" class="hidden"></canvas>
       
-      <!-- 플래시 이펙트 레이어 -->
       <div id="flashEffectLayer" class="absolute inset-0 bg-white opacity-0 pointer-events-none z-30"></div>
 
-      <!-- 카운트다운 오버레이 -->
       <div id="countdownBox" class="hidden absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
         <span id="countdownText" class="text-8xl md:text-9xl font-black stroke-countdown">6</span>
       </div>
 
-      <!-- 상단 포즈 추천 칩 -->
-      <div class="absolute top-4 left-4 right-4 flex justify-center z-10 pointer-events-none">
-        <span id="poseRecommendBadge" class="bg-black/60 text-white/90 text-xs font-bold px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm shadow-md">
+      <!-- 상단 컨트롤 툴바 (블러 제거 선명한 오버레이 & 화각 조절 캡슐) -->
+      <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-auto">
+        <span id="poseRecommendBadge" class="bg-black/75 text-white text-xs font-bold px-3.5 py-1.5 rounded-full border border-white/20 shadow-md">
           거울을 보고 포즈를 준비해 보세요!
         </span>
+
+        <!-- 🌟 카메라 화각(FOV) 토글 버튼 (0.5x 광각 / 1.0x 표준) -->
+        <div class="flex items-center bg-black/75 p-0.5 rounded-full border border-white/20 shadow-md">
+          <button type="button" id="btnFovWide" onclick="setCameraFov('wide')" class="text-[11px] text-slate-300 font-bold px-2.5 py-1 rounded-full transition">0.5x 광각</button>
+          <button type="button" id="btnFovNormal" onclick="setCameraFov('normal')" class="text-[11px] bg-white text-black font-black px-2.5 py-1 rounded-full shadow transition">1.0x 표준</button>
+        </div>
       </div>
 
-      <!-- 무조건 가로모드 자이로 회전 경고 오버레이 (세로 파지 시) -->
-      <div id="gyroOrientationWarning" class="hidden absolute inset-0 bg-black/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center text-white">
+      <!-- 가로 회전 경고 오버레이 (세로 파지 시) -->
+      <div id="gyroOrientationWarning" class="hidden absolute inset-0 bg-black/95 z-40 flex flex-col items-center justify-center p-6 text-center text-white">
         <div class="p-5 rounded-full bg-rose-500/20 text-rose-500 mb-4 animate-bounce">
           <i data-lucide="smartphone" class="w-10 h-10 rotate-90"></i>
         </div>
@@ -124,10 +155,10 @@
       </div>
     </div>
 
-    <!-- 🌟 촬영 전 대기 모드 컨트롤러 (카메라 보며 자세 잡기) -->
-    <div id="captureReadyOverlay" class="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-5 safe-bottom-padding flex flex-col items-center">
-      <p class="text-xs font-bold text-white/80 mb-3 text-center">
-        화면을 보고 옷매무새와 포즈를 잡으신 후 아래 버튼을 누르면 6컷 연속 촬영이 시작됩니다.
+    <!-- 대기실 오버레이 (준비 완료 시 촬영 시작) -->
+    <div id="captureReadyOverlay" class="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 safe-bottom-padding flex flex-col items-center">
+      <p class="text-xs font-bold text-white/90 mb-3 text-center">
+        화면을 보고 포즈와 옷매무새를 가다듬으신 후 버튼을 누르면 6컷 연속 촬영이 시작됩니다.
       </p>
       <div class="flex items-center justify-center gap-4 w-full max-w-xs">
         <button type="button" onclick="returnToHome()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-3 rounded-2xl text-xs transition">
@@ -140,14 +171,21 @@
       </div>
     </div>
 
-    <!-- 🌟 촬영 진행 중 컨트롤러 (카운트다운 및 셔터/전환) -->
-    <div id="captureActiveOverlay" class="hidden absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 safe-bottom-padding flex flex-col items-center">
-      <div class="text-xs font-bold text-white/90 mb-3 flex items-center gap-2">
-        <span id="captureCountBadge" class="bg-rose-500 text-white px-2 py-0.5 rounded-md font-black">1 / 6</span>
-        <span>장의 사진을 연속 촬영 중입니다</span>
+    <!-- 촬영 중 활성 오버레이 (실시간 6구 슬롯 채움 트랙 & 컨트롤) -->
+    <div id="captureActiveOverlay" class="hidden absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 safe-bottom-padding flex flex-col items-center space-y-3">
+      
+      <!-- 🌟 실시간 6구 빈 슬롯 및 썸네일 채움 트랙 -->
+      <div id="captureLiveSlotsContainer" class="flex items-center justify-center gap-2">
+        <div class="live-capture-slot active-target" id="liveSlot0"><span class="text-[11px] font-bold text-white/50">1</span></div>
+        <div class="live-capture-slot" id="liveSlot1"><span class="text-[11px] font-bold text-white/50">2</span></div>
+        <div class="live-capture-slot" id="liveSlot2"><span class="text-[11px] font-bold text-white/50">3</span></div>
+        <div class="live-capture-slot" id="liveSlot3"><span class="text-[11px] font-bold text-white/50">4</span></div>
+        <div class="live-capture-slot" id="liveSlot4"><span class="text-[11px] font-bold text-white/50">5</span></div>
+        <div class="live-capture-slot" id="liveSlot5"><span class="text-[11px] font-bold text-white/50">6</span></div>
       </div>
 
-      <div class="flex items-center justify-center gap-6">
+      <!-- 셔터 및 카메라 제어 바 -->
+      <div class="flex items-center justify-center gap-6 pt-1">
         <button type="button" onclick="returnToHome()" class="text-xs bg-white/15 hover:bg-white/25 text-white px-4 py-2.5 rounded-xl border border-white/20 transition">
           촬영 취소
         </button>
@@ -163,30 +201,22 @@
   </section>
 
   <!-- ========================================== -->
-  <!-- 3. 사진 배치 화면 (Screen 3: screenPick, 2분할 & 패닝 조정기) -->
+  <!-- 3. 사진 배치 화면 (Screen 3: screenPick) -->
   <!-- ========================================== -->
   <section id="screenPick" class="hidden flex-1 flex flex-col justify-between bg-white p-3 md:p-5 overflow-hidden safe-bottom-padding">
-    <!-- 상단 컷수/레이아웃 선택 탭 바 (가로 1열 스트립 vs 세로 2열 엽서) -->
     <div class="shrink-0 flex items-center justify-between pb-2 border-b border-slate-100">
       <div>
-        <h2 class="text-sm md:text-base font-black text-slate-900">프레임 선택 및 사진 배치</h2>
+        <h2 class="text-sm md:text-base font-black">프레임 선택 및 사진 배치</h2>
         <span id="pickProgressText" class="text-[11px] text-rose-600 font-bold">슬롯을 터치하고 우측 사진을 넣어주세요</span>
       </div>
-      <div id="pickCutModeTabs" class="flex flex-wrap gap-1.5 justify-end">
-        <!-- JS 동적 생성: 1x4, 1x5, 1x6 / 2x2, 2x1x2, 1x2x2, 2x2x2 -->
-      </div>
+      <div id="pickCutModeTabs" class="flex flex-wrap gap-1.5 justify-end"></div>
     </div>
 
-    <!-- 2분할 컨테이너 -->
     <div class="pick-split-container flex-1 min-h-0 py-2">
-      
-      <!-- [좌측] 실제 프레임 슬롯 프리뷰 & 패닝 슬라이더 영역 -->
+      <!-- 좌측 실제 프레임 슬롯 & 패닝 슬라이더 -->
       <div class="pick-pane-frame bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex flex-col items-center justify-between relative overflow-hidden">
-        <div id="realFrameSlotContainer" class="w-full flex-1 flex items-center justify-center min-h-0">
-          <!-- JS 동적 슬롯 렌더링 -->
-        </div>
+        <div id="realFrameSlotContainer" class="w-full flex-1 flex items-center justify-center min-h-0"></div>
 
-        <!-- 🌟 세로 프레임 슬롯 사진 좌/우 패닝(위치 조정) 슬라이더 바 -->
         <div id="slotPanControlBar" class="hidden w-full pt-2 mt-1 border-t border-slate-200/80 shrink-0">
           <div class="flex items-center justify-between text-[11px] text-slate-600 font-bold mb-1">
             <span class="flex items-center gap-1">
@@ -203,7 +233,7 @@
         </div>
       </div>
 
-      <!-- [우측] 촬영 컷 대형 뷰어 영역 -->
+      <!-- 우측 원본 대형 뷰어 -->
       <div class="pick-pane-viewer bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col justify-between overflow-hidden">
         <div class="flex-1 relative flex items-center justify-center bg-black/5 rounded-xl overflow-hidden min-h-0">
           <img id="largePhotoViewerImg" src="" class="w-full h-full object-contain" alt="대형 미리보기">
@@ -227,14 +257,10 @@
           </button>
         </div>
 
-        <div id="pickThumbnailsStrip" class="flex gap-2 overflow-x-auto no-scrollbar pt-1 shrink-0">
-          <!-- JS 썸네일 6장 -->
-        </div>
+        <div id="pickThumbnailsStrip" class="flex gap-2 overflow-x-auto no-scrollbar pt-1 shrink-0"></div>
       </div>
-
     </div>
 
-    <!-- 하단 네비게이션 액션 -->
     <div class="shrink-0 flex items-center gap-2 pt-2 border-t border-slate-100">
       <button type="button" onclick="startCameraSession()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl text-xs transition">
         다시 촬영하기
@@ -254,22 +280,21 @@
       
       <!-- [좌/상단] 캔버스 뷰포트 영역 -->
       <div id="splitCanvasPane" class="split-pane-canvas relative flex flex-col items-center justify-center">
-        <!-- 뷰포트 상단 미니 툴바 -->
         <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
-          <div class="flex items-center space-x-1.5 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200 shadow-sm pointer-events-auto">
+          <div class="flex items-center space-x-1.5 bg-white/95 px-2.5 py-1 rounded-xl border border-slate-200 shadow-sm pointer-events-auto">
             <button type="button" onclick="zoomCanvas(-0.1)" class="p-1 text-slate-700 hover:text-black"><i data-lucide="zoom-out" class="w-3.5 h-3.5"></i></button>
-            <span id="canvasZoomLabel" class="text-[11px] font-black text-slate-900 px-1">100%</span>
+            <span id="canvasZoomLabel" class="text-[11px] font-black px-1">100%</span>
             <button type="button" onclick="zoomCanvas(0.1)" class="p-1 text-slate-700 hover:text-black"><i data-lucide="zoom-in" class="w-3.5 h-3.5"></i></button>
             <button type="button" onclick="resetCanvasZoom()" class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold ml-1">초기화</button>
           </div>
 
           <div class="flex items-center space-x-1.5 pointer-events-auto">
-            <button type="button" onclick="returnToPickScreen()" class="bg-white/90 backdrop-blur-md hover:bg-white text-slate-800 text-[11px] font-black px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-1 transition">
+            <button type="button" onclick="returnToPickScreen()" class="bg-white/95 hover:bg-white text-slate-800 text-[11px] font-black px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-1 transition">
               <i data-lucide="rotate-ccw" class="w-3 h-3 text-rose-500"></i>
               <span>사진 다시 선택</span>
             </button>
 
-            <div class="flex items-center space-x-1 bg-white/90 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center space-x-1 bg-white/95 p-1 rounded-xl border border-slate-200 shadow-sm">
               <button type="button" onclick="undo()" class="p-1.5 text-slate-700 hover:text-black" title="실행 취소"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i></button>
               <button type="button" onclick="redo()" class="p-1.5 text-slate-700 hover:text-black" title="다시 실행"><i data-lucide="redo-2" class="w-3.5 h-3.5"></i></button>
             </div>
@@ -283,17 +308,17 @@
         </div>
       </div>
 
-      <!-- [중앙 분할 리사이저 바] -->
+      <!-- 리사이저 바 -->
       <div id="editorSplitResizer" class="split-resizer-bar bg-slate-300 hover:bg-rose-400 active:bg-rose-500 flex items-center justify-center transition-colors">
         <div class="w-6 h-1 bg-slate-500 rounded-full lg:w-1 lg:h-6"></div>
       </div>
 
-      <!-- [우/하단] 에디터 스튜디오 컨트롤 패널 -->
+      <!-- [우/하단] 컨트롤 패널 -->
       <div id="splitControlPane" class="split-pane-controls bg-white border-l border-slate-200 p-4 space-y-4 safe-bottom-padding no-scrollbar">
         
-        <!-- 1) 기본 프레임 테마 5종 단일 구성 -->
+        <!-- 1) 프레임 테마 (기본 5종 단일) -->
         <div>
-          <label class="block text-xs font-black text-slate-900 mb-2">프레임 테마</label>
+          <label class="block text-xs font-black mb-2">프레임 테마</label>
           <div class="grid grid-cols-3 gap-1.5">
             <button type="button" onclick="setFrameStyle('basic_middle', this)" class="style-btn bg-slate-900 text-white font-black py-2 rounded-xl text-xs shadow-xs">중간 문구</button>
             <button type="button" onclick="setFrameStyle('basic_top', this)" class="style-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl border border-slate-200 text-xs">상단 문구</button>
@@ -303,10 +328,10 @@
           </div>
         </div>
 
-        <!-- 2) 프레임 색상 & 여백 두께 (명도 감지 자동 글자색 반전) -->
+        <!-- 2) 프레임 색상 & 여백 -->
         <div id="frameColorPickerWrapper" class="space-y-2.5">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-black text-slate-900">프레임 색상</label>
+            <label class="text-xs font-black">프레임 색상</label>
             <div class="flex items-center space-x-1.5">
               <button type="button" onclick="changeFrameColor('#000000', this)" class="color-btn w-6 h-6 rounded-full bg-black ring-2 ring-slate-900 scale-110 border border-slate-300"></button>
               <button type="button" onclick="changeFrameColor('#1E293B', this)" class="color-btn w-6 h-6 rounded-full bg-slate-800 border border-slate-300"></button>
@@ -327,29 +352,29 @@
           </div>
         </div>
 
-        <!-- 3) 대표 각인 문구 & 날짜 토글 -->
+        <!-- 3) 문구 & 날짜 -->
         <div class="space-y-1.5">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-black text-slate-900">프레임 대표 각인 문구</label>
+            <label class="text-xs font-black">프레임 대표 각인 문구</label>
             <label class="flex items-center space-x-1.5 text-xs text-slate-500 font-bold cursor-pointer">
               <input type="checkbox" id="checkShowDate" checked onchange="toggleShowDate(this.checked)" class="w-3.5 h-3.5 accent-rose-600 rounded">
               <span>오늘 날짜 포함</span>
             </label>
           </div>
-          <input type="text" id="frameSignatureInput" value="photoist Studio" oninput="renderStrip()" class="w-full bg-slate-50 text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500 font-medium">
+          <input type="text" id="frameSignatureInput" value="photoist Studio" oninput="renderStrip()" class="w-full bg-slate-50 text-xs px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500 font-medium">
         </div>
 
         <!-- 4) 스마트 텍스트 추가 도구 -->
         <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-black text-slate-900 flex items-center gap-1">
+            <label class="text-xs font-black flex items-center gap-1">
               <i data-lucide="type" class="w-3.5 h-3.5 text-rose-500"></i>
               <span>텍스트 스티커 추가</span>
             </label>
             <button type="button" onclick="clearAllStickers()" class="text-[10px] text-rose-600 font-bold hover:underline">모든 텍스트 삭제</button>
           </div>
           <div class="flex items-center gap-1.5">
-            <input type="text" id="directTextInput" placeholder="원하는 문구를 입력하세요" class="flex-1 bg-white text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
+            <input type="text" id="directTextInput" placeholder="원하는 문구를 입력하세요" class="flex-1 bg-white text-xs px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
             <button type="button" onclick="addDirectTextSticker()" class="text-xs bg-slate-900 hover:bg-black text-white font-black px-3.5 py-2 rounded-xl transition">추가</button>
           </div>
 
@@ -375,7 +400,7 @@
         <!-- 5) 측면 세로 각인 -->
         <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+            <label class="text-xs font-black flex items-center gap-1.5">
               <i data-lucide="align-vertical-space-around" class="w-3.5 h-3.5 text-rose-500"></i>
               <span>측면 세로 각인</span>
             </label>
@@ -384,17 +409,17 @@
 
           <div id="sideEngravingConfigPanel" class="space-y-2">
             <div class="flex items-center gap-1.5">
-              <input type="text" id="sideEngravingInput" placeholder="각인 문구 입력" oninput="setSideEngravingText(this.value)" class="flex-1 bg-white text-xs text-slate-900 px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
+              <input type="text" id="sideEngravingInput" placeholder="각인 문구 입력" oninput="setSideEngravingText(this.value)" class="flex-1 bg-white text-xs px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500">
               <button type="button" onclick="applyDefaultSideEngraving()" class="text-[11px] bg-slate-200 text-slate-700 font-bold px-2.5 py-2 rounded-xl hover:bg-slate-300 transition">기본값</button>
               <button type="button" onclick="removeSideEngraving()" class="text-[11px] bg-rose-100 text-rose-700 font-bold px-2.5 py-2 rounded-xl hover:bg-rose-200 transition">삭제(X)</button>
             </div>
           </div>
         </div>
 
-        <!-- 6) 감성 필터 8종 -->
+        <!-- 6) 감성 필터 -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
-            <label class="text-xs font-black text-slate-900">감성 필터</label>
+            <label class="text-xs font-black">감성 필터</label>
             <span id="filterStateBadge" class="text-[11px] text-rose-600 font-bold">원본</span>
           </div>
           <div class="grid grid-cols-4 gap-1.5">
@@ -409,11 +434,11 @@
           </div>
         </div>
 
-        <!-- 7) 무빙 영상 합성 & 자동 백업 저장 버튼군 -->
+        <!-- 7) 비디오 생성 & 저장 -->
         <div class="space-y-2 pt-2 border-t border-slate-200">
           <button type="button" id="btnAutoVideo" onclick="generateMovingVideosAndOpenViewer()" class="w-full bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 active:scale-98 text-white font-black py-3.5 px-4 rounded-xl shadow-md text-sm flex items-center justify-center gap-2 transition">
             <i data-lucide="film" class="w-4 h-4"></i>
-            <span>🎬 모션/타임랩스 영상 생성 및 뷰어 열기</span>
+            <span>🎬 2배속 모션 및 3.5배속 타임랩스 생성 (뷰어 열기)</span>
           </button>
 
           <div class="grid grid-cols-2 gap-2">
@@ -437,7 +462,6 @@
   <!-- ========================================== -->
   <section id="screenPixxViewer" class="hidden flex-1 pixx-dark-wrapper safe-bottom-padding">
     <main class="pixx-dark-page">
-      <!-- 헤어로 섹션 -->
       <section class="pixx-dark-hero">
         <p class="pixx-dark-eyebrow">PHOTOIST PRO DIGITAL SERVICE</p>
         <div class="pixx-dark-time" id="pixxTimeDisplay">-</div>
@@ -446,7 +470,6 @@
           소중한 순간이 담긴 사진과 영상은 촬영 후 <strong>24시간 동안 안전하게 보관</strong>되며 언제든 자유롭게 다운로드하실 수 있습니다.
         </p>
         
-        <!-- 다국어 셀렉터 -->
         <div class="pixx-dark-lang-switcher">
           <label class="pixx-dark-lang-select-wrap" for="pixxLanguageSelect">
             <select class="pixx-dark-lang-select" id="pixxLanguageSelect" onchange="changePixxLanguage(this.value)" aria-label="Language">
@@ -460,7 +483,6 @@
         </div>
       </section>
 
-      <!-- 뷰어 카드 섹션 -->
       <section class="pixx-dark-card">
         <div class="pixx-dark-viewer">
           <img id="pixxJpgView" src="" alt="IMAGE">
@@ -472,7 +494,6 @@
           </video>
         </div>
 
-        <!-- 미리보기 뷰 모드 전환 버튼 2종 (모션반복 / 타임랩스 / 정지사진) -->
         <div class="pixx-dark-action-stack">
           <button type="button" class="pixx-dark-btn primary" onclick="togglePixxMediaView('photo')">
             <span class="btn-title" id="pixxTogglePhotoTitle">사진 보기</span>
@@ -480,23 +501,22 @@
           </button>
           <button type="button" class="pixx-dark-btn highlight" onclick="togglePixxMediaView('timelapse')">
             <span class="btn-title" id="pixxToggleTlTitle">타임랩스 보기</span>
-            <span class="btn-sub" id="pixxToggleTlSub">고속 촬영 과정 보기</span>
+            <span class="btn-sub" id="pixxToggleTlSub">3.5배속 촬영 과정 보기</span>
           </button>
         </div>
 
-        <!-- 4종 다운로드 그리드 (타임랩스 / 반복영상 / 사진영상 / 촬영사진) -->
         <div class="pixx-dark-download-grid">
           <button type="button" class="pixx-dark-btn" onclick="downloadPixxMediaItem('timelapse')">
             <span class="btn-title" id="pixxDlTlTitle">타임 랩스</span>
-            <span class="btn-sub" id="pixxDlTlSub">3배속 비디오 저장</span>
+            <span class="btn-sub" id="pixxDlTlSub">3.5배속 전과정 저장</span>
           </button>
           <button type="button" class="pixx-dark-btn" onclick="downloadPixxMediaItem('loop')">
             <span class="btn-title" id="pixxDlLoopTitle">반복 영상</span>
-            <span class="btn-sub" id="pixxDlLoopSub">1.8배속 루프 저장</span>
+            <span class="btn-sub" id="pixxDlLoopSub">2.0배속 부메랑 저장</span>
           </button>
           <button type="button" class="pixx-dark-btn" onclick="downloadPixxMediaItem('videoFrame')">
             <span class="btn-title" id="pixxDlVfTitle">사진 영상</span>
-            <span class="btn-sub" id="pixxDlVfSub">프레임 합성 영상</span>
+            <span class="btn-sub" id="pixxDlVfSub">프레임 합성본 저장</span>
           </button>
           <button type="button" class="pixx-dark-btn" onclick="downloadPixxMediaItem('photo')">
             <span class="btn-title" id="pixxDlPhotoTitle">촬영 사진</span>
@@ -504,7 +524,6 @@
           </button>
         </div>
 
-        <!-- 🌟 다시 편집하기로 되돌아가는 버튼 -->
         <div class="pt-3 mt-3 border-t border-slate-800">
           <button type="button" onclick="returnFromPixxToEditor()" class="w-full py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition">
             <i data-lucide="edit-3" class="w-3.5 h-3.5 text-rose-400"></i>
@@ -513,12 +532,169 @@
         </div>
       </section>
 
-      <!-- 하단 문구 -->
       <section class="pixx-dark-thanks">
         <div id="pixxThanksText">Photoist Pro Studio를 이용해 주셔서 감사합니다.</div>
       </section>
     </main>
   </section>
+
+  <!-- ========================================== -->
+  <!-- [모달 1] 롱프레스 5초 관리자 설정 모드 (비밀번호: 0724) -->
+  <!-- ========================================== -->
+  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+    <div class="bg-white text-slate-900 border border-slate-200 w-full max-w-lg rounded-3xl p-6 space-y-4 shadow-2xl max-h-[90dvh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+        <h3 class="text-base font-black flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-5 h-5 text-rose-600"></i>
+          <span>Photoist Pro 관리자 센터</span>
+        </h3>
+        <button type="button" onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-700 p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- 비밀번호 인증 게이트 (기본 0724) -->
+      <div id="adminAuthGate" class="space-y-3 py-4 text-center">
+        <p class="text-xs text-slate-500 font-bold">관리자 4자리 암호를 입력해 주세요.</p>
+        <input type="password" id="adminPwInput" maxlength="4" placeholder="••••" class="text-center font-mono text-2xl tracking-widest bg-slate-50 w-36 mx-auto py-2.5 rounded-xl border border-slate-300 outline-none focus:border-rose-500">
+        <div>
+          <button type="button" onclick="submitAdminPassword()" class="bg-rose-600 hover:bg-rose-500 text-white font-black text-xs px-6 py-2.5 rounded-xl transition shadow-xs">
+            관리자 승인
+          </button>
+        </div>
+      </div>
+
+      <!-- 관리자 대시보드 (승인 후 노출) -->
+      <div id="adminDashboardPanel" class="hidden flex-1 overflow-y-auto no-scrollbar space-y-4">
+        <!-- 1) 공지사항 관리 -->
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black">📢 메인 홈 공지사항 관리</span>
+            <label class="flex items-center gap-1.5 text-xs text-slate-600 font-bold cursor-pointer">
+              <input type="checkbox" id="adminNoticeToggle" class="w-3.5 h-3.5 accent-rose-600 rounded">
+              <span>공지 노출</span>
+            </label>
+          </div>
+          <textarea id="adminNoticeContentInput" rows="2" placeholder="메인 화면 상단에 띄울 공지 문구를 입력하세요" class="w-full bg-white text-xs p-2.5 rounded-xl border border-slate-200 outline-none focus:border-rose-500"></textarea>
+          <button type="button" onclick="saveAdminNotice()" class="w-full bg-slate-900 hover:bg-black text-white font-bold text-xs py-2 rounded-xl transition">
+            공지사항 저장 및 즉시 반영
+          </button>
+        </div>
+
+        <!-- 2) 이용 후기 관리 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black">⭐ 사용자 후기 관리 (<span id="adminReviewCount">0</span>개)</span>
+            <button type="button" onclick="refreshAdminReviewList()" class="text-[11px] text-rose-600 font-bold hover:underline">새로고침</button>
+          </div>
+          <div id="adminReviewsList" class="space-y-2 max-h-56 overflow-y-auto no-scrollbar p-1"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- [모달 2] 0.5점 단위 별점 후기 작성 팝업 -->
+  <!-- ========================================== -->
+  <div id="reviewModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white text-slate-900 border border-slate-200 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-base font-black flex items-center gap-1.5">
+          <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+          <span>이용 후기 작성</span>
+        </h3>
+        <button type="button" onclick="closeReviewModal()" class="text-slate-400 hover:text-slate-700 p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- 🌟 0.5점 단위 별점 클릭 위젯 -->
+        <div class="text-center space-y-1.5 py-1">
+          <div class="star-rating-widget" id="starRatingBox">
+            <!-- JS 동적 생성: 5개 별 & 좌/우 0.5점 히트영역 -->
+          </div>
+          <div class="text-xs font-black text-amber-500">
+            <span id="starRatingValueText">5.0</span>점 / 5.0점
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">작성자 닉네임</label>
+          <input type="text" id="reviewAuthorInput" placeholder="닉네임 (예: 포토러버)" maxlength="12" class="w-full bg-slate-50 text-xs px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-rose-500 font-medium">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">후기 내용</label>
+          <textarea id="reviewTextInput" rows="3" placeholder="스튜디오 이용 경험이나 사진 퀄리티에 대한 솔직한 후기를 남겨주세요!" class="w-full bg-slate-50 text-xs p-3 rounded-xl border border-slate-200 outline-none focus:border-rose-500 font-medium"></textarea>
+        </div>
+
+        <button type="button" onclick="submitUserReview()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-xl text-xs transition shadow-sm">
+          후기 등록하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- [모달 3] 우측 상단 톱니바퀴 설정 센터 -->
+  <!-- ========================================== -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white text-slate-900 border border-slate-200 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-base font-black flex items-center gap-1.5">
+          <i data-lucide="settings" class="w-4 h-4 text-slate-700"></i>
+          <span>환경 설정 및 버전 정보</span>
+        </h3>
+        <button type="button" onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- 1) UI 색상 테마 선택 -->
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-2">화면 색상 테마</label>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" onclick="applyThemeMode('white', this)" class="theme-mode-btn py-2 text-xs font-black rounded-xl border border-slate-900 bg-slate-900 text-white shadow-xs">클린 화이트</button>
+            <button type="button" onclick="applyThemeMode('matte', this)" class="theme-mode-btn py-2 text-xs font-bold rounded-xl border border-slate-200 bg-slate-100 text-slate-700">매트 블랙</button>
+            <button type="button" onclick="applyThemeMode('slate', this)" class="theme-mode-btn py-2 text-xs font-bold rounded-xl border border-slate-200 bg-slate-100 text-slate-700">딥 슬레이트</button>
+          </div>
+        </div>
+
+        <!-- 2) 버전 정보 & 업데이트 일자 -->
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1 text-xs">
+          <div class="flex items-center justify-between font-bold text-slate-700">
+            <span>프로그램 버전</span>
+            <span class="text-rose-600 font-black">Photoist Pro v1.1</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-500 text-[11px]">
+            <span>최종 업데이트</span>
+            <span class="font-mono">2026.10.04</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-500 text-[11px] pt-1 border-t border-slate-200/60">
+            <span>고객센터 문의</span>
+            <a href="mailto:knsupolo@gmail.com" class="text-slate-700 font-bold hover:underline">knsupolo@gmail.com</a>
+          </div>
+        </div>
+
+        <!-- 3) 추후 업그레이드 예정 로드맵 안내 -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-black text-slate-800">업그레이드 예정 안내 (Roadmap)</label>
+          <div class="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-900 space-y-1">
+            <div class="flex items-center gap-1.5 font-bold">
+              <span class="px-1.5 py-0.2 bg-indigo-200 text-indigo-800 rounded text-[9px]">Coming Soon</span>
+              <span>AI 얼굴 인식 스티커 자동 스냅 엔진</span>
+            </div>
+            <div class="flex items-center gap-1.5 font-bold">
+              <span class="px-1.5 py-0.2 bg-indigo-200 text-indigo-800 rounded text-[9px]">Coming Soon</span>
+              <span>흑백 감열지 영수증 사진 인화 규격 지원</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Lucide Icons & App Script Entry -->
   <script src="app.js"></script>
