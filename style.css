@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap');
 
 /* ========================================================
- * 1. 포토이스트 프로 기본 환경 (클린 화이트 스튜디오 테마)
+ * 1. 포토이스트 프로 v1.1 기본 환경 (클린 화이트 스튜디오 테마)
  * ======================================================== */
 :root {
   --app-vh: 1vh;
@@ -37,7 +37,6 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* Safe Area 방어 패딩 */
 .safe-bottom-padding {
   padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 20px)) !important;
 }
@@ -47,7 +46,7 @@ html, body {
 }
 
 /* ========================================================
- * 2. 풀스크린 카메라 뷰파인더 래퍼
+ * 2. 풀스크린 가로 촬영 뷰파인더 & 대기 모드 래퍼
  * ======================================================== */
 .camera-fullscreen-viewport {
   position: relative;
@@ -87,7 +86,7 @@ html, body {
 }
 
 /* ========================================================
- * 3. 사진 선택 화면 (좌측 실제 프레임 vs 우측 대형 뷰어 2분할)
+ * 3. 사진 선택 화면 (2분할 & 슬롯 패닝 제어기)
  * ======================================================== */
 .pick-split-container {
   display: flex;
@@ -116,24 +115,23 @@ html, body {
     flex-direction: row;
   }
   .pick-pane-frame {
-    flex: 0 0 40%;
+    flex: 0 0 42%;
     height: 100%;
   }
   .pick-pane-viewer {
-    flex: 0 0 60%;
+    flex: 0 0 58%;
     height: 100%;
   }
 }
 
-/* 프레임 슬롯 카드 */
 .slot-real-box {
   background-color: #f1f5f9;
   border: 2px dashed #cbd5e1;
-  border-radius: 10px;
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -262,20 +260,20 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 /* ========================================================
- * 5. PIXX 스타일 프리미엄 모바일 다운로드 뷰어 스타일 (규격 100% 일치)
+ * 5. PIXX 스타일 다크 그레이 & 블랙 모바일 다운로드 뷰어
  * ======================================================== */
-.pixx-page-wrapper {
+.pixx-dark-wrapper {
   min-height: 100%;
-  color: #2c2018;
+  color: #f8fafc;
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.78), transparent 36%),
-    linear-gradient(180deg, #efe6dc 0%, #dcc9b7 100%);
+    radial-gradient(circle at top, rgba(30, 41, 59, 0.85), transparent 45%),
+    linear-gradient(180deg, #0f172a 0%, #020617 100%);
   padding: 16px;
   overflow-y: auto;
 }
 
-.pixx-page {
-  width: min(100%, 560px);
+.pixx-dark-page {
+  width: min(100%, 540px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -283,187 +281,179 @@ input[type=range]::-webkit-slider-thumb {
   padding-bottom: 28px;
 }
 
-.pixx-hero {
+.pixx-dark-hero {
   margin-top: 4px;
-  padding: 20px 18px 22px;
-  border-radius: 30px;
-  background: linear-gradient(180deg, #5b4030 0%, #2f2119 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 72px rgba(60, 34, 18, 0.22);
+  padding: 22px 18px 24px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   text-align: center;
   position: relative;
 }
 
-.pixx-hero-eyebrow {
+.pixx-dark-eyebrow {
   font-family: 'Montserrat', sans-serif;
   font-size: 11px;
   letter-spacing: 0.18em;
-  color: rgba(255, 246, 238, 0.74);
-  margin-bottom: 12px;
+  color: #94a3b8;
+  margin-bottom: 10px;
   font-weight: 700;
 }
 
-.pixx-hero-time {
+.pixx-dark-time {
   font-size: 26px;
   line-height: 1.2;
   font-weight: 800;
-  color: #fffaf5;
+  color: #ffffff;
   margin-bottom: 6px;
 }
 
-.pixx-hero-timezone {
+.pixx-dark-timezone {
   font-size: 12px;
   line-height: 1.4;
   font-weight: 700;
-  color: rgba(255, 246, 238, 0.72);
-  margin-bottom: 8px;
+  color: #64748b;
+  margin-bottom: 10px;
 }
 
-.pixx-notice {
-  font-size: 14px;
-  line-height: 1.65;
-  color: rgba(255, 246, 238, 0.82);
+.pixx-dark-notice {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1;
 }
 
-.pixx-notice strong {
-  color: #ffd6b8;
+.pixx-dark-notice strong {
+  color: #f43f5e;
   font-weight: 800;
 }
 
-.pixx-lang-switcher {
+.pixx-dark-lang-switcher {
   position: absolute;
   top: 14px;
   right: 14px;
-  display: flex;
-  justify-content: flex-end;
 }
 
-.pixx-lang-select-wrap {
+.pixx-dark-lang-select-wrap {
   display: inline-flex;
   align-items: center;
   min-height: 32px;
   padding: 0 8px;
   border-radius: 12px;
-  background: rgba(255, 250, 244, 0.14);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.pixx-lang-select {
+.pixx-dark-lang-select {
   border: 0;
   background: transparent;
-  color: #fffaf5;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 700;
   outline: none;
   cursor: pointer;
 }
 
-.pixx-card {
+.pixx-dark-card {
   padding: 18px;
-  border-radius: 30px;
-  background: rgba(255, 252, 248, 0.94);
-  border: 1px solid rgba(116, 81, 53, 0.12);
-  box-shadow: 0 18px 48px rgba(60, 34, 18, 0.14);
-  backdrop-filter: blur(10px);
+  border-radius: 28px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
 }
 
-.pixx-viewer {
+.pixx-dark-viewer {
   border-radius: 16px;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(135deg, #fbf2e8 0%, #ecd9c7 55%, #e1c5ae 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 320px;
+  min-height: 340px;
 }
 
-#pixxMovieView, #pixxJpgView {
+#pixxMovieView, #pixxTimelapseView, #pixxJpgView {
   display: block;
   width: 100%;
   height: auto;
   max-height: 65vh;
   object-fit: contain;
-  background: transparent;
 }
 
-#pixxJpgView {
+#pixxJpgView, #pixxTimelapseView {
   display: none;
 }
 
-.pixx-action-stack {
+.pixx-dark-action-stack {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 14px;
 }
 
-.pixx-download-grid {
+.pixx-dark-download-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
-.pixx-action-button {
+.pixx-dark-btn {
   width: 100%;
-  border: 1px solid rgba(110, 79, 58, 0.14);
-  border-radius: 20px;
-  min-height: 84px;
-  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  min-height: 76px;
+  padding: 12px 10px;
   font-family: 'Pretendard', sans-serif;
-  color: #4f3425;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 248, 241, 0.92) 100%),
-    linear-gradient(180deg, #f3dfcc 0%, #ead2bc 100%);
-  box-shadow: 0 10px 24px rgba(74, 46, 24, 0.09);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  color: #f1f5f9;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease, background 0.15s ease;
   cursor: pointer;
   text-align: center;
 }
 
-.pixx-action-button:active {
+.pixx-dark-btn:active {
   transform: translateY(1px);
 }
 
-.pixx-action-button .button-title {
+.pixx-dark-btn .btn-title {
   display: block;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   color: inherit;
   letter-spacing: -0.01em;
 }
 
-.pixx-action-button .button-sub {
+.pixx-dark-btn .btn-sub {
   display: block;
-  margin-top: 5px;
+  margin-top: 4px;
   font-size: 11px;
-  font-weight: 700;
-  color: #9a7b66;
+  font-weight: 600;
+  color: #94a3b8;
 }
 
-.pixx-action-button.primary {
-  color: #fffaf5;
-  background: linear-gradient(180deg, #694632 0%, #40281d 100%);
-  border-color: rgba(53, 31, 20, 0.3);
-  box-shadow: 0 14px 28px rgba(60, 34, 18, 0.18);
+.pixx-dark-btn.primary {
+  background: linear-gradient(180deg, #e11d48 0%, #9f1239 100%);
+  border-color: rgba(244, 63, 94, 0.35);
+  box-shadow: 0 10px 24px rgba(225, 29, 72, 0.35);
 }
 
-.pixx-action-button.primary .button-sub {
-  color: rgba(255, 245, 236, 0.72);
+.pixx-dark-btn.primary .btn-sub {
+  color: #fecdd3;
 }
 
-.pixx-action-button.secondary-tone {
-  color: #5b371f;
-  background: #fffaf2;
-  border-color: #ead6bd;
+.pixx-dark-btn.highlight {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
 }
 
-.pixx-thanks {
+.pixx-dark-thanks {
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.7;
-  color: #5d4a3b;
-  margin-top: 8px;
+  color: #64748b;
+  margin-top: 6px;
 }
