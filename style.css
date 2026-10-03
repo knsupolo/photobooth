@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap');
 
 /* ========================================================
- * 1. 포토이스트 프로 v1.1 기본 환경 (클린 화이트 스튜디오 테마)
+ * 1. 포토이스트 프로 v1.1 컬러 테마 변수 (크리스탈 클리어)
  * ======================================================== */
 :root {
   --app-vh: 1vh;
@@ -13,6 +13,28 @@
   --surface-border: #e2e8f0;
   --text-main: #0f172a;
   --text-sub: #64748b;
+}
+
+/* 테마 모드: 매트 블랙 */
+body.theme-matte-black {
+  --theme-bg: #09090b;
+  --surface-card: #18181b;
+  --surface-border: #27272a;
+  --text-main: #f8fafc;
+  --text-sub: #a1a1aa;
+  background-color: #09090b !important;
+  color: #f8fafc !important;
+}
+
+/* 테마 모드: 딥 슬레이트 */
+body.theme-deep-slate {
+  --theme-bg: #0f172a;
+  --surface-card: #1e293b;
+  --surface-border: #334155;
+  --text-main: #f8fafc;
+  --text-sub: #94a3b8;
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
 }
 
 * {
@@ -46,7 +68,50 @@ html, body {
 }
 
 /* ========================================================
- * 2. 풀스크린 가로 촬영 뷰파인더 & 대기 모드 래퍼
+ * 2. 상단 불투명 블러 제거 & 선명한 헤더 디자인
+ * ======================================================== */
+#mainHeader {
+  background-color: #ffffff; /* 반투명 블러를 걷어낸 솔리드 퓨어 화이트 */
+  border-bottom: 1px solid #e2e8f0;
+}
+
+body.theme-matte-black #mainHeader {
+  background-color: #18181b;
+  border-bottom: 1px solid #27272a;
+}
+
+body.theme-deep-slate #mainHeader {
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+
+/* 🌟 로고 롱프레스 5초 게이지 애니메이션 */
+#adminTriggerLogo {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+#adminProgressRing {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  pointer-events: none;
+}
+
+#adminTriggerLogo.long-pressing #adminProgressRing {
+  border-color: #f43f5e;
+  animation: ringFill 5s linear forwards;
+}
+
+@keyframes ringFill {
+  0% { transform: scale(0.95); opacity: 0.3; }
+  100% { transform: scale(1.05); opacity: 1; }
+}
+
+/* ========================================================
+ * 3. 풀스크린 가로 뷰파인더 & 실시간 6구 슬롯
  * ======================================================== */
 .camera-fullscreen-viewport {
   position: relative;
@@ -64,10 +129,20 @@ html, body {
   height: 100%;
   object-fit: cover;
   object-position: center center;
+  transition: transform 0.25s ease;
 }
 
-.mirror {
+/* 🌟 디지털 광각(0.5x) 스케일링 */
+.camera-stream-video.fov-wide {
+  transform: scale(0.82);
+}
+
+.camera-stream-video.mirror {
   transform: scaleX(-1);
+}
+
+.camera-stream-video.mirror.fov-wide {
+  transform: scaleX(-1) scale(0.82);
 }
 
 @keyframes studioFlash {
@@ -85,8 +160,84 @@ html, body {
   -webkit-text-stroke: 4px rgba(0, 0, 0, 0.6);
 }
 
+/* 🌟 촬영 하단 실시간 6구 슬롯 트랙 */
+.live-capture-slot {
+  width: 48px;
+  height: 64px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px dashed rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.live-capture-slot.active-target {
+  border-color: #f43f5e;
+  border-style: solid;
+  box-shadow: 0 0 0 2px #f43f5e, 0 4px 12px rgba(244, 63, 94, 0.4);
+  transform: translateY(-2px);
+}
+
+.live-capture-slot.filled {
+  border-style: solid;
+  border-color: #ffffff;
+  background: #000000;
+}
+
+.live-capture-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* ========================================================
- * 3. 사진 선택 화면 (2분할 & 슬롯 패닝 제어기)
+ * 4. 0.5점 단위 정밀 별점 시스템 (SVG 하프 스타)
+ * ======================================================== */
+.star-rating-widget {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.star-unit {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+}
+
+.star-unit svg {
+  width: 100%;
+  height: 100%;
+  fill: #e2e8f0;
+  transition: fill 0.15s ease;
+}
+
+.star-unit.full svg {
+  fill: #f59e0b;
+}
+
+.star-unit.half svg path.half-left {
+  fill: #f59e0b;
+}
+
+.star-unit .hit-left, .star-unit .hit-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 10;
+}
+.star-unit .hit-left { left: 0; }
+.star-unit .hit-right { right: 0; }
+
+/* ========================================================
+ * 5. 사진 선택 화면 (2분할 & 패닝 조정기)
  * ======================================================== */
 .pick-split-container {
   display: flex;
@@ -149,7 +300,7 @@ html, body {
 }
 
 /* ========================================================
- * 4. 에디터 스튜디오 레이아웃 & 캔버스 뷰포트
+ * 6. 에디터 스튜디오 레이아웃 & 캔버스 뷰포트
  * ======================================================== */
 .split-editor-container {
   display: flex;
@@ -216,6 +367,11 @@ html, body {
   touch-action: none;
 }
 
+body.theme-matte-black #canvasViewport,
+body.theme-deep-slate #canvasViewport {
+  background-color: #020617;
+}
+
 #canvasScaleWrapper {
   transform-origin: center center;
   transition: transform 0.05s ease-out;
@@ -260,7 +416,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 /* ========================================================
- * 5. PIXX 스타일 다크 그레이 & 블랙 모바일 다운로드 뷰어
+ * 7. PIXX 스타일 다크 그레이 & 블랙 모바일 다운로드 뷰어
  * ======================================================== */
 .pixx-dark-wrapper {
   min-height: 100%;
@@ -360,7 +516,6 @@ input[type=range]::-webkit-slider-thumb {
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
 }
 
 .pixx-dark-viewer {
