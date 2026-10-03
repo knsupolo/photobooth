@@ -1,7 +1,9 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Jua&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Montserrat:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap');
 
-/* 1. 포토이스트 프로 클린 화이트 테마 변수 */
+/* ========================================================
+ * 1. 포토이스트 프로 기본 환경 (클린 화이트 스튜디오 테마)
+ * ======================================================== */
 :root {
   --app-vh: 1vh;
   --theme-primary: #f43f5e;
@@ -35,7 +37,7 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* 2. 아이패드/아이폰 하단 Safe Area 및 여백 클래스 */
+/* Safe Area 방어 패딩 */
 .safe-bottom-padding {
   padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 20px)) !important;
 }
@@ -44,7 +46,9 @@ html, body {
   padding-top: max(0.6rem, env(safe-area-inset-top, 10px)) !important;
 }
 
-/* 3. 풀스크린 카메라 뷰파인더 래퍼 */
+/* ========================================================
+ * 2. 풀스크린 카메라 뷰파인더 래퍼
+ * ======================================================== */
 .camera-fullscreen-viewport {
   position: relative;
   width: 100%;
@@ -67,7 +71,6 @@ html, body {
   transform: scaleX(-1);
 }
 
-/* 4. 플래시 셔터 애니메이션 */
 @keyframes studioFlash {
   0% { opacity: 0.95; }
   100% { opacity: 0; }
@@ -77,14 +80,79 @@ html, body {
   animation: studioFlash 0.35s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
 }
 
-/* 5. 카운트다운 스트로크 텍스트 */
 .stroke-countdown {
   color: #ffffff;
   text-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 4px 12px rgba(0, 0, 0, 0.7);
   -webkit-text-stroke: 4px rgba(0, 0, 0, 0.6);
 }
 
-/* 6. 에디터 스튜디오 듀얼 스플릿 레이아웃 & 터치 리사이저 */
+/* ========================================================
+ * 3. 사진 선택 화면 (좌측 실제 프레임 vs 우측 대형 뷰어 2분할)
+ * ======================================================== */
+.pick-split-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  gap: 12px;
+}
+
+@media (max-width: 767px) {
+  .pick-split-container {
+    flex-direction: column;
+  }
+  .pick-pane-frame {
+    flex: 0 0 45%;
+    width: 100%;
+  }
+  .pick-pane-viewer {
+    flex: 1;
+    width: 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .pick-split-container {
+    flex-direction: row;
+  }
+  .pick-pane-frame {
+    flex: 0 0 40%;
+    height: 100%;
+  }
+  .pick-pane-viewer {
+    flex: 0 0 60%;
+    height: 100%;
+  }
+}
+
+/* 프레임 슬롯 카드 */
+.slot-real-box {
+  background-color: #f1f5f9;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot-real-box.slot-filled {
+  border-style: solid;
+  border-color: #94a3b8;
+  background-color: #ffffff;
+}
+
+.slot-real-box.slot-active {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 2px var(--theme-primary), 0 6px 16px -2px rgba(244, 63, 94, 0.35);
+}
+
+/* ========================================================
+ * 4. 에디터 스튜디오 레이아웃 & 캔버스 뷰포트
+ * ======================================================== */
 .split-editor-container {
   display: flex;
   width: 100%;
@@ -93,12 +161,11 @@ html, body {
 }
 
 @media (max-width: 1023px) {
-  /* 태블릿/스마트폰 세로 모드: 상하 분할 */
   .split-editor-container {
     flex-direction: column;
   }
   .split-pane-canvas {
-    flex: 0 0 50%;
+    flex: 0 0 48%;
     width: 100%;
     min-height: 200px;
     max-height: 75%;
@@ -117,7 +184,6 @@ html, body {
 }
 
 @media (min-width: 1024px) {
-  /* PC/아이패드 가로 모드: 좌우 분할 */
   .split-editor-container {
     flex-direction: row;
   }
@@ -140,7 +206,6 @@ html, body {
   }
 }
 
-/* 7. 캔버스 작업대 배경 및 화이트 프레임 입체 분리 섀도우 */
 #canvasViewport {
   position: relative;
   width: 100%;
@@ -148,7 +213,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #e2e8f0; /* 소프트 그레이 작업대 배경 */
+  background-color: #e2e8f0;
   overflow: hidden;
   touch-action: none;
 }
@@ -164,31 +229,10 @@ html, body {
 #photoCanvas {
   max-width: 100%;
   max-height: 100%;
-  /* 화이트 프레임 선택 시에도 경계가 뚜렷이 분리되는 입체 섀도우 */
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08);
   border-radius: 4px;
 }
 
-/* 8. 사진 선택 슬롯 카드 스타일링 */
-.slot-pro-card {
-  background-color: #f1f5f9;
-  border: 2px dashed #cbd5e1;
-  border-radius: 14px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slot-pro-card.slot-filled {
-  border-style: solid;
-  border-color: #94a3b8;
-  background-color: #ffffff;
-}
-
-.slot-pro-card.slot-active {
-  border-color: var(--theme-primary);
-  box-shadow: 0 0 0 2px var(--theme-primary), 0 10px 20px -5px rgba(244, 63, 94, 0.3);
-}
-
-/* 9. 스크롤바 숨김 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -197,7 +241,6 @@ html, body {
   scrollbar-width: none;
 }
 
-/* 10. 커스텀 레인지 슬라이더 */
 input[type=range] {
   -webkit-appearance: none;
   appearance: none;
@@ -216,4 +259,211 @@ input[type=range]::-webkit-slider-thumb {
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   border: 2.5px solid var(--theme-primary);
+}
+
+/* ========================================================
+ * 5. PIXX 스타일 프리미엄 모바일 다운로드 뷰어 스타일 (규격 100% 일치)
+ * ======================================================== */
+.pixx-page-wrapper {
+  min-height: 100%;
+  color: #2c2018;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.78), transparent 36%),
+    linear-gradient(180deg, #efe6dc 0%, #dcc9b7 100%);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.pixx-page {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 28px;
+}
+
+.pixx-hero {
+  margin-top: 4px;
+  padding: 20px 18px 22px;
+  border-radius: 30px;
+  background: linear-gradient(180deg, #5b4030 0%, #2f2119 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 72px rgba(60, 34, 18, 0.22);
+  text-align: center;
+  position: relative;
+}
+
+.pixx-hero-eyebrow {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgba(255, 246, 238, 0.74);
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.pixx-hero-time {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #fffaf5;
+  margin-bottom: 6px;
+}
+
+.pixx-hero-timezone {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: rgba(255, 246, 238, 0.72);
+  margin-bottom: 8px;
+}
+
+.pixx-notice {
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(255, 246, 238, 0.82);
+}
+
+.pixx-notice strong {
+  color: #ffd6b8;
+  font-weight: 800;
+}
+
+.pixx-lang-switcher {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pixx-lang-select-wrap {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: rgba(255, 250, 244, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pixx-lang-select {
+  border: 0;
+  background: transparent;
+  color: #fffaf5;
+  font-size: 11px;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+
+.pixx-card {
+  padding: 18px;
+  border-radius: 30px;
+  background: rgba(255, 252, 248, 0.94);
+  border: 1px solid rgba(116, 81, 53, 0.12);
+  box-shadow: 0 18px 48px rgba(60, 34, 18, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+.pixx-viewer {
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, #fbf2e8 0%, #ecd9c7 55%, #e1c5ae 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+#pixxMovieView, #pixxJpgView {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 65vh;
+  object-fit: contain;
+  background: transparent;
+}
+
+#pixxJpgView {
+  display: none;
+}
+
+.pixx-action-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pixx-download-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pixx-action-button {
+  width: 100%;
+  border: 1px solid rgba(110, 79, 58, 0.14);
+  border-radius: 20px;
+  min-height: 84px;
+  padding: 14px;
+  font-family: 'Pretendard', sans-serif;
+  color: #4f3425;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 248, 241, 0.92) 100%),
+    linear-gradient(180deg, #f3dfcc 0%, #ead2bc 100%);
+  box-shadow: 0 10px 24px rgba(74, 46, 24, 0.09);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  text-align: center;
+}
+
+.pixx-action-button:active {
+  transform: translateY(1px);
+}
+
+.pixx-action-button .button-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: inherit;
+  letter-spacing: -0.01em;
+}
+
+.pixx-action-button .button-sub {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9a7b66;
+}
+
+.pixx-action-button.primary {
+  color: #fffaf5;
+  background: linear-gradient(180deg, #694632 0%, #40281d 100%);
+  border-color: rgba(53, 31, 20, 0.3);
+  box-shadow: 0 14px 28px rgba(60, 34, 18, 0.18);
+}
+
+.pixx-action-button.primary .button-sub {
+  color: rgba(255, 245, 236, 0.72);
+}
+
+.pixx-action-button.secondary-tone {
+  color: #5b371f;
+  background: #fffaf2;
+  border-color: #ead6bd;
+}
+
+.pixx-thanks {
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #5d4a3b;
+  margin-top: 8px;
 }
