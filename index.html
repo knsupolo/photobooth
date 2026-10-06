@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Photoist Pro v1.1</title>
+  <title>Photoist Pro v1.2</title>
   
   <!-- TailwindCSS & Icons & Libraries -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -17,21 +17,21 @@
 <body class="bg-[#F8FAFC] text-slate-900 flex flex-col h-[100dvh] overflow-hidden antialiased">
 
   <!-- ========================================== -->
-  <!-- 0. 글로벌 헤더 (선명화 솔리드 화이트 & 롱프레스 관리자 & 설정 아이콘) -->
+  <!-- 0. 글로벌 헤더 (v1.2 버전 배지 & 롱프레스 관리자) -->
   <!-- ========================================== -->
   <header id="mainHeader" class="shrink-0 z-40 px-4 py-2.5 flex items-center justify-between safe-top-padding shadow-xs">
-    <!-- 좌측 로고 (5초 길게 누르면 관리자 모드 진입) -->
+    <!-- 좌측 로고 (5초 롱프레스 시 관리자 모드 진입) -->
     <div id="adminTriggerLogo" class="flex items-center space-x-2 p-1 rounded-xl" title="5초 동안 길게 누르면 관리자 모드로 진입합니다">
       <div id="adminProgressRing"></div>
       <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
       <h1 class="text-sm md:text-base font-black tracking-tight flex items-center gap-1.5 cursor-pointer">
         <span class="tracking-tighter">photoist</span>
         <span class="text-rose-500 font-black">PRO</span>
-        <span class="text-[10px] bg-slate-900 text-white font-extrabold px-1.5 py-0.5 rounded">v1.1</span>
+        <span class="text-[10px] bg-slate-900 text-white font-extrabold px-1.5 py-0.5 rounded">v1.2</span>
       </h1>
     </div>
     
-    <!-- 우측 네비게이션: [홈으로] [후기작성] [설정(톱니바퀴)] -->
+    <!-- 우측 네비게이션: [홈으로] [후기] [설정(톱니바퀴)] -->
     <div class="flex items-center space-x-1.5">
       <button type="button" onclick="returnToHome()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1">
         <i data-lucide="home" class="w-3.5 h-3.5"></i>
@@ -43,7 +43,6 @@
         <span>후기</span>
       </button>
 
-      <!-- 🌟 설정 톱니바퀴 버튼 -->
       <button type="button" onclick="openSettingsModal()" class="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" title="설정">
         <i data-lucide="settings" class="w-4 h-4"></i>
       </button>
@@ -59,7 +58,7 @@
       <h2 class="text-2xl md:text-3xl font-black tracking-tight">Photoist Pro (포토이스트 프로)</h2>
       <p class="text-xs text-slate-500 mt-1 font-medium">와이드 가로 화각으로 여유롭게 담는 프리미엄 무빙 스튜디오</p>
       
-      <!-- 상단 등록 공지사항 바 (관리자가 등록/수정 시 표출) -->
+      <!-- 관리자 등록 공지 배너 -->
       <div id="homeNoticeBanner" class="hidden mt-3 p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold flex items-center justify-between">
         <div class="flex items-center gap-2 truncate">
           <i data-lucide="megaphone" class="w-3.5 h-3.5 shrink-0 text-rose-500"></i>
@@ -69,7 +68,7 @@
       </div>
     </div>
 
-    <!-- 핵심 기능 카드 그리드 -->
+    <!-- 4대 핵심 기능 카드 그리드 -->
     <div class="grid grid-cols-2 gap-3 my-auto">
       <button type="button" onclick="startCameraSession()" class="flex flex-col items-center justify-center p-5 bg-white rounded-3xl border-2 border-slate-200/90 hover:border-rose-500 active:scale-98 shadow-sm hover:shadow-md transition text-center group">
         <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3 group-hover:scale-110 transition">
@@ -101,14 +100,13 @@
       </div>
     </div>
 
-    <!-- 하단 고객센터 창구 & 입장 버튼 -->
+    <!-- 하단 고객센터 안내 & 입장 버튼 -->
     <div class="pt-4 space-y-3">
       <button type="button" onclick="startCameraSession()" class="w-full bg-rose-600 hover:bg-rose-500 active:scale-98 text-white font-black py-4 px-6 rounded-2xl shadow-lg shadow-rose-600/25 text-base flex items-center justify-center gap-2 transition">
         <i data-lucide="video" class="w-5 h-5"></i>
         <span>와이드 스튜디오 입장하기</span>
       </button>
 
-      <!-- 🌟 고객센터 고정 표기 (mailto 링크 연동) -->
       <footer class="text-center pt-2 border-t border-slate-200/60">
         <p class="text-[11px] text-slate-400 font-medium">
           문의 및 피드백 : <a href="mailto:knsupolo@gmail.com" class="text-slate-600 font-bold hover:underline">knsupolo@gmail.com</a>
@@ -121,9 +119,8 @@
   <!-- 2. 풀스크린 카메라 촬영 화면 (화각 조절 & 6구 슬롯) -->
   <!-- ========================================== -->
   <section id="screenCapture" class="hidden flex-1 relative w-full h-full overflow-hidden bg-black flex flex-col items-center justify-between">
-    <!-- 크리스탈 클리어 뷰파인더 래퍼 -->
     <div class="camera-fullscreen-viewport">
-      <video id="cameraVideo" autoplay playsinline muted class="camera-stream-video mirror"></video>
+      <video id="cameraVideo" autoplay playsinline muted class="camera-stream-video mirror fov-wide"></video>
       <canvas id="hiddenCaptureCanvas" class="hidden"></canvas>
       
       <div id="flashEffectLayer" class="absolute inset-0 bg-white opacity-0 pointer-events-none z-30"></div>
@@ -132,20 +129,20 @@
         <span id="countdownText" class="text-8xl md:text-9xl font-black stroke-countdown">6</span>
       </div>
 
-      <!-- 상단 컨트롤 툴바 (블러 제거 선명한 오버레이 & 화각 조절 캡슐) -->
+      <!-- 상단 툴바 (포즈 추천 & 아이패드 전면 광각/표준 전환 버튼) -->
       <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-auto">
         <span id="poseRecommendBadge" class="bg-black/75 text-white text-xs font-bold px-3.5 py-1.5 rounded-full border border-white/20 shadow-md">
           거울을 보고 포즈를 준비해 보세요!
         </span>
 
-        <!-- 🌟 카메라 화각(FOV) 토글 버튼 (0.5x 광각 / 1.0x 표준) -->
+        <!-- 🌟 아이패드 광각(0.5x) / 표준(1.0x) 토글 캡슐 -->
         <div class="flex items-center bg-black/75 p-0.5 rounded-full border border-white/20 shadow-md">
-          <button type="button" id="btnFovWide" onclick="setCameraFov('wide')" class="text-[11px] text-slate-300 font-bold px-2.5 py-1 rounded-full transition">0.5x 광각</button>
-          <button type="button" id="btnFovNormal" onclick="setCameraFov('normal')" class="text-[11px] bg-white text-black font-black px-2.5 py-1 rounded-full shadow transition">1.0x 표준</button>
+          <button type="button" id="btnFovWide" onclick="setCameraFov('wide')" class="text-[11px] bg-white text-black font-black px-2.5 py-1 rounded-full shadow transition">0.5x 광각</button>
+          <button type="button" id="btnFovNormal" onclick="setCameraFov('normal')" class="text-[11px] text-slate-300 font-bold px-2.5 py-1 rounded-full transition">1.0x 표준</button>
         </div>
       </div>
 
-      <!-- 가로 회전 경고 오버레이 (세로 파지 시) -->
+      <!-- 가로 회전 경고 오버레이 -->
       <div id="gyroOrientationWarning" class="hidden absolute inset-0 bg-black/95 z-40 flex flex-col items-center justify-center p-6 text-center text-white">
         <div class="p-5 rounded-full bg-rose-500/20 text-rose-500 mb-4 animate-bounce">
           <i data-lucide="smartphone" class="w-10 h-10 rotate-90"></i>
@@ -155,7 +152,7 @@
       </div>
     </div>
 
-    <!-- 대기실 오버레이 (준비 완료 시 촬영 시작) -->
+    <!-- 대기실 오버레이 -->
     <div id="captureReadyOverlay" class="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 safe-bottom-padding flex flex-col items-center">
       <p class="text-xs font-bold text-white/90 mb-3 text-center">
         화면을 보고 포즈와 옷매무새를 가다듬으신 후 버튼을 누르면 6컷 연속 촬영이 시작됩니다.
@@ -171,10 +168,8 @@
       </div>
     </div>
 
-    <!-- 촬영 중 활성 오버레이 (실시간 6구 슬롯 채움 트랙 & 컨트롤) -->
+    <!-- 촬영 중 활성 오버레이 (실시간 6구 슬롯 트랙) -->
     <div id="captureActiveOverlay" class="hidden absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 safe-bottom-padding flex flex-col items-center space-y-3">
-      
-      <!-- 🌟 실시간 6구 빈 슬롯 및 썸네일 채움 트랙 -->
       <div id="captureLiveSlotsContainer" class="flex items-center justify-center gap-2">
         <div class="live-capture-slot active-target" id="liveSlot0"><span class="text-[11px] font-bold text-white/50">1</span></div>
         <div class="live-capture-slot" id="liveSlot1"><span class="text-[11px] font-bold text-white/50">2</span></div>
@@ -184,7 +179,6 @@
         <div class="live-capture-slot" id="liveSlot5"><span class="text-[11px] font-bold text-white/50">6</span></div>
       </div>
 
-      <!-- 셔터 및 카메라 제어 바 -->
       <div class="flex items-center justify-center gap-6 pt-1">
         <button type="button" onclick="returnToHome()" class="text-xs bg-white/15 hover:bg-white/25 text-white px-4 py-2.5 rounded-xl border border-white/20 transition">
           촬영 취소
@@ -209,7 +203,15 @@
         <h2 class="text-sm md:text-base font-black">프레임 선택 및 사진 배치</h2>
         <span id="pickProgressText" class="text-[11px] text-rose-600 font-bold">슬롯을 터치하고 우측 사진을 넣어주세요</span>
       </div>
-      <div id="pickCutModeTabs" class="flex flex-wrap gap-1.5 justify-end"></div>
+      
+      <!-- 🌟 [한번에 다 넣기 (🎲 자동 배치)] 버튼 및 레이아웃 탭 -->
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="autoFillAllSlotsRandom()" class="px-3 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-rose-500 to-indigo-600 text-white shadow-sm hover:opacity-90 active:scale-95 transition flex items-center gap-1">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>한번에 다 넣기</span>
+        </button>
+        <div id="pickCutModeTabs" class="flex flex-wrap gap-1.5 justify-end"></div>
+      </div>
     </div>
 
     <div class="pick-split-container flex-1 min-h-0 py-2">
@@ -233,8 +235,9 @@
         </div>
       </div>
 
-      <!-- 우측 원본 대형 뷰어 -->
+      <!-- 우측 가로 모드(Landscape) 대형 뷰어 & 썸네일 스트립 -->
       <div class="pick-pane-viewer bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col justify-between overflow-hidden">
+        <!-- 🌟 가로 와이드 비율(16:10) 대형 뷰어 박스 -->
         <div class="flex-1 relative flex items-center justify-center bg-black/5 rounded-xl overflow-hidden min-h-0">
           <img id="largePhotoViewerImg" src="" class="w-full h-full object-contain" alt="대형 미리보기">
           
@@ -257,6 +260,7 @@
           </button>
         </div>
 
+        <!-- 🌟 가로 와이드 썸네일 스트립 -->
         <div id="pickThumbnailsStrip" class="flex gap-2 overflow-x-auto no-scrollbar pt-1 shrink-0"></div>
       </div>
     </div>
@@ -316,7 +320,7 @@
       <!-- [우/하단] 컨트롤 패널 -->
       <div id="splitControlPane" class="split-pane-controls bg-white border-l border-slate-200 p-4 space-y-4 safe-bottom-padding no-scrollbar">
         
-        <!-- 1) 프레임 테마 (기본 5종 단일) -->
+        <!-- 1) 프레임 테마 (기본 5종) -->
         <div>
           <label class="block text-xs font-black mb-2">프레임 테마</label>
           <div class="grid grid-cols-3 gap-1.5">
@@ -364,7 +368,7 @@
           <input type="text" id="frameSignatureInput" value="photoist Studio" oninput="renderStrip()" class="w-full bg-slate-50 text-xs px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-rose-500 font-medium">
         </div>
 
-        <!-- 4) 스마트 텍스트 추가 도구 -->
+        <!-- 4) 스마트 텍스트 추가 -->
         <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-xs font-black flex items-center gap-1">
@@ -438,7 +442,7 @@
         <div class="space-y-2 pt-2 border-t border-slate-200">
           <button type="button" id="btnAutoVideo" onclick="generateMovingVideosAndOpenViewer()" class="w-full bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 active:scale-98 text-white font-black py-3.5 px-4 rounded-xl shadow-md text-sm flex items-center justify-center gap-2 transition">
             <i data-lucide="film" class="w-4 h-4"></i>
-            <span>🎬 2배속 모션 및 3.5배속 타임랩스 생성 (뷰어 열기)</span>
+            <span>🎬 2.0배속 부메랑 & 3.0배속 타임랩스 생성 (뷰어 열기)</span>
           </button>
 
           <div class="grid grid-cols-2 gap-2">
@@ -448,7 +452,7 @@
             </button>
             <button type="button" onclick="saveMediaWithSilentCloud('loop')" class="bg-slate-900 hover:bg-black text-white font-bold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
               <i data-lucide="repeat" class="w-3.5 h-3.5 text-indigo-400"></i>
-              <span>반복 영상 저장</span>
+              <span>부메랑 영상 저장</span>
             </button>
           </div>
         </div>
@@ -501,14 +505,14 @@
           </button>
           <button type="button" class="pixx-dark-btn highlight" onclick="togglePixxMediaView('timelapse')">
             <span class="btn-title" id="pixxToggleTlTitle">타임랩스 보기</span>
-            <span class="btn-sub" id="pixxToggleTlSub">3.5배속 촬영 과정 보기</span>
+            <span class="btn-sub" id="pixxToggleTlSub">3.0배속 촬영 과정 보기</span>
           </button>
         </div>
 
         <div class="pixx-dark-download-grid">
           <button type="button" class="pixx-dark-btn" onclick="downloadPixxMediaItem('timelapse')">
             <span class="btn-title" id="pixxDlTlTitle">타임 랩스</span>
-            <span class="btn-sub" id="pixxDlTlSub">3.5배속 전과정 저장</span>
+            <span class="btn-sub" id="pixxDlTlSub">3.0배속 전과정 저장</span>
           </button>
           <button type="button" class="pixx-dark-btn" onclick="downloadPixxMediaItem('loop')">
             <span class="btn-title" id="pixxDlLoopTitle">반복 영상</span>
@@ -539,6 +543,46 @@
   </section>
 
   <!-- ========================================== -->
+  <!-- [모달 0] 🌟 v1.2 신규 업데이트 안내 자동 팝업 -->
+  <!-- ========================================== -->
+  <div id="updateNoticeModal" class="hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="bg-white text-slate-900 border border-slate-200 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+      <div class="text-center space-y-1">
+        <span class="px-2.5 py-0.5 bg-rose-100 text-rose-600 rounded-full text-[10px] font-black uppercase">Major Update</span>
+        <h3 class="text-base font-black">Photoist Pro v1.2 업데이트</h3>
+        <p class="text-xs text-slate-500">더 부드럽고 직관적인 스튜디오 환경으로 업그레이드되었습니다.</p>
+      </div>
+
+      <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2 text-xs text-slate-700">
+        <div class="flex items-start gap-2">
+          <span class="text-rose-500 font-bold">✓</span>
+          <span><strong>2.0배속 왕복 부메랑 비디오</strong>: 검은 화면 없이 부드러운 왕복 루프 생성</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-rose-500 font-bold">✓</span>
+          <span><strong>3.0배속 전 과정 타임랩스</strong>: 촬영 현장 전체를 담은 고속 비디오</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-rose-500 font-bold">✓</span>
+          <span><strong>아이패드 전면 광각 최적화</strong>: 여백 없이 시원한 0.5x 광각 지원</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-rose-500 font-bold">✓</span>
+          <span><strong>원클릭 한번에 다 넣기</strong>: 6컷 중 베스트 사진 자동/랜덤 채우기</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-rose-500 font-bold">✓</span>
+          <span><strong>테마별 글자색 가독성 완벽 지원</strong>: 다크 테마에서도 선명한 글씨</span>
+        </div>
+      </div>
+
+      <button type="button" onclick="closeUpdateNoticeModal()" class="w-full bg-slate-900 hover:bg-black text-white font-black py-3 rounded-xl text-xs transition shadow-sm">
+        새로운 기능 시작하기
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
   <!-- [모달 1] 롱프레스 5초 관리자 설정 모드 (비밀번호: 0724) -->
   <!-- ========================================== -->
   <div id="adminModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
@@ -553,7 +597,6 @@
         </button>
       </div>
 
-      <!-- 비밀번호 인증 게이트 (기본 0724) -->
       <div id="adminAuthGate" class="space-y-3 py-4 text-center">
         <p class="text-xs text-slate-500 font-bold">관리자 4자리 암호를 입력해 주세요.</p>
         <input type="password" id="adminPwInput" maxlength="4" placeholder="••••" class="text-center font-mono text-2xl tracking-widest bg-slate-50 w-36 mx-auto py-2.5 rounded-xl border border-slate-300 outline-none focus:border-rose-500">
@@ -564,9 +607,7 @@
         </div>
       </div>
 
-      <!-- 관리자 대시보드 (승인 후 노출) -->
       <div id="adminDashboardPanel" class="hidden flex-1 overflow-y-auto no-scrollbar space-y-4">
-        <!-- 1) 공지사항 관리 -->
         <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-black">📢 메인 홈 공지사항 관리</span>
@@ -581,7 +622,6 @@
           </button>
         </div>
 
-        <!-- 2) 이용 후기 관리 -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-black">⭐ 사용자 후기 관리 (<span id="adminReviewCount">0</span>개)</span>
@@ -609,11 +649,8 @@
       </div>
 
       <div class="space-y-3">
-        <!-- 🌟 0.5점 단위 별점 클릭 위젯 -->
         <div class="text-center space-y-1.5 py-1">
-          <div class="star-rating-widget" id="starRatingBox">
-            <!-- JS 동적 생성: 5개 별 & 좌/우 0.5점 히트영역 -->
-          </div>
+          <div class="star-rating-widget" id="starRatingBox"></div>
           <div class="text-xs font-black text-amber-500">
             <span id="starRatingValueText">5.0</span>점 / 5.0점
           </div>
@@ -637,7 +674,7 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- [모달 3] 우측 상단 톱니바퀴 설정 센터 -->
+  <!-- [모달 3] 톱니바퀴 설정 센터 -->
   <!-- ========================================== -->
   <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
     <div class="bg-white text-slate-900 border border-slate-200 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
@@ -652,7 +689,6 @@
       </div>
 
       <div class="space-y-4">
-        <!-- 1) UI 색상 테마 선택 -->
         <div>
           <label class="block text-xs font-black text-slate-800 mb-2">화면 색상 테마</label>
           <div class="grid grid-cols-3 gap-1.5">
@@ -662,15 +698,14 @@
           </div>
         </div>
 
-        <!-- 2) 버전 정보 & 업데이트 일자 -->
         <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1 text-xs">
           <div class="flex items-center justify-between font-bold text-slate-700">
             <span>프로그램 버전</span>
-            <span class="text-rose-600 font-black">Photoist Pro v1.1</span>
+            <span class="text-rose-600 font-black">Photoist Pro v1.2</span>
           </div>
           <div class="flex items-center justify-between text-slate-500 text-[11px]">
             <span>최종 업데이트</span>
-            <span class="font-mono">2026.10.04</span>
+            <span class="font-mono">2026.10.06</span>
           </div>
           <div class="flex items-center justify-between text-slate-500 text-[11px] pt-1 border-t border-slate-200/60">
             <span>고객센터 문의</span>
@@ -678,17 +713,16 @@
           </div>
         </div>
 
-        <!-- 3) 추후 업그레이드 예정 로드맵 안내 -->
         <div class="space-y-1.5">
           <label class="block text-xs font-black text-slate-800">업그레이드 예정 안내 (Roadmap)</label>
           <div class="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-900 space-y-1">
             <div class="flex items-center gap-1.5 font-bold">
               <span class="px-1.5 py-0.2 bg-indigo-200 text-indigo-800 rounded text-[9px]">Coming Soon</span>
-              <span>AI 얼굴 인식 스티커 자동 스냅 엔진</span>
+              <span>한 컷 다시 찍기 (눈감음 방지 1회 재촬영 찬스)</span>
             </div>
             <div class="flex items-center gap-1.5 font-bold">
               <span class="px-1.5 py-0.2 bg-indigo-200 text-indigo-800 rounded text-[9px]">Coming Soon</span>
-              <span>흑백 감열지 영수증 사진 인화 규격 지원</span>
+              <span>움직이는 GIF(움짤) 원터치 다운로드 옵션</span>
             </div>
           </div>
         </div>
