@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap');
 
 /* ========================================================
- * 1. 포토이스트 프로 v1.3 글로벌 테마 시스템 (가독성 보장)
+ * 1. 포토이스트 프로 v1.4 글로벌 테마 시스템
  * ======================================================== */
 :root {
   --app-vh: 1vh;
@@ -15,7 +15,7 @@
   --text-sub: #64748b;
 }
 
-/* 매트 블랙 테마: 다크 배경 시 텍스트 화이트 자동 반전 */
+/* 매트 블랙 테마: 텍스트 및 카드 화이트 자동 반전 */
 body.theme-matte-black {
   --theme-bg: #09090b;
   --surface-card: #18181b;
@@ -58,7 +58,7 @@ body.theme-matte-black textarea {
   border-color: #3f3f46 !important;
 }
 
-/* 딥 슬레이트 테마: 쿨 다크 톤 시 텍스트 쿨 화이트 자동 반전 */
+/* 딥 슬레이트 테마: 쿨 다크 톤 텍스트 자동 반전 */
 body.theme-deep-slate {
   --theme-bg: #0f172a;
   --surface-card: #1e293b;
@@ -214,7 +214,6 @@ html, body {
   -webkit-text-stroke: 4px rgba(0, 0, 0, 0.6);
 }
 
-/* 촬영 뷰파인더 실시간 6구 슬롯 트랙 */
 .live-capture-slot {
   width: 48px;
   height: 64px;
@@ -249,7 +248,7 @@ html, body {
 }
 
 /* ========================================================
- * 4. 사진 선택 화면 (가로 모드 와이드 뷰어 & 비대칭 슬롯)
+ * 4. 사진 선택 화면 (가로 모드 와이드 뷰어)
  * ======================================================== */
 .pick-split-container {
   display: flex;
@@ -311,7 +310,6 @@ html, body {
   box-shadow: 0 0 0 2px var(--theme-primary), 0 6px 16px -2px rgba(244, 63, 94, 0.35);
 }
 
-/* 가로 촬영 사진 와이드 썸네일 (16:10 비율) */
 .pick-thumb-horizontal {
   width: 76px;
   height: 50px;
@@ -379,7 +377,7 @@ html, body {
 .star-unit .hit-right { right: 0; }
 
 /* ========================================================
- * 6. 에디터 스튜디오 레이아웃 & 캔버스 뷰포트
+ * 6. 에디터 스튜디오 & 2줄 인화 토글 스타일
  * ======================================================== */
 .split-editor-container {
   display: flex;
@@ -464,6 +462,11 @@ body.theme-deep-slate #canvasViewport {
   max-height: 100%;
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08);
   border-radius: 4px;
+}
+
+/* 2줄 복제 인화 토글 버튼 */
+.print-strip-mode-btn {
+  transition: all 0.15s ease;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -561,32 +564,6 @@ input[type=range]::-webkit-slider-thumb {
 .pixx-dark-notice strong {
   color: #f43f5e;
   font-weight: 800;
-}
-
-.pixx-dark-lang-switcher {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-}
-
-.pixx-dark-lang-select-wrap {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0 8px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.pixx-dark-lang-select {
-  border: 0;
-  background: transparent;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  outline: none;
-  cursor: pointer;
 }
 
 .pixx-dark-card {
