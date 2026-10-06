@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap');
 
 /* ========================================================
- * 1. 포토이스트 프로 v1.2 글로벌 테마 시스템 (시인성 완벽 보장)
+ * 1. 포토이스트 프로 v1.3 글로벌 테마 시스템 (가독성 보장)
  * ======================================================== */
 :root {
   --app-vh: 1vh;
@@ -15,7 +15,7 @@
   --text-sub: #64748b;
 }
 
-/* 🌟 매트 블랙 테마 (글자색 소프트 화이트 자동 반전) */
+/* 매트 블랙 테마: 다크 배경 시 텍스트 화이트 자동 반전 */
 body.theme-matte-black {
   --theme-bg: #09090b;
   --surface-card: #18181b;
@@ -58,7 +58,7 @@ body.theme-matte-black textarea {
   border-color: #3f3f46 !important;
 }
 
-/* 🌟 딥 슬레이트 테마 (글자색 쿨 화이트 자동 반전) */
+/* 딥 슬레이트 테마: 쿨 다크 톤 시 텍스트 쿨 화이트 자동 반전 */
 body.theme-deep-slate {
   --theme-bg: #0f172a;
   --surface-card: #1e293b;
@@ -132,7 +132,7 @@ html, body {
 }
 
 /* ========================================================
- * 2. 헤더 및 로고 롱프레스 게이지
+ * 2. 솔리드 헤더 & 로고 롱프레스 5초 게이지
  * ======================================================== */
 #mainHeader {
   background-color: #ffffff;
@@ -164,7 +164,7 @@ html, body {
 }
 
 /* ========================================================
- * 3. 풀스크린 뷰파인더 & 아이패드 전면 광각 엔진
+ * 3. 풀스크린 뷰파인더 & 아이패드 전면 광각 전환 엔진
  * ======================================================== */
 .camera-fullscreen-viewport {
   position: relative;
@@ -185,10 +185,6 @@ html, body {
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* 🌟 아이패드 광각 최적화:
- * 광각(0.5x): 네이티브 초광각 렌더링 (1.0x 전체 화면 채움)
- * 표준(1.0x): 단독 샷을 위한 왜곡 없는 중앙 줌인 (1.28x 줌)
- */
 .camera-stream-video.fov-wide {
   transform: scale(1.0);
 }
@@ -218,6 +214,7 @@ html, body {
   -webkit-text-stroke: 4px rgba(0, 0, 0, 0.6);
 }
 
+/* 촬영 뷰파인더 실시간 6구 슬롯 트랙 */
 .live-capture-slot {
   width: 48px;
   height: 64px;
@@ -252,7 +249,7 @@ html, body {
 }
 
 /* ========================================================
- * 4. 사진 선택 화면 (가로 모드 와이드 뷰어 & 썸네일)
+ * 4. 사진 선택 화면 (가로 모드 와이드 뷰어 & 비대칭 슬롯)
  * ======================================================== */
 .pick-split-container {
   display: flex;
@@ -314,10 +311,10 @@ html, body {
   box-shadow: 0 0 0 2px var(--theme-primary), 0 6px 16px -2px rgba(244, 63, 94, 0.35);
 }
 
-/* 🌟 가로 촬영 사진 전용 와이드 썸네일 (16:10 비율) */
+/* 가로 촬영 사진 와이드 썸네일 (16:10 비율) */
 .pick-thumb-horizontal {
-  width: 74px;
-  height: 48px;
+  width: 76px;
+  height: 50px;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
@@ -340,7 +337,7 @@ html, body {
 }
 
 /* ========================================================
- * 5. 0.5점 단위 별점 위젯
+ * 5. 0.5점 단위 정밀 별점 위젯
  * ======================================================== */
 .star-rating-widget {
   display: inline-flex;
@@ -612,7 +609,7 @@ input[type=range]::-webkit-slider-thumb {
   min-height: 340px;
 }
 
-#pixxMovieView, #pixxTimelapseView, #pixxJpgView {
+#pixxMovieView, #pixxTimelapseView, #pixxFramedView, #pixxJpgView {
   display: block;
   width: 100%;
   height: auto;
@@ -620,14 +617,14 @@ input[type=range]::-webkit-slider-thumb {
   object-fit: contain;
 }
 
-#pixxJpgView, #pixxTimelapseView {
+#pixxJpgView, #pixxTimelapseView, #pixxFramedView {
   display: none;
 }
 
 .pixx-dark-action-stack {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   margin-top: 14px;
 }
 
@@ -642,8 +639,8 @@ input[type=range]::-webkit-slider-thumb {
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
-  min-height: 76px;
-  padding: 12px 10px;
+  min-height: 72px;
+  padding: 10px 8px;
   font-family: 'Pretendard', sans-serif;
   color: #f1f5f9;
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
@@ -659,7 +656,7 @@ input[type=range]::-webkit-slider-thumb {
 
 .pixx-dark-btn .btn-title {
   display: block;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   color: inherit;
   letter-spacing: -0.01em;
@@ -667,8 +664,8 @@ input[type=range]::-webkit-slider-thumb {
 
 .pixx-dark-btn .btn-sub {
   display: block;
-  margin-top: 4px;
-  font-size: 11px;
+  margin-top: 3px;
+  font-size: 10px;
   font-weight: 600;
   color: #94a3b8;
 }
