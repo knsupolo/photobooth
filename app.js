@@ -1,16 +1,16 @@
 // ========================================================
-// [Photoist Pro v1.2] app.js (1편 / 전반부)
+// [Photoist Pro v1.3] app.js (1편 / 전반부)
 // ========================================================
 // 1. 핵심 전역 상수 및 통합 상태 관리 (State Management)
-// 2. v1.2 업데이트 자동 공지 팝업 & 테마별 글자색 동기화
-// 3. 로고 5초 롱프레스 관리자 모드 (비밀번호: 0724)
-// 4. 0.5점 단위 별점 후기 시스템 (Half-Star Engine)
+// 2. v1.3 업데이트 공지 & 테마별 텍스트 시인성 자동 동기화
+// 3. 5초 롱프레스 관리자 모드 (비밀번호: 0724, 공지/후기 삭제)
+// 4. 이용 후기 목록 열람 & 0.5점 단위 별점 후기 작성 시스템
 // 5. 톱니바퀴 설정 센터 & 테마 모드 제어 (Settings & Theme)
-// 6. 화면 라우팅 & 무조건 가로 자이로 회전 감지
+// 6. 화면 라우팅 & 무조건 가로 자이로 감지 엔진
 // 7. 아이패드 맞춤형 화각 제어 (0.5x 광각 / 1.0x 표준) & 대기실
-// 8. 6컷 연속 촬영 & 6구 슬롯 실시간 썸네일 채움 트랙
+// 8. 4~8초 전체 시간 클립 통녹화 & 실시간 6구 슬롯 채움 트랙
 // 9. 전체 세션 타임랩스 통녹화 마스터 엔진
-// 10. 사진 선택 2분할 뷰어, 자동 커서 전진 & [한번에 다 넣기] 엔진
+// 10. 사진 선택 스마트 자동 커서(미사용 사진 자동 점프) & [한번에 다 넣기]
 // ========================================================
 
 // ========================================================
@@ -18,7 +18,7 @@
 // ========================================================
 const GOOGLE_DB_URL = "https://script.google.com/macros/s/AKfycbw1fjoUYoKQOHNNatPY_8q8X-1ogUV7iaFsIMpYioStlVX1SZK9hYiY32P-bGv7GUVoBw/exec";
 const APP_NAME = "photoist Pro";
-const APP_VERSION = "v1.2";
+const APP_VERSION = "v1.3";
 const ADMIN_MASTER_PW = "0724";
 
 const FILTER_PRESETS = {
@@ -50,7 +50,7 @@ const appState = {
   
   // 2) 촬영 데이터
   shotImages: [],              // 6컷 원본 Image 객체 배열
-  shotVideoBlobs: [],          // 6컷별 2초 녹화 비디오 클립 Blob 배열
+  shotVideoBlobs: [],          // 컷별 전체 시간(4~8초) 통녹화 비디오 클립 Blob 배열
   fullSessionVideoBlob: null,  // 대기~촬영 전과정 3.0배속 타임랩스용 마스터 Blob
   selectedIndices: [null, null, null, null], // 슬롯별 선택 인덱스
   selectedImages: [null, null, null, null],  // 슬롯별 실제 Image 객체
@@ -92,7 +92,7 @@ const appState = {
   // 7) 공지 및 후기
   adminNotice: {
     visible: false,
-    text: "포토이스트 프로 v1.2 오픈! 2배속 부메랑 영상과 3배속 타임랩스를 즐겨보세요."
+    text: "포토이스트 프로 v1.3 오픈! 2.0배속 부메랑 영상과 3.0배속 타임랩스를 즐겨보세요."
   },
   reviews: [],
   currentReviewScore: 5.0
@@ -110,7 +110,7 @@ let panStartY = 0;
 let historyStack = [];
 let redoStack = [];
 
-// 오디오 컨텍스트
+// 오디오 신디사이저 엔진
 let audioCtx = null;
 
 function getAudioContext() {
@@ -229,7 +229,7 @@ function getFormattedTodayDate() {
 }
 
 // ========================================================
-// 2. v1.2 업데이트 자동 공지 팝업 & 테마별 글자색 동기화
+// 2. v1.3 업데이트 공지 & 테마별 텍스트 시인성 자동 동기화
 // ========================================================
 function checkVersionUpdateAutoNotice() {
   const storedVersion = localStorage.getItem('photoist_pro_version');
@@ -245,7 +245,7 @@ function closeUpdateNoticeModal() {
 }
 
 // ========================================================
-// 3. 로고 5초 롱프레스 관리자 모드 (비밀번호: 0724)
+// 3. 5초 롱프레스 관리자 모드 (비밀번호: 0724, 공지/후기 삭제)
 // ========================================================
 let adminPressTimer = null;
 
@@ -356,7 +356,7 @@ function refreshAdminReviewList() {
   const countEl = document.getElementById('adminReviewCount');
   if (!container) return;
 
-  const reviews = JSON.parse(localStorage.getItem('photoist_pro_reviews') || '[]');
+  const reviews = getStoredReviews();
   appState.reviews = reviews;
   if (countEl) countEl.textContent = reviews.length;
 
@@ -386,10 +386,11 @@ function refreshAdminReviewList() {
 
 function deleteAdminReview(id) {
   if (!confirm("이 후기를 영구 삭제하시겠습니까?")) return;
-  let reviews = JSON.parse(localStorage.getItem('photoist_pro_reviews') || '[]');
+  let reviews = getStoredReviews();
   reviews = reviews.filter(r => r.id !== id);
   localStorage.setItem('photoist_pro_reviews', JSON.stringify(reviews));
   refreshAdminReviewList();
+  renderPublicReviewsList();
   showToast("후기가 삭제되었습니다.");
 }
 
@@ -399,17 +400,88 @@ function escapeHtml(str) {
 }
 
 // ========================================================
-// 4. 0.5점 단위 별점 후기 시스템 (Half-Star Engine)
+// 4. 이용 후기 목록 열람 & 0.5점 단위 별점 후기 작성 시스템
 // ========================================================
-function openReviewModal() {
-  const modal = document.getElementById('reviewModal');
+function getStoredReviews() {
+  const defaultMock = [
+    { id: 1, author: "빛나는순간", score: 5.0, text: "무빙 영상 화질이 정말 미쳤어요! 부메랑으로 저장하니 인스타에 올리기 딱 좋습니다.", date: "26.10.05" },
+    { id: 2, author: "네컷매니아", score: 4.5, text: "가로로 찍으니 친구 넷이서 다 들어가도 얼굴 안 잘려서 너무 편해요.", date: "26.10.05" },
+    { id: 3, author: "수원러버", score: 5.0, text: "QR코드로 폰에서 바로 영상 내려받을 수 있어서 편리하네요. 최고입니다!", date: "26.10.04" }
+  ];
+  const saved = localStorage.getItem('photoist_pro_reviews');
+  if (!saved) {
+    localStorage.setItem('photoist_pro_reviews', JSON.stringify(defaultMock));
+    return defaultMock;
+  }
+  try {
+    return JSON.parse(saved);
+  } catch (e) {
+    return defaultMock;
+  }
+}
+
+// 🌟 후기 목록 열람 센터 열기
+function openPublicReviewsModal() {
+  const modal = document.getElementById('publicReviewsModal');
   if (modal) modal.classList.remove('hidden');
+  renderPublicReviewsList();
+}
+
+function closePublicReviewsModal() {
+  document.getElementById('publicReviewsModal')?.classList.add('hidden');
+}
+
+function renderPublicReviewsList() {
+  const container = document.getElementById('publicReviewsList');
+  const avgEl = document.getElementById('summaryAverageScore');
+  const totalEl = document.getElementById('summaryTotalReviews');
+  if (!container) return;
+
+  const reviews = getStoredReviews();
+  appState.reviews = reviews;
+
+  const total = reviews.length;
+  if (totalEl) totalEl.textContent = total;
+
+  if (total > 0) {
+    const avg = reviews.reduce((sum, r) => sum + (r.score || 5), 0) / total;
+    if (avgEl) avgEl.textContent = avg.toFixed(1);
+  } else {
+    if (avgEl) avgEl.textContent = "5.0";
+  }
+
+  if (reviews.length === 0) {
+    container.innerHTML = `<p class="text-center py-10 text-xs text-slate-400">등록된 후기가 없습니다. 첫 후기를 남겨보세요!</p>`;
+    return;
+  }
+
+  container.innerHTML = reviews.map(r => `
+    <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1.5 shadow-2xs">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black text-slate-800">${escapeHtml(r.author)}</span>
+          <span class="text-[11px] text-amber-500 font-extrabold flex items-center">
+            ★ ${Number(r.score).toFixed(1)}
+          </span>
+        </div>
+        <span class="text-[10px] text-slate-400 font-mono">${r.date}</span>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed font-medium">${escapeHtml(r.text)}</p>
+    </div>
+  `).join('');
+
+  if (window.lucide) lucide.createIcons();
+}
+
+// 후기 작성 팝업 열기/닫기
+function openReviewWriteModal() {
+  document.getElementById('reviewWriteModal')?.classList.remove('hidden');
   appState.currentReviewScore = 5.0;
   renderStarRatingWidget();
 }
 
-function closeReviewModal() {
-  document.getElementById('reviewModal')?.classList.add('hidden');
+function closeReviewWriteModal() {
+  document.getElementById('reviewWriteModal')?.classList.add('hidden');
 }
 
 function renderStarRatingWidget() {
@@ -477,14 +549,15 @@ function submitUserReview() {
     date: getFormattedTodayDate()
   };
 
-  let reviews = JSON.parse(localStorage.getItem('photoist_pro_reviews') || '[]');
+  let reviews = getStoredReviews();
   reviews.unshift(newReview);
   localStorage.setItem('photoist_pro_reviews', JSON.stringify(reviews));
 
-  alert("소중한 후기가 등록되었습니다! 감사합니다.");
+  alert("소중한 후기가 성공적으로 등록되었습니다! 감사합니다.");
   if (authorInp) authorInp.value = '';
   if (textInp) textInp.value = '';
-  closeReviewModal();
+  closeReviewWriteModal();
+  renderPublicReviewsList();
 
   if (GOOGLE_DB_URL) {
     fetch(GOOGLE_DB_URL, {
@@ -512,7 +585,6 @@ function closeSettingsModal() {
   document.getElementById('settingsModal')?.classList.add('hidden');
 }
 
-// 🌟 색상 테마 전환 시 UI 텍스트 및 카드 글자색 시인성 완벽 자동 보장
 function applyThemeMode(themeKey, btn) {
   document.body.classList.remove('theme-matte-black', 'theme-deep-slate');
 
@@ -621,9 +693,6 @@ function selectInterval(sec, btn) {
   }
 }
 
-// 🌟 아이패드 전면 광각 최적화:
-// 0.5x 광각: 네이티브 와이드 전체 화면 (fov-wide)
-// 1.0x 표준: 왜곡 없는 단독 인물 크롭 줌 (fov-normal)
 function setCameraFov(fovMode) {
   appState.cameraFov = fovMode;
   const btnWide = document.getElementById('btnFovWide');
@@ -701,6 +770,9 @@ function stopCameraAndAudio() {
   if (activeFullSessionRecorder && activeFullSessionRecorder.state === 'recording') {
     activeFullSessionRecorder.stop();
   }
+  if (activeClipRecorder && activeClipRecorder.state === 'recording') {
+    activeClipRecorder.stop();
+  }
   if (appState.mediaStream) {
     appState.mediaStream.getTracks().forEach(t => t.stop());
     appState.mediaStream = null;
@@ -749,7 +821,7 @@ async function flipCameraFacingPreserve() {
 }
 
 // ========================================================
-// 8. 6컷 연속 촬영 & 6구 슬롯 실시간 썸네일 채움 트랙
+// 8. 4~8초 전체 시간 클립 통녹화 & 실시간 6구 슬롯 채움 트랙
 // ========================================================
 let countdownTimer = null;
 let currentShotNumber = 0;
@@ -761,7 +833,6 @@ function beginShootingCountdown() {
   if (readyOverlay) readyOverlay.classList.add('hidden');
   if (activeOverlay) activeOverlay.classList.remove('hidden');
 
-  // 전체 세션 타임랩스 통녹화 시작
   startFullSessionRecording();
 
   currentShotNumber = 0;
@@ -817,7 +888,7 @@ function executeNextShotCycle() {
 
   playBeepSound(false);
 
-  // 셔터 직전 2초 부메랑 비디오 클립 녹화
+  // 🌟 카운트다운 시작 0초부터 셔터까지 전체 시간(4초/6초/8초) 통녹화 시작
   startPreShotClipRecording();
 
   countdownTimer = setInterval(() => {
@@ -889,6 +960,7 @@ function captureCurrentFrame() {
     flash.classList.add('flash-active');
   }
 
+  // 셔터 시점에 녹화 중지 -> 4~8초 전체 클립 저장 완료
   if (activeClipRecorder && activeClipRecorder.state === 'recording') {
     activeClipRecorder.stop();
   }
@@ -912,7 +984,6 @@ function captureCurrentFrame() {
   img.onload = () => {
     appState.shotImages.push(img);
 
-    // 하단 실시간 6구 슬롯에 찍힌 사진 즉시 썸네일 표시
     const slotIdx = currentShotNumber - 1;
     const slotEl = document.getElementById(`liveSlot${slotIdx}`);
     if (slotEl) {
@@ -968,7 +1039,7 @@ function stopFullSessionRecordingAndProceed() {
 }
 
 // ========================================================
-// 10. 사진 선택 2분할 뷰어, 자동 커서 전진 & [한번에 다 넣기] 엔진
+// 10. 사진 선택 2분할 뷰어, 스마트 자동 커서 & [한번에 다 넣기]
 // ========================================================
 function proceedToPickScreen() {
   showScreen('screenPick');
@@ -1027,21 +1098,19 @@ function selectCutLayout(layoutKey, count) {
   appState.activeSlotIndex = 0;
 }
 
-// 🌟 [🎲 한번에 다 넣기 (원클릭 자동 채우기)] 알고리즘
+// 🌟 [한번에 다 넣기 (원클릭 자동 채우기)]
 function autoFillAllSlotsRandom() {
   if (appState.shotImages.length === 0) return;
 
   triggerHaptic('heavy');
   const count = appState.selectedCutCount;
   
-  // 6컷 중에서 필요한 수만큼 순서대로 채우기
   for (let slot = 0; slot < count; slot++) {
     const shotIdx = slot % appState.shotImages.length;
     appState.selectedIndices[slot] = shotIdx;
     appState.selectedImages[slot] = appState.shotImages[shotIdx];
   }
 
-  // 첫 번째 슬롯으로 포커스 정돈
   appState.activeSlotIndex = 0;
 
   renderRealFrameSlots();
@@ -1218,7 +1287,6 @@ function resetActiveSlotPan() {
   onActiveSlotPanChange(0);
 }
 
-// 🌟 가로 모드 대형 뷰어 렌더링
 function renderLargeViewer() {
   const imgEl = document.getElementById('largePhotoViewerImg');
   const badgeEl = document.getElementById('largeViewerIndexBadge');
@@ -1247,7 +1315,7 @@ function navigateLargeViewer(direction) {
   renderThumbnailsStrip();
 }
 
-// 🌟 사진 하나 선택 시 다음 슬롯으로 자동 커서 전진
+// 🌟 사진 선택 시: '다음 빈 슬롯' + '미사용 사진' 동시 자동 점프
 function assignCurrentViewerPhotoToActiveSlot() {
   if (appState.shotImages.length === 0) return;
   const shotIdx = appState.viewerPhotoIndex;
@@ -1267,13 +1335,30 @@ function assignCurrentViewerPhotoToActiveSlot() {
   appState.selectedIndices[currentSlot] = shotIdx;
   appState.selectedImages[currentSlot] = appState.shotImages[shotIdx];
 
-  // 🌟 다음 빈 슬롯으로 커서 자동 전진
+  // 1. 다음 빈 슬롯으로 포커스 전진
   const nextEmptySlot = appState.selectedIndices.findIndex(idx => idx === null);
   if (nextEmptySlot !== -1) {
     appState.activeSlotIndex = nextEmptySlot;
   } else {
-    // 모든 슬롯이 다 찼으면 마지막 슬롯 혹은 0번 슬롯 유지
     appState.activeSlotIndex = (currentSlot + 1) % appState.selectedCutCount;
+  }
+
+  // 2. 🌟 아직 어느 슬롯에도 안 넣은 사진(미사용 사진)을 찾아 뷰어 자동 점프
+  const totalShots = appState.shotImages.length;
+  let nextUnusedPhotoIdx = -1;
+  for (let offset = 1; offset < totalShots; offset++) {
+    const candidateIdx = (shotIdx + offset) % totalShots;
+    if (!appState.selectedIndices.includes(candidateIdx)) {
+      nextUnusedPhotoIdx = candidateIdx;
+      break;
+    }
+  }
+
+  if (nextUnusedPhotoIdx !== -1) {
+    appState.viewerPhotoIndex = nextUnusedPhotoIdx;
+  } else {
+    // 모든 사진이 한 번씩 다 쓰였으면 다음 순번 사진으로 이동
+    appState.viewerPhotoIndex = (shotIdx + 1) % totalShots;
   }
 
   renderRealFrameSlots();
@@ -1299,7 +1384,6 @@ function unassignPhotoFromSlot(slotIdx) {
   if (window.lucide) lucide.createIcons();
 }
 
-// 🌟 가로 와이드(16:10) 썸네일 스트립 렌더링
 function renderThumbnailsStrip() {
   const container = document.getElementById('pickThumbnailsStrip');
   if (!container) return;
@@ -1373,12 +1457,17 @@ function proceedToEditor() {
   showScreen('screenEdit');
   initSplitResizer();
 
+  // 🌟 재편집 시 저장 잠금/QR 인셋 상태 깨끗이 초기화
+  finalEmbeddedQrImage = null;
+
   if (typeof renderStrip === 'function') {
     renderStrip();
   }
 }
 
+// 🌟 사진 다시 선택으로 복귀 시 내보내기 락 및 QR 상태 초기화
 function returnToPickScreen() {
+  finalEmbeddedQrImage = null;
   showScreen('screenPick');
   renderRealFrameSlots();
   renderLargeViewer();
@@ -1432,16 +1521,17 @@ function initSplitResizer() {
   resizer.addEventListener('pointerup', onPointerUp);
   resizer.addEventListener('pointercancel', onPointerUp);
 }
+
 // ========================================================
-// [Photoist Pro v1.2] app.js (2편 / 후반부)
+// [Photoist Pro v1.3] app.js (2편 / 후반부)
 // ========================================================
 // 11. 테마 컨트롤러 & 프레임 스타일 제어 (기본 5종 단일화)
 // 12. 감성 필터 및 화질 보정 엔진 (Pixel Filter Math)
 // 13. 스마트 텍스트 스티커 관리 (추가/크기/회전/삭제)
 // 14. 캔버스 뷰포트 인터랙션 & 무제한 핀치 줌 / 패닝 통합 제스처
-// 15. 초고화질 통합 프레임 합성 엔진 (사진 & 비디오 100% 공용 렌더러)
-// 16. 무결점 비디오 엔진 (2.0배속 부메랑 & 3.0배속 타임랩스)
-// 17. 기기 다운로드 & 구글 클라우드 무소음 자동 백업 파이프라인
+// 15. 초고화질 통합 프레임 합성 엔진 (2×1×2 비대칭 지그재그 & 동기화)
+// 16. 3종 비디오 분리 엔진 (2.0배속 부메랑 / 1.8배속 사진영상 / 3.0배속 타임랩스)
+// 17. 기기 다운로드 & 스마트폰 QR 직결 클라우드 파이프라인
 // 18. PIXX 스타일 다크 그레이/블랙 모바일 다운로드 뷰어 엔진
 // 19. 실행취소(Undo/Redo), 뷰포트 dvh 보정 & 초기 구동 엔트리포인트
 // ========================================================
@@ -1853,7 +1943,7 @@ function initCanvasInteractions() {
 }
 
 // ========================================================
-// 15. 초고화질 통합 프레임 합성 엔진 (사진 & 비디오 100% 공용 렌더러)
+// 15. 초고화질 통합 프레임 합성 엔진 (2×1×2 비대칭 지그재그 & 동기화)
 // ========================================================
 let finalEmbeddedQrImage = null;
 
@@ -1867,7 +1957,7 @@ function getCanvasDimensions(layout, cut, sideOffset) {
   }
 }
 
-// 🌟 사진 캔버스와 비디오 녹화기가 100% 오차 없이 공유하는 통합 렌더러
+// 🌟 사진 캔버스와 비디오 녹화기가 100% 동일하게 공유하는 통합 렌더러
 function drawFrameComposite(ctx, canvasW, canvasH, mediaList, isVideo = false, isFinalExport = false) {
   const layout = appState.selectedCutLayout || '1x4';
   const cut = appState.selectedCutCount || 4;
@@ -1956,19 +2046,25 @@ function drawFrameComposite(ctx, canvasW, canvasH, mediaList, isVideo = false, i
       }
 
     } else if (layout === '2x1x2') {
+      // 🌟 2×1×2 프레임: 지그재그 선택 시 상단 60:40, 하단 40:60 비대칭 교차 레이아웃
       const isMiddle = (fStyle === 'basic_middle');
+      const isZigzag = (fStyle === 'basic_zigzag');
       const bannerH = isMiddle ? 140 : 0;
       const availH = canvasH - topH - bottomH - bannerH - (gap * 2);
       const row1H = availH * 0.31;
       const row2H = availH * 0.38;
       const row3H = availH * 0.31;
-      const smallW = (baseCanvasW - (pad * 2) - gap) / 2;
+      const availW = baseCanvasW - (pad * 2) - gap;
       const heroW = baseCanvasW - (pad * 2);
 
-      localSlotRects.push({ x: pad, y: topH, w: smallW, h: row1H });
-      localSlotRects.push({ x: pad + smallW + gap, y: topH, w: smallW, h: row1H });
-      drawFilteredSlotMedia(ctx, mediaList[0], pad, topH, smallW, row1H, 0, isVideo);
-      drawFilteredSlotMedia(ctx, mediaList[1], pad + smallW + gap, topH, smallW, row1H, 1, isVideo);
+      // 상단 2장 너비 계산
+      const r1LeftW = isZigzag ? Math.round(availW * 0.62) : Math.round(availW * 0.5);
+      const r1RightW = availW - r1LeftW;
+
+      localSlotRects.push({ x: pad, y: topH, w: r1LeftW, h: row1H });
+      localSlotRects.push({ x: pad + r1LeftW + gap, y: topH, w: r1RightW, h: row1H });
+      drawFilteredSlotMedia(ctx, mediaList[0], pad, topH, r1LeftW, row1H, 0, isVideo);
+      drawFilteredSlotMedia(ctx, mediaList[1], pad + r1LeftW + gap, topH, r1RightW, row1H, 1, isVideo);
 
       let heroY = topH + row1H + gap;
       if (isMiddle) {
@@ -1976,14 +2072,19 @@ function drawFrameComposite(ctx, canvasW, canvasH, mediaList, isVideo = false, i
         heroY += bannerH + gap;
       }
 
+      // 중단 1장 대형 와이드
       localSlotRects.push({ x: pad, y: heroY, w: heroW, h: row2H });
       drawFilteredSlotMedia(ctx, mediaList[2], pad, heroY, heroW, row2H, 2, isVideo);
 
+      // 하단 2장 너비 계산 (지그재그 시 상단과 반대로 좌측 40%, 우측 60%)
+      const r3LeftW = isZigzag ? Math.round(availW * 0.38) : Math.round(availW * 0.5);
+      const r3RightW = availW - r3LeftW;
       const row3Y = heroY + row2H + gap;
-      localSlotRects.push({ x: pad, y: row3Y, w: smallW, h: row3H });
-      localSlotRects.push({ x: pad + smallW + gap, y: row3Y, w: smallW, h: row3H });
-      drawFilteredSlotMedia(ctx, mediaList[3], pad, row3Y, smallW, row3H, 3, isVideo);
-      drawFilteredSlotMedia(ctx, mediaList[4], pad + smallW + gap, row3Y, smallW, row3H, 4, isVideo);
+
+      localSlotRects.push({ x: pad, y: row3Y, w: r3LeftW, h: row3H });
+      localSlotRects.push({ x: pad + r3LeftW + gap, y: row3Y, w: r3RightW, h: row3H });
+      drawFilteredSlotMedia(ctx, mediaList[3], pad, row3Y, r3LeftW, row3H, 3, isVideo);
+      drawFilteredSlotMedia(ctx, mediaList[4], pad + r3LeftW + gap, row3Y, r3RightW, row3H, 4, isVideo);
 
     } else if (layout === '1x2x2') {
       const isMiddle = (fStyle === 'basic_middle');
@@ -2081,7 +2182,7 @@ function drawFrameComposite(ctx, canvasW, canvasH, mediaList, isVideo = false, i
     ctx.restore();
   });
 
-  // 5. 🌟 우측 하단 QR 인셋
+  // 5. 우측 하단 QR 인셋
   if (finalEmbeddedQrImage) {
     drawQrInsetBox(ctx, canvasW, canvasH, pad);
   }
@@ -2107,7 +2208,6 @@ function renderStrip(isFinalExport = false) {
   appState.slotRects = drawFrameComposite(ctx, canvas.width, canvas.height, appState.selectedImages, false, isFinalExport);
 }
 
-// 🌟 슬롯 미디어 드로우 함수 (Image / Canvas / Video 모두 완벽 지원 및 좌/우 패닝 반영)
 function drawFilteredSlotMedia(ctx, media, targetX, targetY, targetW, targetH, slotIdx, isVideo) {
   if (!media) return;
   ctx.save();
@@ -2129,7 +2229,6 @@ function drawFilteredSlotMedia(ctx, media, targetX, targetY, targetW, targetH, s
     renderH = targetW / srcRatio;
   }
 
-  // 🌟 좌/우 패닝 오프셋 (-100 ~ 100%)
   const panOffset = (typeof slotIdx === 'number' && appState.slotPanOffsets[slotIdx]) ? appState.slotPanOffsets[slotIdx] : 0;
   const maxPanDiff = Math.max(0, (renderW - targetW) / 2);
   const panShiftX = maxPanDiff * (panOffset / 100);
@@ -2271,17 +2370,17 @@ function drawQrInsetBox(ctx, canvasW, canvasH, pad) {
 }
 
 // ========================================================
-// 16. 무결점 비디오 엔진 (2.0배속 부메랑 & 3.0배속 타임랩스)
+// 16. 3종 비디오 분리 엔진 (2.0배속 부메랑 / 1.8배속 사진영상 / 3.0배속 타임랩스)
 // ========================================================
 let currentMediaBlobs = {
   loop: null,        // 2.0배속 왕복 부메랑 비디오
-  timelapse: null,   // 3.0배속 전과정 타임랩스 비디오
-  videoFrame: null,  // 프레임 합성본
+  videoFrame: null,  // 1.8배속 정방향 루프 사진영상
+  timelapse: null,   // 3.0배속 전과정 통녹화 타임랩스
   photoUrl: ""
 };
 
-// 🌟 비동기 시킹 버그를 원천 차단하는 순차 프레임 버퍼 추출기
-async function extractSlotFrames(blob, count = 24) {
+// 🌟 촬영된 4~8초 전체 길이 클립을 균등 샘플링하여 프레임 버퍼 추출 (검은 화면 0% 보장)
+async function extractSlotFrames(blob, count = 30) {
   return new Promise((resolve) => {
     if (!blob) return resolve([]);
     const v = document.createElement('video');
@@ -2291,7 +2390,7 @@ async function extractSlotFrames(blob, count = 24) {
 
     v.onloadedmetadata = async () => {
       const frames = [];
-      const dur = Math.min(v.duration || 2.0, 2.0);
+      const dur = Math.max(v.duration || 4.0, 1.0);
       const step = dur / count;
       const off = document.createElement('canvas');
       off.width = 480;
@@ -2303,7 +2402,7 @@ async function extractSlotFrames(blob, count = 24) {
         await new Promise(r => {
           const onSeek = () => { v.removeEventListener('seeked', onSeek); r(); };
           v.addEventListener('seeked', onSeek);
-          setTimeout(r, 120); // 디코더 대기 타임아웃
+          setTimeout(r, 120);
         });
 
         offCtx.drawImage(v, 0, 0, off.width, off.height);
@@ -2330,27 +2429,24 @@ async function generateMovingVideosAndOpenViewer() {
   const btn = document.getElementById('btnAutoVideo');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>2.0배속 부메랑 및 3.0배속 타임랩스 합성 중...</span>`;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>3종 비디오 분리 합성 중...</span>`;
     if (window.lucide) lucide.createIcons();
   }
 
   try {
-    // 1. QR코드 먼저 사전 생성
-    const downloadLink = `${window.location.href.split('?')[0]}?view=pixx&id=${Date.now()}`;
-    await cacheQrImageFromUrl(downloadLink);
+    // 1. 메인 사진 데이터 URL 인출
     renderStrip(false);
-
     const mainCanvas = document.getElementById('photoCanvas');
     if (mainCanvas) {
       currentMediaBlobs.photoUrl = mainCanvas.toDataURL('image/jpeg', 0.95);
     }
 
-    // 2. 🌟 각 슬롯 비디오를 프레임 버퍼로 사전 디코딩 (검은 화면 0% 보장)
+    // 2. 🌟 4~8초 전체 클립 기반 30프레임 고해상도 버퍼 추출
     const allSlotFrameBuffers = await Promise.all(
-      appState.selectedIndices.map(shotIdx => extractSlotFrames(appState.shotVideoBlobs[shotIdx], 24))
+      appState.selectedIndices.map(shotIdx => extractSlotFrames(appState.shotVideoBlobs[shotIdx], 30))
     );
 
-    // 3. 🌟 2.0배속 왕복 부메랑(Ping-Pong) 비디오 합성기
+    // 3. 비디오 캔버스 & 레코더 준비
     const vCanvas = document.createElement('canvas');
     vCanvas.width = mainCanvas.width;
     vCanvas.height = mainCanvas.height;
@@ -2363,65 +2459,81 @@ async function generateMovingVideosAndOpenViewer() {
         : 'video/webm';
     }
 
-    const stream = vCanvas.captureStream(30);
-    const recorder = new MediaRecorder(stream, {
-      mimeType: mimeType,
-      videoBitsPerSecond: 15000000
+    // 🌟 A. 2.0배속 왕복 부메랑 비디오 합성 (전진 -> 후진 Ping-Pong)
+    const streamBoomerang = vCanvas.captureStream(30);
+    const recBoomerang = new MediaRecorder(streamBoomerang, { mimeType, videoBitsPerSecond: 15000000 });
+    const chunksBoomerang = [];
+    recBoomerang.ondataavailable = e => { if (e.data && e.data.size > 0) chunksBoomerang.push(e.data); };
+
+    await new Promise((resolve) => {
+      recBoomerang.onstop = () => {
+        currentMediaBlobs.loop = new Blob(chunksBoomerang, { type: mimeType });
+        resolve();
+      };
+      recBoomerang.start();
+
+      const boomerangSeq = [];
+      for (let f = 0; f < 30; f++) boomerangSeq.push(f);
+      for (let f = 28; f >= 1; f--) boomerangSeq.push(f);
+      const totalTicks = boomerangSeq.length * 2;
+      let tick = 0;
+
+      function stepBoomerang() {
+        if (tick < totalTicks) {
+          const fIdx = boomerangSeq[tick % boomerangSeq.length];
+          const curMedia = allSlotFrameBuffers.map((frames, sIdx) => frames[fIdx] || appState.selectedImages[sIdx]);
+          drawFrameComposite(vCtx, vCanvas.width, vCanvas.height, curMedia, true, true);
+          tick++;
+          requestAnimationFrame(stepBoomerang);
+        } else {
+          recBoomerang.stop();
+        }
+      }
+      requestAnimationFrame(stepBoomerang);
     });
 
-    const chunks = [];
-    recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+    // 🌟 B. 1.8배속 정방향 루프 사진영상(Framed Video) 별도 합성
+    const streamFramed = vCanvas.captureStream(30);
+    const recFramed = new MediaRecorder(streamFramed, { mimeType, videoBitsPerSecond: 15000000 });
+    const chunksFramed = [];
+    recFramed.ondataavailable = e => { if (e.data && e.data.size > 0) chunksFramed.push(e.data); };
 
-    recorder.onstop = () => {
-      currentMediaBlobs.videoFrame = new Blob(chunks, { type: mimeType });
-      currentMediaBlobs.loop = currentMediaBlobs.videoFrame;
+    await new Promise((resolve) => {
+      recFramed.onstop = () => {
+        currentMediaBlobs.videoFrame = new Blob(chunksFramed, { type: mimeType });
+        resolve();
+      };
+      recFramed.start();
 
-      // 4. 🌟 3.0배속 전과정 타임랩스 비디오 처리
-      buildTimelapseVideo30x().then(() => {
-        silentBackupToGoogleDrive(currentMediaBlobs.videoFrame, 'video');
-        openPixxViewer();
+      const totalForwardTicks = 30 * 2;
+      let fTick = 0;
 
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = `<i data-lucide="film" class="w-4 h-4"></i><span>🎬 2.0배속 부메랑 & 3.0배속 타임랩스 생성 (뷰어 열기)</span>`;
-          if (window.lucide) lucide.createIcons();
+      function stepForward() {
+        if (fTick < totalForwardTicks) {
+          const fIdx = fTick % 30;
+          const curMedia = allSlotFrameBuffers.map((frames, sIdx) => frames[fIdx] || appState.selectedImages[sIdx]);
+          drawFrameComposite(vCtx, vCanvas.width, vCanvas.height, curMedia, true, true);
+          fTick++;
+          requestAnimationFrame(stepForward);
+        } else {
+          recFramed.stop();
         }
-      });
-    };
-
-    recorder.start();
-
-    // 2.0배속 왕복 프레임 시퀀스 생성 (0 -> 23 -> 1 -> 0 -> 23 -> ...)
-    const cycleFrames = [];
-    for (let f = 0; f < 24; f++) cycleFrames.push(f);
-    for (let f = 22; f >= 1; f--) cycleFrames.push(f); // 왕복 루프
-
-    const totalRenderTicks = cycleFrames.length * 2; // 왕복 2회 반복 (약 4.2초)
-    let currentTick = 0;
-
-    function renderBoomerangStep() {
-      if (currentTick < totalRenderTicks) {
-        const frameIdx = cycleFrames[currentTick % cycleFrames.length];
-
-        // 슬롯별 현재 프레임 캔버스 매핑
-        const currentFrameMedia = allSlotFrameBuffers.map((frames, sIdx) => {
-          return frames[frameIdx] || appState.selectedImages[sIdx];
-        });
-
-        // 🌟 메인 캔버스와 100% 동일한 통합 프레임 함수 호출
-        drawFrameComposite(vCtx, vCanvas.width, vCanvas.height, currentFrameMedia, true, true);
-
-        currentTick++;
-        requestAnimationFrame(renderBoomerangStep);
-      } else {
-        recorder.stop();
       }
-    }
+      requestAnimationFrame(stepForward);
+    });
 
-    requestAnimationFrame(renderBoomerangStep);
+    // 🌟 C. 3.0배속 전과정 통녹화 타임랩스 비디오 합성
+    await buildTimelapseVideo30x();
+
+    // 4. 🌟 클라우드 업로드 및 스마트폰 QR 파라미터 직결 파이프라인
+    await syncMediaToCloudAndGenerateQR();
+
+    // 5. 다크 모던 PIXX 뷰어 화면으로 전환
+    openPixxViewer();
 
   } catch (err) {
     alert("영상 생성 중 오류가 발생했습니다: " + err.message);
+  } finally {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = `<i data-lucide="film" class="w-4 h-4"></i><span>🎬 2.0배속 부메랑 & 3.0배속 타임랩스 생성 (뷰어 열기)</span>`;
@@ -2430,7 +2542,7 @@ async function generateMovingVideosAndOpenViewer() {
   }
 }
 
-// 🌟 3.0배속 전과정 촬영 타임랩스 비디오 빌더 (자연스러운 고속 인코딩)
+// 🌟 3.0배속 전과정 촬영 타임랩스 비디오 빌더
 function buildTimelapseVideo30x() {
   return new Promise((resolve) => {
     const rawBlob = appState.fullSessionVideoBlob || appState.shotVideoBlobs[0];
@@ -2444,7 +2556,7 @@ function buildTimelapseVideo30x() {
     tempV.src = URL.createObjectURL(rawBlob);
     tempV.muted = true;
     tempV.playsInline = true;
-    tempV.playbackRate = 3.0; // 🌟 3.0배속 네이티브 고속 재생
+    tempV.playbackRate = 3.0;
 
     tempV.onloadedmetadata = () => {
       const tlCanvas = document.createElement('canvas');
@@ -2491,6 +2603,54 @@ function buildTimelapseVideo30x() {
       resolve();
     };
   });
+}
+
+// 🌟 스마트폰 QR 스캔 시 빈 화면 문제 원천 해결 파이프라인
+async function syncMediaToCloudAndGenerateQR() {
+  let photoRemoteUrl = "";
+  let videoRemoteUrl = "";
+
+  if (GOOGLE_DB_URL && currentMediaBlobs.photoUrl && currentMediaBlobs.loop) {
+    try {
+      const vidReader = new FileReader();
+      const videoBase64 = await new Promise((res) => {
+        vidReader.onloadend = () => res(vidReader.result);
+        vidReader.readAsDataURL(currentMediaBlobs.loop);
+      });
+
+      const uploadRes = await fetch(GOOGLE_DB_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action: 'UPLOAD_FULL_BUNDLE',
+          photoBase64: currentMediaBlobs.photoUrl,
+          videoBase64: videoBase64,
+          date: getFormattedTodayDate(),
+          archiveId: Date.now()
+        })
+      }).then(r => r.json());
+
+      if (uploadRes && uploadRes.success) {
+        photoRemoteUrl = uploadRes.photoUrl || "";
+        videoRemoteUrl = uploadRes.downloadUrl || "";
+      }
+    } catch (e) {}
+  }
+
+  // 원격 URL 파라미터를 실어 QR 생성 (스마트폰에서 접속 시 100% 미디어 즉시 노출)
+  const baseUrl = window.location.href.split('?')[0];
+  let qrTargetUrl = `${baseUrl}?view=pixx&id=${Date.now()}`;
+  if (photoRemoteUrl && videoRemoteUrl) {
+    qrTargetUrl += `&img=${encodeURIComponent(photoRemoteUrl)}&vid=${encodeURIComponent(videoRemoteUrl)}`;
+  }
+
+  await cacheQrImageFromUrl(qrTargetUrl);
+  renderStrip(false);
+
+  const mainCanvas = document.getElementById('photoCanvas');
+  if (mainCanvas) {
+    currentMediaBlobs.photoUrl = mainCanvas.toDataURL('image/jpeg', 0.95);
+  }
 }
 
 function cacheQrImageFromUrl(url) {
@@ -2550,15 +2710,15 @@ async function saveMediaWithSilentCloud(type) {
     }, 'image/png');
 
   } else if (type === 'loop') {
-    if (!currentMediaBlobs.videoFrame) {
-      alert("무빙 영상을 먼저 생성해 주세요!");
+    if (!currentMediaBlobs.loop) {
+      alert("부메랑 영상을 먼저 생성해 주세요!");
       return;
     }
 
-    const ext = currentMediaBlobs.videoFrame.type.includes('mp4') ? 'mp4' : 'webm';
+    const ext = currentMediaBlobs.loop.type.includes('mp4') ? 'mp4' : 'webm';
     const fileName = `[Photoist_Pro_부메랑영상]_${Date.now()}.${ext}`;
 
-    const url = URL.createObjectURL(currentMediaBlobs.videoFrame);
+    const url = URL.createObjectURL(currentMediaBlobs.loop);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
@@ -2603,11 +2763,11 @@ const pixxDarkI18n = {
     timezone: '한국시간 기준 · KST',
     notice: '소중한 순간이 담긴 사진과 영상은 촬영 후 <strong>24시간 동안 안전하게 보관</strong>되며 언제든 자유롭게 다운로드하실 수 있습니다.',
     togglePhoto: '사진 보기',
-    togglePhotoSub: '정지 사진으로 보기',
-    toggleVideo: '부메랑 영상 보기',
-    toggleVideoSub: '2.0배속 왕복 영상으로 보기',
-    toggleTl: '타임랩스 보기',
-    toggleTlSub: '3.0배속 촬영 과정 보기',
+    togglePhotoSub: '정지 사진',
+    toggleVideo: '부메랑 영상',
+    toggleVideoSub: '2.0배속 왕복',
+    toggleTl: '타임랩스',
+    toggleTlSub: '3.0배속 비하인드',
     dlTl: '타임 랩스',
     dlTlSub: '3.0배속 전과정 저장',
     dlLoop: '반복 영상',
@@ -2623,9 +2783,9 @@ const pixxDarkI18n = {
     notice: 'Your precious photos and videos are safely stored for <strong>24 hours</strong> after shooting and can be downloaded anytime.',
     togglePhoto: 'Photo View',
     togglePhotoSub: 'View still photo',
-    toggleVideo: 'Boomerang Video',
-    toggleVideoSub: 'View 2.0x boomerang video',
-    toggleTl: 'Timelapse View',
+    toggleVideo: 'Boomerang',
+    toggleVideoSub: 'View 2.0x boomerang',
+    toggleTl: 'Timelapse',
     toggleTlSub: 'View 3.0x process',
     dlTl: 'Timelapse',
     dlTlSub: 'Save 3.0x full video',
@@ -2642,14 +2802,14 @@ const pixxDarkI18n = {
     notice: '大切な瞬間を収めた写真と動画は、撮影後<strong>24時間安全に保管</strong>され、いつでも自由にダウンロードできます。',
     togglePhoto: '写真を見る',
     togglePhotoSub: '写真表示に切り替え',
-    toggleVideo: 'ブーメラン動画',
+    toggleVideo: 'ブーメラン',
     toggleVideoSub: '2.0倍速ループ動画',
     toggleTl: 'タイムラプス',
     toggleTlSub: '3.0倍速撮影過程を見る',
     dlTl: 'タイムラプス',
-    dlTlSub: '3.0倍速動画を保存',
+    dlTlSub: '3.0배속動画を保存',
     dlLoop: 'ループ動画',
-    dlLoopSub: '2.0倍速ループ保存',
+    dlLoopSub: '2.0배속ループ保存',
     dlVf: '写真動画',
     dlVfSub: 'フレーム合成動画',
     dlPhoto: '撮影写真',
@@ -2661,10 +2821,10 @@ const pixxDarkI18n = {
     notice: '珍贵瞬间的照片与视频在拍摄后将<strong>安全保存24小时</strong>，您可随时自由下载。',
     togglePhoto: '查看照片',
     togglePhotoSub: '切换为静态照片',
-    toggleVideo: 'Boomerang视频',
-    toggleVideoSub: '查看2.0倍速循环视频',
+    toggleVideo: 'Boomerang',
+    toggleVideoSub: '查看2.0倍速循环',
     toggleTl: '延时视频',
-    toggleTlSub: '查看3.0倍速拍摄过程',
+    toggleTlSub: '查看3.0倍速拍摄',
     dlTl: '延时视频',
     dlTlSub: '下载3.0倍速延时视频',
     dlLoop: '循环视频',
@@ -2680,10 +2840,10 @@ const pixxDarkI18n = {
     notice: 'ภาพและวิดีโออันมีค่าของคุณจะถูกเก็บรักษาอย่างปลอดภัยเป็นเวลา <strong>24 ชั่วโมง</strong> หลังจากถ่ายภาพ และสามารถดาวน์โหลดได้ตลอดเวลา',
     togglePhoto: 'ดูรูปภาพ',
     togglePhotoSub: 'สลับเป็นภาพนิ่ง',
-    toggleVideo: 'วิดีโอบูมเมอแรง',
+    toggleVideo: 'บูมเมอแรง',
     toggleVideoSub: 'ดูวิดีโอวนซ้ำ 2.0x',
-    toggleTl: 'ดูไทม์แลปส์',
-    toggleTlSub: 'ดูขั้นตอนการถ่ายทำ 3.0x',
+    toggleTl: 'ไทม์แลปส์',
+    toggleTlSub: 'ดูขั้นตอน 3.0x',
     dlTl: 'ไทม์แลปส์',
     dlTlSub: 'ดาวน์โหลดวิดีโอ 3.0x',
     dlLoop: 'วิดีโอวนซ้ำ',
@@ -2702,15 +2862,21 @@ function openPixxViewer() {
   const jpgView = document.getElementById('pixxJpgView');
   const movieView = document.getElementById('pixxMovieView');
   const tlView = document.getElementById('pixxTimelapseView');
+  const framedView = document.getElementById('pixxFramedView');
 
   if (jpgView && currentMediaBlobs.photoUrl) {
     jpgView.src = currentMediaBlobs.photoUrl;
   }
 
-  if (movieView && currentMediaBlobs.videoFrame) {
-    movieView.src = URL.createObjectURL(currentMediaBlobs.videoFrame);
+  if (movieView && currentMediaBlobs.loop) {
+    movieView.src = URL.createObjectURL(currentMediaBlobs.loop);
     movieView.load();
     movieView.play().catch(() => {});
+  }
+
+  if (framedView && currentMediaBlobs.videoFrame) {
+    framedView.src = URL.createObjectURL(currentMediaBlobs.videoFrame);
+    framedView.load();
   }
 
   if (tlView && currentMediaBlobs.timelapse) {
@@ -2736,11 +2902,15 @@ function renderPixxLanguage() {
 
   const pBtn = document.getElementById('pixxTogglePhotoTitle');
   const pSub = document.getElementById('pixxTogglePhotoSub');
+  const lBtn = document.getElementById('pixxToggleLoopTitle');
+  const lSub = document.getElementById('pixxToggleLoopSub');
   const tBtn = document.getElementById('pixxToggleTlTitle');
   const tSub = document.getElementById('pixxToggleTlSub');
 
-  if (pBtn) pBtn.textContent = (activePixxViewMode === 'photo') ? text.toggleVideo : text.togglePhoto;
-  if (pSub) pSub.textContent = (activePixxViewMode === 'photo') ? text.toggleVideoSub : text.togglePhotoSub;
+  if (pBtn) pBtn.textContent = text.togglePhoto;
+  if (pSub) pSub.textContent = text.togglePhotoSub;
+  if (lBtn) lBtn.textContent = text.toggleVideo;
+  if (lSub) lSub.textContent = text.toggleVideoSub;
   if (tBtn) tBtn.textContent = text.toggleTl;
   if (tSub) tSub.textContent = text.toggleTlSub;
 
@@ -2774,53 +2944,51 @@ function togglePixxMediaView(target) {
   const jpgView = document.getElementById('pixxJpgView');
   const movieView = document.getElementById('pixxMovieView');
   const tlView = document.getElementById('pixxTimelapseView');
+  const framedView = document.getElementById('pixxFramedView');
 
   if (target === 'photo') {
-    if (activePixxViewMode === 'photo') {
-      activePixxViewMode = 'loop';
-      if (jpgView) jpgView.style.display = 'none';
-      if (tlView) { tlView.pause(); tlView.style.display = 'none'; }
-      if (movieView) { movieView.style.display = 'block'; movieView.play().catch(() => {}); }
-    } else {
-      activePixxViewMode = 'photo';
-      if (movieView) { movieView.pause(); movieView.style.display = 'none'; }
-      if (tlView) { tlView.pause(); tlView.style.display = 'none'; }
-      if (jpgView) jpgView.style.display = 'block';
-    }
+    activePixxViewMode = 'photo';
+    if (movieView) { movieView.pause(); movieView.style.display = 'none'; }
+    if (tlView) { tlView.pause(); tlView.style.display = 'none'; }
+    if (framedView) { framedView.pause(); framedView.style.display = 'none'; }
+    if (jpgView) jpgView.style.display = 'block';
   } else if (target === 'timelapse') {
     activePixxViewMode = 'timelapse';
     if (jpgView) jpgView.style.display = 'none';
     if (movieView) { movieView.pause(); movieView.style.display = 'none'; }
+    if (framedView) { framedView.pause(); framedView.style.display = 'none'; }
     if (tlView) { tlView.style.display = 'block'; tlView.play().catch(() => {}); }
   } else if (target === 'loop') {
     activePixxViewMode = 'loop';
     if (jpgView) jpgView.style.display = 'none';
     if (tlView) { tlView.pause(); tlView.style.display = 'none'; }
+    if (framedView) { framedView.pause(); framedView.style.display = 'none'; }
     if (movieView) { movieView.style.display = 'block'; movieView.play().catch(() => {}); }
   }
 
   renderPixxLanguage();
 }
 
+// 🌟 4종 다운로드 처리 (타임랩스 / 부메랑 / 사진영상 / 촬영사진)
 function downloadPixxMediaItem(type) {
   if (type === 'timelapse') {
-    const blob = currentMediaBlobs.timelapse || currentMediaBlobs.videoFrame;
+    const blob = currentMediaBlobs.timelapse || currentMediaBlobs.loop;
     if (blob) {
       triggerDirectFileDownload(blob, `PIXX_Timelapse_${Date.now()}.mp4`);
     } else {
       alert("다운로드 가능한 타임랩스 영상이 없습니다.");
     }
   } else if (type === 'loop') {
-    const blob = currentMediaBlobs.loop || currentMediaBlobs.videoFrame;
+    const blob = currentMediaBlobs.loop;
     if (blob) {
       triggerDirectFileDownload(blob, `PIXX_Boomerang_${Date.now()}.mp4`);
     } else {
       alert("다운로드 가능한 반복 영상이 없습니다.");
     }
   } else if (type === 'videoFrame') {
-    const blob = currentMediaBlobs.videoFrame;
+    const blob = currentMediaBlobs.videoFrame || currentMediaBlobs.loop;
     if (blob) {
-      triggerDirectFileDownload(blob, `PIXX_PhotoVideo_${Date.now()}.mp4`);
+      triggerDirectFileDownload(blob, `PIXX_FramedVideo_${Date.now()}.mp4`);
     } else {
       alert("다운로드 가능한 사진 영상이 없습니다.");
     }
@@ -2853,8 +3021,10 @@ function triggerDirectFileDownload(blob, fileName) {
 function returnFromPixxToEditor() {
   const movieView = document.getElementById('pixxMovieView');
   const tlView = document.getElementById('pixxTimelapseView');
+  const framedView = document.getElementById('pixxFramedView');
   if (movieView) movieView.pause();
   if (tlView) tlView.pause();
+  if (framedView) framedView.pause();
 
   showScreen('screenEdit');
   renderStrip();
@@ -2972,9 +3142,25 @@ function updateAppVh() {
   document.documentElement.style.setProperty('--app-vh', `${vh}px`);
 }
 
+// 🌟 URL 쿼리 파라미터 감지 (스마트폰 QR 스캔 접속 시 클라우드 미디어 즉시 바인딩)
 function checkUrlQueryForPixxViewer() {
-  const url = location.href;
-  if (url.includes('?view=pixx') || url.includes('?id=')) {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('view') === 'pixx' || urlParams.get('id')) {
+    const remoteImg = urlParams.get('img');
+    const remoteVid = urlParams.get('vid');
+
+    if (remoteImg) {
+      currentMediaBlobs.photoUrl = decodeURIComponent(remoteImg);
+    }
+
+    if (remoteVid) {
+      const vEl = document.getElementById('pixxMovieView');
+      if (vEl) {
+        vEl.src = decodeURIComponent(remoteVid);
+        vEl.load();
+      }
+    }
+
     openPixxViewer();
   }
 }
